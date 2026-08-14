@@ -1,0 +1,66 @@
+name: Windows external audio build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/external-audio-1.12
+
+jobs:
+  test-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test external audio and subtitle mapping
+        run: node scripts/test-external-audio.js
+
+  build-win64:
+    needs: test-js
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt 5.15.2
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: "5.15.2"
+          arch: "win64_msvc2019_64"
+          modules: "qtwebengine"
+      - name: Install dependencies
+        run: |
+          mkdir build
+          curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe > vc_redist.x64.exe
+          sed -i 's#C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\v142\vcredist_x64.exe#'"$(readlink -f vc_redist.x64.exe | sed 's#/\([a-z]\)/#\1:\\#g' | tr '/' '\\' | sed 's/\\/\\\\/g')#g" bundle/win/Bundle.wxs
+          curl -L https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip > ninja.zip
+          unzip ninja.zip
+          mv ninja.exe build/
+          curl -L https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20240304-git-9ac791c.7z/download > mpv.7z
+          7z x mpv.7z
+          mkdir mpv
+          mv include mpv
+          gendef libmpv-2.dll
+          mv libmpv-2.dll mpv/libmpv-2.dll
+          mv libmpv-2.def mpv.def
+          mv mpv.def libmpv.dll.a mpv/
+          mv mpv build/
+        shell: bash
+      - name: Build installer
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cd build
+          set PATH=%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin;%CD%
+          cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt5_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll ..
+          lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
+          ninja
+          ninja windows_package
+        shell: cmd
+      - name: Name test installer
+        run: Move-Item (Get-ChildItem build\JellyfinMediaPlayer-*.exe).FullName build\JellyfinMediaPlayer-1.12.0-external-audio.1-win64.exe
+        shell: powershell
+      - name: Archive installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-external-audio
+          path: ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.0-external-audio.1-win64.exe

@@ -310,6 +310,46 @@
         /**
          * @private
          */
+        getExternalAudioUrl(audioStream) {
+            if (audioStream.DeliveryUrl) {
+                return audioStream.DeliveryUrl;
+            }
+
+            const options = this._currentPlayOptions;
+            const itemId = options?.item?.Id;
+            const mediaSourceId = options?.mediaSource?.Id;
+            const codec = audioStream.Codec?.toLowerCase();
+
+            if (!itemId || !mediaSourceId || !codec || !options?.url) {
+                return null;
+            }
+
+            try {
+                const url = new URL(options.url);
+                const videoPath = url.pathname.match(/^(.*)\/Videos\/[^/]+\/stream(?:\.[^/]*)?$/i);
+                if (!videoPath) {
+                    return null;
+                }
+
+                url.pathname = `${videoPath[1]}/Audio/${encodeURIComponent(itemId)}/stream.${encodeURIComponent(codec)}`;
+                url.searchParams.delete('Static');
+                url.searchParams.delete('Tag');
+                url.searchParams.set('MediaSourceId', mediaSourceId);
+                url.searchParams.set('AudioStreamIndex', audioStream.Index);
+                url.searchParams.set('AudioCodec', codec);
+                url.searchParams.set('TranscodingProtocol', 'http');
+                url.searchParams.set('EnableRedirection', 'false');
+
+                return url.toString();
+            } catch {
+                console.error('Unable to create external audio stream URL');
+                return null;
+            }
+        }
+
+        /**
+         * @private
+         */
         getAudioParam() {
             const options = this._currentPlayOptions;
 
@@ -317,6 +357,13 @@
                 const initialAudioStream = this.getStreamByIndex(options.mediaSource.MediaStreams, this._audioTrackIndexToSetOnPlaying);
                 if (!initialAudioStream) {
                     return '#1';
+                }
+
+                if (initialAudioStream.IsExternal || initialAudioStream.DeliveryMethod === 'External') {
+                    const externalAudioUrl = this.getExternalAudioUrl(initialAudioStream);
+                    return externalAudioUrl
+                        ? '#,' + externalAudioUrl
+                        : '#1';
                 }
             }
 
