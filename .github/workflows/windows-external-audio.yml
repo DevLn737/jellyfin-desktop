@@ -56,12 +56,27 @@ jobs:
           }
           [IO.File]::WriteAllText($bundlePath, $content.Replace($placeholder, $redistPath))
         shell: pwsh
+      - name: Install compatible CMake
+        run: |
+          python -m pip install --disable-pip-version-check "cmake==3.31.6"
+          $pythonDir = Split-Path (python -c "import sys; print(sys.executable)")
+          $cmakeExe = Join-Path $pythonDir "Scripts\cmake.exe"
+          if (-not (Test-Path $cmakeExe)) {
+              throw "Pinned CMake executable was not found"
+          }
+          "JMP_CMAKE=$cmakeExe" | Out-File -FilePath $env:GITHUB_ENV -Append
+          & $cmakeExe --version
+        shell: pwsh
       - name: Build installer
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
+          if not defined VSINSTALL exit /b 1
+          call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
+          where cl
+          where lib
           cd build
           set PATH=%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin;%CD%
-          cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt5_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll ..
+          "%JMP_CMAKE%" -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt5_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll ..
           lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
           ninja
           ninja windows_package
