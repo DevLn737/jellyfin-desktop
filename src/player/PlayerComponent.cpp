@@ -870,7 +870,34 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
       streamName = streamSelection.mid(splitPos + 1);
     }
   }
-  else if (streamSelection.isEmpty())
+  if (target == MediaType::Audio)
+  {
+    QStringList staleExternalAudioStreamIds;
+    auto tracks = mpv::qt::get_property(m_mpv, "track-list");
+
+    for (auto track : tracks.toList())
+    {
+      auto map = track.toMap();
+
+      if (map["type"].toString() != mpvStreamTypeName || !map["external"].toBool())
+        continue;
+
+      if (!streamName.isEmpty() && map["external-filename"].toString() == streamName)
+        continue;
+
+      auto id = map["id"].toString();
+      if (!id.isEmpty())
+        staleExternalAudioStreamIds += id;
+    }
+
+    for (const auto &id : staleExternalAudioStreamIds)
+    {
+      qInfo() << "removing stale external audio stream" << id;
+      mpv::qt::command(m_mpv, QStringList() << "audio-remove" << id);
+    }
+  }
+
+  if (streamSelection.isEmpty())
   {
     mpv::qt::set_property(m_mpv, streamIdPropertyName, "no");
     return;
@@ -882,6 +909,18 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
     if (streams.isEmpty())
     {
       QStringList args = (QStringList() << streamAddCommandName << streamName);
+
+      if (target == MediaType::Audio)
+      {
+        // Loading an external audio stream is asynchronous. Let mpv select the
+        // stream when it becomes available instead of immediately falling back
+        // to aid=1 and leaving the external demuxer running in the background.
+        args << "select";
+        qInfo() << "adding and selecting external audio stream";
+        mpv::qt::command(m_mpv, args);
+        return;
+      }
+
       mpv::qt::command(m_mpv, args);
     }
   }

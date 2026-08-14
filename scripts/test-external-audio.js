@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const source = fs.readFileSync('native/mpvVideoPlayer.js', 'utf8');
+const playerComponentSource = fs.readFileSync('src/player/PlayerComponent.cpp', 'utf8');
 const context = {
   URL,
   console: { debug() {}, error() {}, log() {} },
@@ -73,4 +74,20 @@ assert.equal(
   '#,https://example.test/jellyfin/Videos/item-1/Subtitles/0/Stream.ass?ApiKey=secret'
 );
 
-console.log('external audio and subtitle mapping tests passed');
+const selectExternalAudio = playerComponentSource.indexOf('args << "select";');
+const stopBeforeFallback = playerComponentSource.indexOf('return;', selectExternalAudio);
+const fallbackToFirstAudio = playerComponentSource.indexOf(
+  'if ((target == MediaType::Audio || !streamID.isEmpty()) && selection == "no")'
+);
+
+assert.ok(selectExternalAudio >= 0, 'external audio must be selected after mpv loads it');
+assert.ok(
+  stopBeforeFallback > selectExternalAudio && stopBeforeFallback < fallbackToFirstAudio,
+  'new external audio must not immediately fall back to embedded aid=1'
+);
+assert.ok(
+  playerComponentSource.includes('QStringList() << "audio-remove" << id'),
+  'stale external audio demuxers must be removed when switching tracks'
+);
+
+console.log('external audio, subtitle, and native stream lifecycle tests passed');
