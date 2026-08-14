@@ -249,6 +249,7 @@ private:
   QVariantMap m_serverMediaInfo;
   QString m_currentSubtitleStream;
   QString m_currentAudioStream;
+  QString m_pendingExternalAudioStream;
   QRect m_videoRectangle;
 };
 

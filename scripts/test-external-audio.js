@@ -89,5 +89,13 @@ assert.ok(
   playerComponentSource.includes('QStringList() << "audio-remove" << id'),
   'stale external audio demuxers must be removed when switching tracks'
 );
+assert.ok(
+  playerComponentSource.includes('mpv_observe_property(m_mpv, 0, "track-list", MPV_FORMAT_NODE)'),
+  'external audio selection must follow asynchronous track-list updates'
+);
+assert.ok(
+  playerComponentSource.includes('m_pendingExternalAudioStream == streamName'),
+  'repeated track-list events must not add duplicate external audio demuxers'
+);
 
 console.log('external audio, subtitle, and native stream lifecycle tests passed');

@@ -194,6 +194,7 @@ bool PlayerComponent::componentInitialize()
   mpv_observe_property(m_mpv, 0, "duration", MPV_FORMAT_DOUBLE);
   mpv_observe_property(m_mpv, 0, "audio-device-list", MPV_FORMAT_NODE);
   mpv_observe_property(m_mpv, 0, "video-dec-params", MPV_FORMAT_NODE);
+  mpv_observe_property(m_mpv, 0, "track-list", MPV_FORMAT_NODE);
 
   // Setup a hook with the ID 1, which is run during the file is loaded.
   // Used to delay playback start for display framerate switching.
@@ -335,6 +336,7 @@ void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
 
   m_currentSubtitleStream = subtitleStream;
   m_currentAudioStream = audioStream;
+  m_pendingExternalAudioStream.clear();
 
   if (metadata["type"] == "music")
     extraArgs.insert("vid", "no");
@@ -586,6 +588,13 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
         // dependent on the aspect ratio.
         updateVideoAspectSettings();
       }
+      else if (strcmp(prop->name, "track-list") == 0)
+      {
+        // External audio is added asynchronously. Re-apply the requested
+        // selection once mpv publishes the new track, and clean up a late
+        // track if the user switched back to embedded audio while it loaded.
+        reselectStream(m_currentAudioStream, MediaType::Audio);
+      }
       break;
     }
     case MPV_EVENT_LOG_MESSAGE:
@@ -645,6 +654,7 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       // Used initialize stream selections and to probe codecs.
       if (!strcmp(msg->args[1], "2"))
       {
+        m_pendingExternalAudioStream.clear();
         reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
         reselectStream(m_currentAudioStream, MediaType::Audio);
         startCodecsLoading([=] {
@@ -688,6 +698,7 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       }
       if (!strcmp(hook->name, "on_preloaded"))
       {
+        m_pendingExternalAudioStream.clear();
         reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
         reselectStream(m_currentAudioStream, MediaType::Audio);
         startCodecsLoading([=] {
@@ -872,6 +883,9 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
   }
   if (target == MediaType::Audio)
   {
+    if (m_pendingExternalAudioStream != streamName)
+      m_pendingExternalAudioStream.clear();
+
     QStringList staleExternalAudioStreamIds;
     auto tracks = mpv::qt::get_property(m_mpv, "track-list");
 
@@ -893,7 +907,10 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
     for (const auto &id : staleExternalAudioStreamIds)
     {
       qInfo() << "removing stale external audio stream" << id;
-      mpv::qt::command(m_mpv, QStringList() << "audio-remove" << id);
+      auto result = mpv::qt::command(m_mpv, QStringList() << "audio-remove" << id);
+      auto error = mpv::qt::get_error(result);
+      if (error < 0)
+        qWarning() << "failed to remove external audio stream" << id << mpv_error_string(error);
     }
   }
 
@@ -912,12 +929,22 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
 
       if (target == MediaType::Audio)
       {
+        if (m_pendingExternalAudioStream == streamName)
+          return;
+
         // Loading an external audio stream is asynchronous. Let mpv select the
         // stream when it becomes available instead of immediately falling back
         // to aid=1 and leaving the external demuxer running in the background.
+        m_pendingExternalAudioStream = streamName;
         args << "select";
         qInfo() << "adding and selecting external audio stream";
-        mpv::qt::command(m_mpv, args);
+        auto result = mpv::qt::command(m_mpv, args);
+        auto error = mpv::qt::get_error(result);
+        if (error < 0)
+        {
+          m_pendingExternalAudioStream.clear();
+          qWarning() << "failed to add external audio stream" << mpv_error_string(error);
+        }
         return;
       }
 
@@ -945,12 +972,34 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
     }
   }
 
+  if (target == MediaType::Audio && !streamName.isEmpty() && selection == "no")
+  {
+    // The external demuxer exists, but has not published an audio track yet.
+    // Keep the existing selection until the observed track-list changes.
+    return;
+  }
+
   // Fallback to the first stream if none could be found.
   // Useful if web-client uses wrong stream IDs when e.g. transcoding.
   if ((target == MediaType::Audio || !streamID.isEmpty()) && selection == "no")
     selection = "1";
 
-  mpv::qt::set_property(m_mpv, streamIdPropertyName, selection);
+  if (mpv::qt::get_property(m_mpv, streamIdPropertyName).toString() == selection)
+  {
+    if (target == MediaType::Audio && !streamName.isEmpty())
+      m_pendingExternalAudioStream.clear();
+    return;
+  }
+
+  auto error = mpv::qt::set_property(m_mpv, streamIdPropertyName, selection);
+  if (error < 0)
+  {
+    qWarning() << "failed to select" << mpvStreamTypeName << "stream" << mpv_error_string(error);
+    return;
+  }
+
+  if (target == MediaType::Audio && !streamName.isEmpty())
+    m_pendingExternalAudioStream.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
