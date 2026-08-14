@@ -32,7 +32,6 @@ jobs:
         run: |
           mkdir build
           curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe > vc_redist.x64.exe
-          sed -i 's#C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\v142\vcredist_x64.exe#'"$(readlink -f vc_redist.x64.exe | sed 's#/\([a-z]\)/#\1:\\#g' | tr '/' '\\' | sed 's/\\/\\\\/g')#g" bundle/win/Bundle.wxs
           curl -L https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip > ninja.zip
           unzip ninja.zip
           mv ninja.exe build/
@@ -46,6 +45,17 @@ jobs:
           mv mpv.def libmpv.dll.a mpv/
           mv mpv build/
         shell: bash
+      - name: Configure VC redistributable
+        run: |
+          $bundlePath = Join-Path $env:GITHUB_WORKSPACE "bundle\win\Bundle.wxs"
+          $redistPath = Join-Path $env:GITHUB_WORKSPACE "vc_redist.x64.exe"
+          $placeholder = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\v142\vcredist_x64.exe"
+          $content = [IO.File]::ReadAllText($bundlePath)
+          if (-not $content.Contains($placeholder)) {
+              throw "VC redistributable placeholder was not found in Bundle.wxs"
+          }
+          [IO.File]::WriteAllText($bundlePath, $content.Replace($placeholder, $redistPath))
+        shell: pwsh
       - name: Build installer
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
