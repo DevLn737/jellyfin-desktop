@@ -6,8 +6,9 @@ Jellyfin Desktop. Supports audio passthrough.
 
 ## SyncPlay Windows release
 
-This fork provides the validated Jellyfin Media Player `1.12.0-syncplay.1` build
-for synchronized playback rate and independent external audio/subtitle tracks:
+This fork provides the Jellyfin Media Player `1.12.0-syncplay.1` build validated
+by two-client canary acceptance and a four-client production stress session for
+synchronized playback rate and independent external audio/subtitle tracks:
 
 - [Windows installer](https://github.com/DevLn737/jellyfin-desktop/releases/download/v1.12.0-syncplay.1/JellyfinMediaPlayer-1.12.0-syncplay.1-win64.exe)
 - [Windows portable ZIP](https://github.com/DevLn737/jellyfin-desktop/releases/download/v1.12.0-syncplay.1/JellyfinMediaPlayer-1.12.0-syncplay.1-portable-win64.zip)
