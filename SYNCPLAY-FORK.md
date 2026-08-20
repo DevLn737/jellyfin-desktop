@@ -16,8 +16,8 @@ native external-track handling.
 ## Stable Windows release
 
 The validated Windows x64 build is tagged `v1.12.0-syncplay.1` and published as
-`JellyfinMediaPlayer-1.12.0-syncplay.1-win64.exe` on the repository's Releases
-page.
+an [installer](https://github.com/DevLn737/jellyfin-desktop/releases/download/v1.12.0-syncplay.1/JellyfinMediaPlayer-1.12.0-syncplay.1-win64.exe)
+and [portable ZIP](https://github.com/DevLn737/jellyfin-desktop/releases/download/v1.12.0-syncplay.1/JellyfinMediaPlayer-1.12.0-syncplay.1-portable-win64.zip).
 
 The release was accepted with two remote Windows clients using independent
 audio and subtitle selections while SyncPlay rate changes, pause/resume and

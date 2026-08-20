@@ -4,6 +4,15 @@ Desktop client using jellyfin-web with embedded MPV player. Supports Windows, Ma
 and Linux. Media plays within the same window using the jellyfin-web interface unlike
 Jellyfin Desktop. Supports audio passthrough.
 
+## SyncPlay Windows release
+
+This fork provides the validated Jellyfin Media Player `1.12.0-syncplay.1` build
+for synchronized playback rate and independent external audio/subtitle tracks:
+
+- [Windows installer](https://github.com/DevLn737/jellyfin-desktop/releases/download/v1.12.0-syncplay.1/JellyfinMediaPlayer-1.12.0-syncplay.1-win64.exe)
+- [Windows portable ZIP](https://github.com/DevLn737/jellyfin-desktop/releases/download/v1.12.0-syncplay.1/JellyfinMediaPlayer-1.12.0-syncplay.1-portable-win64.zip)
+- [Release notes](https://github.com/DevLn737/jellyfin-desktop/releases/tag/v1.12.0-syncplay.1)
+
 ![Screenshot of Jellyfin Media Player](https://raw.githubusercontent.com/iwalton3/mpv-shim-misc-docs/master/images/jmp-player-win.png)
 
 Downloads:
