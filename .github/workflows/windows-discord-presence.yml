@@ -35,6 +35,8 @@ jobs:
           version: "5.15.2"
           arch: "win64_msvc2019_64"
           modules: "qtwebengine"
+          # Avoid intermittent py7zr Bad7zFile failures on Windows runner paths.
+          extra: "--external 7z"
       - name: Install dependencies
         run: |
           mkdir build
