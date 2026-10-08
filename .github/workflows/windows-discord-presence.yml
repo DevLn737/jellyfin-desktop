@@ -161,6 +161,7 @@ jobs:
           Windows test build of Jellyfin Desktop with Discord Rich Presence.
 
           - Native Watching progress bar when runtime is available.
+          - Fixes Russian labels appearing as question marks in the Windows installer build.
           - Minimal movie/year and series/episode text, poster and Jellyfin logo; no buttons.
           - Retains the timer through pauses; Discord's timer continues during pause and resyncs on resume.
           - Includes existing SyncPlay external audio/subtitle support.

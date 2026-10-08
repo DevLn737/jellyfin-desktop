@@ -129,6 +129,10 @@ endif()
 
 get_property(BUNDLED_FILES GLOBAL PROPERTY CONFIG_BUNDLED_FILES)
 add_executable(${MAIN_TARGET} WIN32 MACOSX_BUNDLE ${SOURCES} ${BUNDLED_FILES} ${RESOURCE_FILES} ${XCODE_RESOURCES})
+include(DiscordCompileOptions)
+if(WIN32)
+  configure_discord_sources(discord/DiscordActivity.cpp discord/DiscordIpc.cpp discord/DiscordComponent.cpp)
+endif()
 std_target_properties(${MAIN_TARGET})
 set_target_properties(${MAIN_TARGET} PROPERTIES
   MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/bundle/osx/Info.plist.in

@@ -12,6 +12,8 @@ add_executable(discord-presence-tests
   ../../src/discord/DiscordIpc.h)
 target_include_directories(discord-presence-tests PRIVATE ../../src/discord)
 target_link_libraries(discord-presence-tests PRIVATE Qt5::Core Qt5::Network Qt5::Test)
+include(../../CMakeModules/DiscordCompileOptions.cmake)
+configure_discord_sources(../../src/discord/DiscordActivity.cpp ../../src/discord/DiscordIpc.cpp)
 if(MSVC)
   target_compile_options(discord-presence-tests PRIVATE /utf-8)
 endif()

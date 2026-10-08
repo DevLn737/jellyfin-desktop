@@ -25,8 +25,8 @@ The application name comes from Discord's registration, not the executable name.
 The Application ID can be changed in Client Settings. An empty/invalid ID disables
 the connection. Never enter a Client Secret or bot token.
 
-The Discord build is version `1.12.3-discord.3` (Windows Installer version
-`1.12.3`), so the installer upgrades existing `1.12.0` / SyncPlay and earlier Discord installations
+The Discord build is version `1.12.4-discord.4` (Windows Installer version
+`1.12.4`), so the installer upgrades existing `1.12.0` / SyncPlay and earlier Discord installations
 without a manual uninstall. Close the player before updating. The existing
 UpgradeCode and settings location are preserved. The portable ZIP can be
 extracted to a separate directory, but uses the same user settings by default.
@@ -90,8 +90,10 @@ hostname and relevant item/image identifiers.
 
 ## Build and test
 
-The feature is compiled and registered only on Windows. Existing SyncPlay
-external-track support remains included. The workflow
+The feature is compiled and registered only on Windows.
+Discord sources use the same UTF-8 compiler settings in production and tests;
+MSVC character-conversion warning C4566 is an error for these sources.
+Existing SyncPlay external-track support remains included. The workflow
 `.github/workflows/windows-discord-presence.yml` runs the existing JavaScript
 regression test, builds/runs the Qt activity and named-pipe tests on Windows,
 and builds installer/portable artifacts. It does not replace the SyncPlay release.
