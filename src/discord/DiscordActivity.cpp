@@ -91,7 +91,7 @@ QJsonObject DiscordActivity::build(const QVariantMap& item, const QUrl& playback
     {
       QString number = QStringLiteral("E%1").arg(item.value("IndexNumber").toInt(), 2, 10, QLatin1Char('0'));
       if (item.value("IndexNumberEnd").toInt() > item.value("IndexNumber").toInt())
-        number += QStringLiteral("–%1").arg(item.value("IndexNumberEnd").toInt(), 2, 10, QLatin1Char('0'));
+        number += QStringLiteral("\u2013%1").arg(item.value("IndexNumberEnd").toInt(), 2, 10, QLatin1Char('0'));
       state << number;
     }
   }
@@ -102,10 +102,10 @@ QJsonObject DiscordActivity::build(const QVariantMap& item, const QUrl& playback
     : playing ? QStringLiteral("Watching") : QStringLiteral("Paused");
   QString stateText = state.join(QLatin1Char(' '));
   if (!stateText.isEmpty())
-    stateText += QStringLiteral(" · ");
+    stateText += QStringLiteral(" \u00b7 ");
   stateText += status;
   if (!playing)
-    stateText += QStringLiteral(" · ") + clockText(positionMs);
+    stateText += QStringLiteral(" \u00b7 ") + clockText(positionMs);
 
   const QString poster = posterUrl(item, playbackUrl);
   QJsonObject assets{{"large_image", poster.isEmpty() ? Logo : poster},
