@@ -1,0 +1,113 @@
+name: Windows Discord Rich Presence
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/discord-rich-presence
+
+permissions:
+  contents: read
+
+jobs:
+  test-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test external audio and subtitle mapping
+        run: node scripts/test-external-audio.js
+
+  build-win64:
+    needs: test-js
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt 5.15.2
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: "5.15.2"
+          arch: "win64_msvc2019_64"
+          modules: "qtwebengine"
+      - name: Install dependencies
+        run: |
+          mkdir build
+          curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe > vc_redist.x64.exe
+          curl -L https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip > ninja.zip
+          unzip ninja.zip
+          mv ninja.exe build/
+          curl -L https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20240304-git-9ac791c.7z/download > mpv.7z
+          7z x mpv.7z
+          mkdir mpv
+          mv include mpv
+          gendef libmpv-2.dll
+          mv libmpv-2.dll mpv/libmpv-2.dll
+          mv libmpv-2.def mpv.def
+          mv mpv.def libmpv.dll.a mpv/
+          mv mpv build/
+        shell: bash
+      - name: Configure VC redistributable
+        run: |
+          $bundlePath = Join-Path $env:GITHUB_WORKSPACE "bundle\win\Bundle.wxs"
+          $redistPath = Join-Path $env:GITHUB_WORKSPACE "vc_redist.x64.exe"
+          $placeholder = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Redist\MSVC\v142\vcredist_x64.exe"
+          $content = [IO.File]::ReadAllText($bundlePath)
+          if (-not $content.Contains($placeholder)) {
+              throw "VC redistributable placeholder was not found in Bundle.wxs"
+          }
+          [IO.File]::WriteAllText($bundlePath, $content.Replace($placeholder, $redistPath))
+        shell: pwsh
+      - name: Install compatible CMake
+        run: |
+          python -m pip install --disable-pip-version-check "cmake==3.31.6"
+          $pythonDir = Split-Path (python -c "import sys; print(sys.executable)")
+          $cmakeExe = Join-Path $pythonDir "Scripts\cmake.exe"
+          if (-not (Test-Path $cmakeExe)) {
+              throw "Pinned CMake executable was not found"
+          }
+          "JMP_CMAKE=$cmakeExe" | Out-File -FilePath $env:GITHUB_ENV -Append
+          & $cmakeExe --version
+        shell: pwsh
+      - name: Test Discord activity and Windows IPC
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
+          if not defined VSINSTALL exit /b 1
+          call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
+          "%JMP_CMAKE%" -S tests/discord -B build/discord-tests -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%Qt5_DIR%" -DCMAKE_MAKE_PROGRAM="%CD%/build/ninja.exe"
+          if errorlevel 1 exit /b 1
+          "%JMP_CMAKE%" --build build/discord-tests
+          if errorlevel 1 exit /b 1
+          build\discord-tests\discord-presence-tests.exe
+          if errorlevel 1 exit /b 1
+      - name: Build installer
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
+          if not defined VSINSTALL exit /b 1
+          call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
+          where cl
+          where lib
+          cd build
+          set PATH=%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin;%CD%
+          "%JMP_CMAKE%" -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt5_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll ..
+          lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
+          ninja
+          if errorlevel 1 exit /b 1
+          if errorlevel 1 exit /b 1
+          ninja windows_package
+        shell: cmd
+      - name: Name Discord installer
+        run: Move-Item (Get-ChildItem build\JellyfinMediaPlayer-*.exe).FullName build\JellyfinMediaPlayer-1.12.0-discord.1-win64.exe
+        shell: powershell
+      - name: Package portable build
+        run: Compress-Archive -Path build\output\* -DestinationPath build\JellyfinMediaPlayer-1.12.0-discord.1-portable-win64.zip
+        shell: powershell
+      - name: Archive installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-discord-rich-presence
+          path: |
+            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.0-discord.1-win64.exe
+            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.0-discord.1-portable-win64.zip

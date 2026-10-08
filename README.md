@@ -4,6 +4,12 @@ Desktop client using jellyfin-web with embedded MPV player. Supports Windows, Ma
 and Linux. Media plays within the same window using the jellyfin-web interface unlike
 Jellyfin Desktop. Supports audio passthrough.
 
+## Discord Rich Presence for Windows
+
+This branch adds movie/series posters, titles, year or episode numbers, playback
+status and an elapsed timer to Discord. See [setup, image requirements and tests](DISCORD-RICH-PRESENCE.md).
+Windows installer and portable builds are produced by the **Windows Discord Rich Presence** workflow.
+
 ## SyncPlay Windows release
 
 This fork provides the Jellyfin Media Player `1.12.0-syncplay.1` build validated

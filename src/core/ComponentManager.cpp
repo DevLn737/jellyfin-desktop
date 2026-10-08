@@ -12,6 +12,9 @@
 #include "system/SystemComponent.h"
 #include "settings/SettingsComponent.h"
 #include "taskbar/TaskbarComponent.h"
+#ifdef Q_OS_WIN
+#include "discord/DiscordComponent.h"
+#endif
 
 #if KONVERGO_OPENELEC
 #include "system/openelec/OESystemComponent.h"
@@ -58,6 +61,9 @@ void ComponentManager::initialize()
   registerComponent(&PlayerComponent::Get());
   registerComponent(&PowerComponent::Get());
   registerComponent(&TaskbarComponent::Get());
+#ifdef Q_OS_WIN
+  registerComponent(&DiscordComponent::Get());
+#endif
 
 #if KONVERGO_OPENELEC
   registerComponent(&OESystemComponent::Get());

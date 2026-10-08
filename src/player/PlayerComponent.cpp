@@ -353,7 +353,11 @@ void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
 
   command << extraArgs;
 
-  mpv::qt::command(m_mpv, command);
+  const auto loadResult = mpv::qt::command(m_mpv, command);
+  if (mpv::qt::get_error(loadResult) >= 0)
+    m_presenceQueue.enqueue({metadata["metadata"].toMap(),
+      qurl.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment),
+      static_cast<qint64>(startMilliseconds)});
 
   emit onMetaData(metadata["metadata"].toMap(), qurl.adjusted(QUrl::RemovePath | QUrl::RemoveQuery));
 }
@@ -509,6 +513,13 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
     case MPV_EVENT_START_FILE:
     {
       m_inPlayback = true;
+      // Publish only when this file starts, after the previous file's END_FILE.
+      // Enqueuing the next episode must not replace the current presence early.
+      if (!m_presenceQueue.isEmpty())
+      {
+        const auto media = m_presenceQueue.dequeue();
+        emit presenceMediaChanged(media.item, media.url, media.startMs);
+      }
       break;
     }
     case MPV_EVENT_END_FILE:
@@ -750,6 +761,8 @@ void PlayerComponent::play()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::stop()
 {
+  m_presenceQueue.clear();
+  emit presenceStopped();
   QStringList args("stop");
   mpv::qt::command(m_mpv, args);
 }
@@ -757,6 +770,7 @@ void PlayerComponent::stop()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::clearQueue()
 {
+  m_presenceQueue.clear();
   QStringList args("playlist_clear");
   mpv::qt::command(m_mpv, args);
 }

@@ -5,6 +5,7 @@
 #include <QtCore/qglobal.h>
 #include <QVariant>
 #include <QSet>
+#include <QQueue>
 #include <QQuickWindow>
 #include <QTimer>
 #include <QTextStream>
@@ -193,6 +194,9 @@ Q_SIGNALS:
   void onMpvEvents();
 
   void onMetaData(const QVariantMap &meta, QUrl baseUrl);
+  // Native presence integration needs the server subpath and initial seek offset.
+  void presenceMediaChanged(const QVariantMap& item, const QUrl& playbackUrl, qint64 positionMs);
+  void presenceStopped();
   
 private:
   // this is the function actually implemented in the backends. the variantmap contains
@@ -250,6 +254,13 @@ private:
   QString m_currentSubtitleStream;
   QString m_currentAudioStream;
   QString m_pendingExternalAudioStream;
+  struct PresenceMedia
+  {
+    QVariantMap item;
+    QUrl url;
+    qint64 startMs;
+  };
+  QQueue<PresenceMedia> m_presenceQueue;
   QRect m_videoRectangle;
 };
 

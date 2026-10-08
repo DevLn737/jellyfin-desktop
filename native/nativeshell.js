@@ -486,6 +486,20 @@ async function showSettingsModal() {
                     label.appendChild(labelText);
                     if (helpElement) label.appendChild(helpElement);
                     label.appendChild(control);
+                } else if (setting.inputType === "text") {
+                    const control = document.createElement("input");
+                    control.type = "text";
+                    control.className = "emby-input";
+                    control.value = values[setting.key];
+                    control.addEventListener("change", e => {
+                        jmpInfo.settings[section][setting.key] = e.target.value.trim();
+                    });
+                    const labelText = document.createElement('label');
+                    labelText.className = "inputLabel";
+                    labelText.textContent = (setting.displayName ? setting.displayName : setting.key) + ": ";
+                    label.appendChild(labelText);
+                    if (helpElement) label.appendChild(helpElement);
+                    label.appendChild(control);
                 } else if (setting.inputType === "textarea") {
                     const control = document.createElement("textarea");
                     control.className = "emby-select-withcolor emby-select";

@@ -130,6 +130,21 @@
         "default": true
       },
       {
+        "value": "discordRichPresence",
+        "display_name": "Discord Rich Presence",
+        "help": "Share the current movie or episode, poster and playback progress on your Discord profile. Requires the Discord desktop app and activity sharing. Posters require a public HTTPS Jellyfin image endpoint; no Jellyfin token is shared.",
+        "default": true,
+        "platforms": [ "windows" ]
+      },
+      {
+        "value": "discordApplicationId",
+        "display_name": "Discord Application ID",
+        "help": "Public Application ID from the Discord Developer Portal. Its application name should be Jellyfin Desktop. No bot token or Client Secret is needed. Leave empty to disable the connection.",
+        "input_type": "text",
+        "default": "1557831977250463766",
+        "platforms": [ "windows" ]
+      },
+      {
         "value": "enableInputRepeat",
         "display_name": "Enable Input Repeat",
         "help": "Allows disabling repeating of control inputs.",
