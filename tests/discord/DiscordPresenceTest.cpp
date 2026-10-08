@@ -83,15 +83,48 @@ private slots:
   void pauseSeekResumeAndBuffering()
   {
     auto activity = DiscordActivity::build(movie(), Playback, 125000, false, false, 1800000000);
-    QVERIFY(!activity.contains("timestamps"));
+    QCOMPARE(activity.value("timestamps").toObject().value("start").toDouble(), 1799999875.0);
     QCOMPARE(activity.value("state").toString(), QStringLiteral("2016 · Paused · 2:05"));
     activity = DiscordActivity::build(movie(), Playback, 3600000, false, false, 1800000010);
     QVERIFY(activity.value("state").toString().endsWith("1:00:00"));
     activity = DiscordActivity::build(movie(), Playback, 3600000, true, false, 1800000100);
     QCOMPARE(activity.value("timestamps").toObject().value("start").toDouble(), 1799996500.0);
     activity = DiscordActivity::build(movie(), Playback, 3600000, false, true, 1800000100);
-    QVERIFY(!activity.contains("timestamps"));
+    QCOMPARE(activity.value("timestamps").toObject().value("start").toDouble(), 1799996500.0);
     QVERIFY(activity.value("state").toString().contains("Buffering"));
+  }
+
+  void pauseRetainsTimerAcrossRefreshes()
+  {
+    const qint64 now = 1800000000;
+    qint64 anchor = 0;
+    auto publish = [&](qint64 position, bool playing, bool buffering, qint64 time) {
+      anchor = DiscordActivity::startTimestamp(anchor, position, playing, time);
+      return DiscordActivity::build(movie(), Playback, position, playing, buffering, time, anchor);
+    };
+    const auto watching = publish(2172000, true, false, now);
+    const auto timestamps = watching.value("timestamps");
+    QCOMPARE(publish(2172000, false, false, now).value("timestamps"), timestamps);
+    // A long pause, periodic refreshes and buffering must not create a new timer.
+    for (qint64 elapsed = 15; elapsed <= 300; elapsed += 15)
+    {
+      const auto paused = publish(2172000, false, false, now + elapsed);
+      QCOMPARE(paused.value("timestamps"), timestamps);
+      QVERIFY(paused.value("state").toString().endsWith("Paused · 36:12"));
+    }
+    QCOMPARE(publish(2172000, false, true, now + 300).value("timestamps"), timestamps);
+    auto resumed = publish(2172000, true, false, now + 300);
+    QCOMPARE(resumed.value("timestamps").toObject().value("start").toDouble(), double(now + 300 - 2172));
+    QCOMPARE(publish(2182000, false, false, now + 310).value("timestamps"), resumed.value("timestamps"));
+    // An explicit seek while paused rebases once, then remains stable.
+    anchor = 0;
+    const auto seek = publish(600000, false, false, now + 320);
+    QCOMPARE(seek.value("timestamps").toObject().value("start").toDouble(), double(now + 320 - 600));
+    QCOMPARE(publish(600000, false, false, now + 335).value("timestamps"), seek.value("timestamps"));
+    // A new media item gets its own position, even if it starts buffering.
+    anchor = 0;
+    QCOMPARE(publish(90000, false, true, now + 400).value("timestamps").toObject().value("start").toDouble(),
+             double(now + 400 - 90));
   }
 
   void seriesPosterAndSpecials()

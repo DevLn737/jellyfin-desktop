@@ -25,6 +25,7 @@ private:
   QVariantMap m_item;
   QUrl m_playbackUrl;
   qint64 m_positionMs = 0;
+  qint64 m_timestampStart = 0;
   bool m_playing = false;
   bool m_buffering = false;
   bool m_active = false;

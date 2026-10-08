@@ -19,8 +19,8 @@ The application name comes from Discord's registration, not the executable name.
 The Application ID can be changed in Client Settings. An empty/invalid ID disables
 the connection. Never enter a Client Secret or bot token.
 
-The Discord build is version `1.12.1-discord.1` (Windows Installer version
-`1.12.1`), so the installer upgrades the existing `1.12.0` / SyncPlay installation
+The Discord build is version `1.12.2-discord.2` (Windows Installer version
+`1.12.2`), so the installer upgrades the existing `1.12.0` / SyncPlay or `1.12.1` Discord installation
 without a manual uninstall. Close the player before updating. The existing
 UpgradeCode and settings location are preserved. The portable ZIP can be
 extracted to a separate directory, but uses the same user settings by default.
@@ -38,12 +38,19 @@ contain the fork's Discord integration. Install future fork builds manually.
 | Small image | Jellyfin logo | Jellyfin logo |
 | Timer | Elapsed playback position | Elapsed playback position |
 
-On pause the state becomes, for example, `2016 · Paused · 12:34` and the live
-timer is removed. Discord cannot freeze its standard timestamp timer. Resuming
-or seeking recalculates its start time from the media position. Buffering also
-suspends the timer. Only a start timestamp is sent: adding an end timestamp makes
-Discord display remaining time instead of elapsed time. Discord controls the
-card layout; a graphical progress bar is not guaranteed.
+On pause the state becomes, for example, `2016 · Paused · 12:34`. The timer keeps
+its existing start timestamp through pauses, buffering and periodic refreshes,
+instead of resetting to Discord's fallback session timer. Discord cannot freeze
+its standard timer, so it continues advancing during a pause; the position in
+the state text is the exact paused position. Resuming or seeking recalculates the
+start time from the media position, excluding paused time. Only a start timestamp
+is sent for elapsed time. Discord controls the card layout.
+
+Discord renders the poster in a square image area and may crop portrait posters.
+The Jellyfin image endpoint does not add square letterboxing; forcing both width
+and height would distort the poster. Set an App Icon in the Discord Developer
+Portal for the application's own logo. Member-list badges and their placement
+are controlled by Discord, not by Rich Presence.
 
 The timer ticks at Discord's standard 1× rate. At other playback speeds it is
 corrected from mpv's actual position every 15 seconds; seeks and larger drift

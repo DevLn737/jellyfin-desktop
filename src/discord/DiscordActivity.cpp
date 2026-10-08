@@ -68,8 +68,15 @@ QString DiscordActivity::posterUrl(const QVariantMap& item, const QUrl& playback
   return url.size() <= 256 ? url : QString();
 }
 
+qint64 DiscordActivity::startTimestamp(qint64 previousStart, qint64 positionMs, bool playing, qint64 nowSeconds)
+{
+  return !playing && previousStart > 0 ? previousStart
+    : qMax<qint64>(1, nowSeconds - qMax<qint64>(0, positionMs) / 1000);
+}
+
 QJsonObject DiscordActivity::build(const QVariantMap& item, const QUrl& playbackUrl,
-                                   qint64 positionMs, bool playing, bool buffering, qint64 nowSeconds)
+                                   qint64 positionMs, bool playing, bool buffering, qint64 nowSeconds,
+                                   qint64 retainedStart)
 {
   const QString type = item.value("Type").toString();
   if (type != QStringLiteral("Movie") && type != QStringLiteral("Episode"))
@@ -113,11 +120,9 @@ QJsonObject DiscordActivity::build(const QVariantMap& item, const QUrl& playback
                      {"small_text", QStringLiteral("Jellyfin Desktop")}};
   QJsonObject activity{{"type", 3}, {"details", clipped(title)},
                        {"state", clipped(stateText)}, {"assets", assets}, {"instance", false}};
-  if (playing)
-  {
-    // Start only means elapsed time. An end timestamp switches Discord to remaining time.
-    const qint64 start = qMax<qint64>(1, nowSeconds - qMax<qint64>(0, positionMs) / 1000);
-    activity.insert("timestamps", QJsonObject{{"start", static_cast<double>(start)}});
-  }
+  // Removing timestamps on pause makes Discord fall back to a new session timer.
+  // Its timer cannot freeze: retain the anchor and show the exact paused position in state.
+  const qint64 start = startTimestamp(retainedStart, positionMs, playing, nowSeconds);
+  activity.insert("timestamps", QJsonObject{{"start", static_cast<double>(start)}});
   return activity;
 }

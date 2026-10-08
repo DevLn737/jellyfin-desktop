@@ -18,6 +18,7 @@ bool DiscordComponent::componentInitialize()
       // Retain no authentication data, even in the component's private state.
       m_playbackUrl = url.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment);
       m_positionMs = positionMs;
+      m_timestampStart = 0;
       m_positionClock.invalidate();
       m_active = true;
       m_playing = false;
@@ -32,6 +33,8 @@ bool DiscordComponent::componentInitialize()
         clear();
         return;
       }
+      if (m_playing && m_positionClock.isValid())
+        m_positionMs += m_positionClock.elapsed();
       m_playing = state == PlayerComponent::State::playing;
       m_buffering = state == PlayerComponent::State::buffering;
       m_positionClock.invalidate();
@@ -43,7 +46,10 @@ bool DiscordComponent::componentInitialize()
     m_positionMs = static_cast<qint64>(positionMs);
     m_positionClock.start();
     if (seek)
+    {
+      m_timestampStart = 0;
       publish();
+    }
   });
   // Explicit stop also covers stopping before mpv ever enters a playback state.
   connect(&player, &PlayerComponent::presenceStopped, this, &DiscordComponent::clear);
@@ -72,6 +78,7 @@ void DiscordComponent::updateSettings()
 void DiscordComponent::clear()
 {
   m_active = false;
+  m_timestampStart = 0;
   m_playing = false;
   m_buffering = false;
   m_item.clear();
@@ -82,6 +89,15 @@ void DiscordComponent::clear()
 
 void DiscordComponent::publish()
 {
-  m_ipc.setActivity(m_active ? DiscordActivity::build(m_item, m_playbackUrl, m_positionMs,
-    m_playing, m_buffering, QDateTime::currentSecsSinceEpoch()) : QJsonObject());
+  if (!m_active)
+  {
+    m_ipc.setActivity({});
+    return;
+  }
+  const qint64 now = QDateTime::currentSecsSinceEpoch();
+  const qint64 position = m_positionMs +
+    (m_playing && m_positionClock.isValid() ? m_positionClock.elapsed() : 0);
+  m_timestampStart = DiscordActivity::startTimestamp(m_timestampStart, position, m_playing, now);
+  m_ipc.setActivity(DiscordActivity::build(m_item, m_playbackUrl, position,
+    m_playing, m_buffering, now, m_timestampStart));
 }
