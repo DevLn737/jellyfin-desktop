@@ -355,9 +355,13 @@ void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
 
   const auto loadResult = mpv::qt::command(m_mpv, command);
   if (mpv::qt::get_error(loadResult) >= 0)
+  {
+    const auto playlist = mpv::qt::get_property(m_mpv, "playlist").toList();
+    const qint64 playlistId = playlist.isEmpty() ? -1 : playlist.last().toMap().value("id", -1).toLongLong();
     m_presenceQueue.enqueue({metadata["metadata"].toMap(),
       qurl.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment),
-      static_cast<qint64>(startMilliseconds)});
+      static_cast<qint64>(startMilliseconds), playlistId});
+  }
 
   emit onMetaData(metadata["metadata"].toMap(), qurl.adjusted(QUrl::RemovePath | QUrl::RemoveQuery));
 }
@@ -515,9 +519,23 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       m_inPlayback = true;
       // Publish only when this file starts, after the previous file's END_FILE.
       // Enqueuing the next episode must not replace the current presence early.
-      if (!m_presenceQueue.isEmpty())
+      int presenceIndex = m_presenceQueue.isEmpty() ? -1 : 0;
+#if MPV_CLIENT_API_VERSION >= MPV_MAKE_VERSION(1, 108)
+      // A rapid stop/load may leave a START_FILE event for the old file queued.
+      // Match mpv's stable ID so that event cannot consume the new movie's metadata.
+      presenceIndex = -1;
+      const auto startFile = static_cast<mpv_event_start_file*>(event->data);
+      if (startFile)
+        for (int i = 0; i < m_presenceQueue.size(); ++i)
+          if (m_presenceQueue.at(i).playlistId == startFile->playlist_entry_id)
+          {
+            presenceIndex = i;
+            break;
+          }
+#endif
+      if (presenceIndex >= 0)
       {
-        const auto media = m_presenceQueue.dequeue();
+        const auto media = m_presenceQueue.takeAt(presenceIndex);
         emit presenceMediaChanged(media.item, media.url, media.startMs);
       }
       break;

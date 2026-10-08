@@ -14,7 +14,7 @@ QString clipped(QString text)
   // Discord limits these fields to 128 UTF-8 bytes. Do not split a code point.
   while (text.toUtf8().size() > 128)
   {
-    if (text.back().isLowSurrogate())
+    if (text.at(text.size() - 1).isLowSurrogate())
       text.chop(2);
     else
       text.chop(1);

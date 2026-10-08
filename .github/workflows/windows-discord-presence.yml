@@ -92,22 +92,23 @@ jobs:
           cd build
           set PATH=%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin;%CD%
           "%JMP_CMAKE%" -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt5_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll ..
-          lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
-          ninja
           if errorlevel 1 exit /b 1
+          lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
+          if errorlevel 1 exit /b 1
+          ninja
           if errorlevel 1 exit /b 1
           ninja windows_package
         shell: cmd
       - name: Name Discord installer
-        run: Move-Item (Get-ChildItem build\JellyfinMediaPlayer-*.exe).FullName build\JellyfinMediaPlayer-1.12.0-discord.1-win64.exe
+        run: Move-Item (Get-ChildItem build\JellyfinMediaPlayer-*.exe).FullName build\JellyfinMediaPlayer-1.12.1-discord.1-win64.exe
         shell: powershell
       - name: Package portable build
-        run: Compress-Archive -Path build\output\* -DestinationPath build\JellyfinMediaPlayer-1.12.0-discord.1-portable-win64.zip
+        run: Compress-Archive -Path build\output\* -DestinationPath build\JellyfinMediaPlayer-1.12.1-discord.1-portable-win64.zip
         shell: powershell
       - name: Archive installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-discord-rich-presence
           path: |
-            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.0-discord.1-win64.exe
-            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.0-discord.1-portable-win64.zip
+            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.1-discord.1-win64.exe
+            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.1-discord.1-portable-win64.zip

@@ -259,6 +259,7 @@ private:
     QVariantMap item;
     QUrl url;
     qint64 startMs;
+    qint64 playlistId;
   };
   QQueue<PresenceMedia> m_presenceQueue;
   QRect m_videoRectangle;

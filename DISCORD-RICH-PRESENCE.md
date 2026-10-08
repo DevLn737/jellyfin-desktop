@@ -19,6 +19,12 @@ The application name comes from Discord's registration, not the executable name.
 The Application ID can be changed in Client Settings. An empty/invalid ID disables
 the connection. Never enter a Client Secret or bot token.
 
+The Discord build is version `1.12.1-discord.1` (Windows Installer version
+`1.12.1`), so the installer upgrades the existing `1.12.0` / SyncPlay installation
+without a manual uninstall. Close the player before updating. The existing
+UpgradeCode and settings location are preserved. The portable ZIP can be
+extracted to a separate directory, but uses the same user settings by default.
+
 ## Display
 
 | Field | Movie | Episode |

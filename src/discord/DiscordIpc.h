@@ -12,6 +12,7 @@ class DiscordIpc : public QObject
   Q_OBJECT
 public:
   explicit DiscordIpc(QObject* parent = nullptr, const QString& pipePrefix = QStringLiteral("discord-ipc-"));
+  ~DiscordIpc() override;
   void configure(bool enabled, const QString& applicationId);
   void setActivity(const QJsonObject& activity);
   void shutdown();

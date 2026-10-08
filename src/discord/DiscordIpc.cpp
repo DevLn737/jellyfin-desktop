@@ -27,6 +27,12 @@ DiscordIpc::DiscordIpc(QObject* parent, const QString& pipePrefix)
           [this](QLocalSocket::LocalSocketError) { reconnect(m_pipeIndex == 0 ? 15000 : 100); });
 }
 
+DiscordIpc::~DiscordIpc()
+{
+  // Disconnect while the member timers still exist.
+  shutdown();
+}
+
 void DiscordIpc::configure(bool enabled, const QString& applicationId)
 {
   const QString id = applicationId.trimmed();
