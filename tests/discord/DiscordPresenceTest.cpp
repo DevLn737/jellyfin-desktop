@@ -68,7 +68,7 @@ private slots:
     const auto activity = DiscordActivity::build(movie(), Playback, 125000, true, false, 1800000000);
     QCOMPARE(activity.value("type").toInt(), 3);
     QCOMPARE(activity.value("details").toString(), QStringLiteral("Arrival"));
-    QCOMPARE(activity.value("state").toString(), QStringLiteral("2016 · Watching"));
+    QCOMPARE(activity.value("state").toString(), QStringLiteral("Фильм · 2016"));
     QCOMPARE(activity.value("timestamps").toObject().value("start").toDouble(), 1799999875.0);
     QVERIFY(!activity.value("timestamps").toObject().contains("end"));
     const auto assets = activity.value("assets").toObject();
@@ -84,23 +84,25 @@ private slots:
   {
     auto activity = DiscordActivity::build(movie(), Playback, 125000, false, false, 1800000000);
     QCOMPARE(activity.value("timestamps").toObject().value("start").toDouble(), 1799999875.0);
-    QCOMPARE(activity.value("state").toString(), QStringLiteral("2016 · Paused · 2:05"));
+    QCOMPARE(activity.value("state").toString(), QStringLiteral("Фильм · 2016 · Пауза · 2:05"));
     activity = DiscordActivity::build(movie(), Playback, 3600000, false, false, 1800000010);
     QVERIFY(activity.value("state").toString().endsWith("1:00:00"));
     activity = DiscordActivity::build(movie(), Playback, 3600000, true, false, 1800000100);
     QCOMPARE(activity.value("timestamps").toObject().value("start").toDouble(), 1799996500.0);
     activity = DiscordActivity::build(movie(), Playback, 3600000, false, true, 1800000100);
     QCOMPARE(activity.value("timestamps").toObject().value("start").toDouble(), 1799996500.0);
-    QVERIFY(activity.value("state").toString().contains("Buffering"));
+    QVERIFY(activity.value("state").toString().contains(QStringLiteral("Загрузка")));
   }
 
   void pauseRetainsTimerAcrossRefreshes()
   {
     const qint64 now = 1800000000;
     qint64 anchor = 0;
+    auto item = movie();
+    item["RunTimeTicks"] = qint64(101400000000LL);
     auto publish = [&](qint64 position, bool playing, bool buffering, qint64 time) {
       anchor = DiscordActivity::startTimestamp(anchor, position, playing, time);
-      return DiscordActivity::build(movie(), Playback, position, playing, buffering, time, anchor);
+      return DiscordActivity::build(item, Playback, position, playing, buffering, time, anchor);
     };
     const auto watching = publish(2172000, true, false, now);
     const auto timestamps = watching.value("timestamps");
@@ -110,7 +112,7 @@ private slots:
     {
       const auto paused = publish(2172000, false, false, now + elapsed);
       QCOMPARE(paused.value("timestamps"), timestamps);
-      QVERIFY(paused.value("state").toString().endsWith("Paused · 36:12"));
+      QVERIFY(paused.value("state").toString().endsWith(QStringLiteral("Пауза · 36:12")));
     }
     QCOMPARE(publish(2172000, false, true, now + 300).value("timestamps"), timestamps);
     auto resumed = publish(2172000, true, false, now + 300);
@@ -127,6 +129,36 @@ private slots:
              double(now + 400 - 90));
   }
 
+  void nativeProgressBarAndMinimalCard()
+  {
+    auto item = movie();
+    item["Name"] = QStringLiteral("Интерстеллар");
+    item["ProductionYear"] = 2014;
+    item["RunTimeTicks"] = qint64(101400000000LL); // 2:49:00
+    auto activity = DiscordActivity::build(item, Playback, 5058000, true, false, 1800000000);
+    QCOMPARE(activity.value("details").toString(), QStringLiteral("Интерстеллар"));
+    QCOMPARE(activity.value("state").toString(), QStringLiteral("Фильм · 2014"));
+    const auto timestamps = activity.value("timestamps").toObject();
+    const double start = 1800000000.0 - 5058;
+    QCOMPARE(timestamps.value("start").toDouble(), start);
+    QCOMPARE(timestamps.value("end").toDouble(), start + 10140);
+    QVERIFY(!activity.contains("buttons"));
+    QVERIFY(activity.value("assets").toObject().value("small_text").toString().endsWith(QStringLiteral("Просмотр")));
+    // Stream duration is only a fallback; transcoding must not shorten the full runtime.
+    activity = DiscordActivity::build(item, Playback, 5058000, true, false, 1800000000, 0, 100000);
+    QCOMPARE(activity.value("timestamps").toObject(), timestamps);
+    item.remove("RunTimeTicks");
+    activity = DiscordActivity::build(item, Playback, 5058000, true, false, 1800000000, 0, 10140000);
+    QCOMPARE(activity.value("timestamps").toObject(), timestamps);
+    // Unknown or invalid duration keeps the elapsed timer, without a fictitious end.
+    for (qint64 ticks : {qint64(0), qint64(-1), qint64(9999)})
+    {
+      item["RunTimeTicks"] = ticks;
+      activity = DiscordActivity::build(item, Playback, 5058000, true, false, 1800000000);
+      QVERIFY(!activity.value("timestamps").toObject().contains("end"));
+    }
+  }
+
   void seriesPosterAndSpecials()
   {
     QVariantMap episode{{"Type", "Episode"}, {"Name", "Pilot"}, {"SeriesName", "A Series"},
@@ -134,12 +166,12 @@ private slots:
       {"ParentIndexNumber", 0}, {"IndexNumber", 1}, {"IndexNumberEnd", 2}};
     auto activity = DiscordActivity::build(episode, Playback, 0, true, false, 1800000000);
     QCOMPARE(activity.value("details").toString(), QStringLiteral("A Series"));
-    QCOMPARE(activity.value("state").toString(), QStringLiteral("S00 E01–02 · Watching"));
+    QCOMPARE(activity.value("state").toString(), QStringLiteral("Сериал · S00 E01–02"));
     QVERIFY(activity.value("assets").toObject().value("large_image").toString().contains("/Items/series1/"));
     episode.remove("ParentIndexNumber");
     episode.remove("IndexNumber");
     activity = DiscordActivity::build(episode, Playback, 0, true, false, 1800000000);
-    QCOMPARE(activity.value("state").toString(), QStringLiteral("Watching"));
+    QCOMPARE(activity.value("state").toString(), QStringLiteral("Сериал"));
   }
 
   void missingMetadataAndPrivatePosters()

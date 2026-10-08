@@ -12,6 +12,12 @@ or Discord SDK installation is required.
 3. Play a movie or episode. In the player's **Client Settings → main**,
    **Discord Rich Presence** can be disabled at any time.
 
+Download the standalone `win64.exe` from this fork's GitHub Releases for an
+installed copy. The portable ZIP is a separate alternative; downloading both is
+unnecessary. The workflow uploads them separately and publishes a prerelease
+only after tests and the Windows build succeed, without replacing the latest
+stable SyncPlay release.
+
 The default public Application ID is `1557831977250463766`. Its owner must name
 the application **Jellyfin Desktop** in the
 [Discord Developer Portal](https://discord.com/developers/applications).
@@ -19,8 +25,8 @@ The application name comes from Discord's registration, not the executable name.
 The Application ID can be changed in Client Settings. An empty/invalid ID disables
 the connection. Never enter a Client Secret or bot token.
 
-The Discord build is version `1.12.2-discord.2` (Windows Installer version
-`1.12.2`), so the installer upgrades the existing `1.12.0` / SyncPlay or `1.12.1` Discord installation
+The Discord build is version `1.12.3-discord.3` (Windows Installer version
+`1.12.3`), so the installer upgrades existing `1.12.0` / SyncPlay and earlier Discord installations
 without a manual uninstall. Close the player before updating. The existing
 UpgradeCode and settings location are preserved. The portable ZIP can be
 extracted to a separate directory, but uses the same user settings by default.
@@ -33,18 +39,24 @@ contain the fork's Discord integration. Install future fork builds manually.
 | --- | --- | --- |
 | Application | Jellyfin Desktop | Jellyfin Desktop |
 | Details | Movie title | Series title |
-| State | `2016 · Watching` | `S01 E02 · Watching` |
+| State | `Фильм · 2016` | `Сериал · S01 E02` |
 | Large image | Movie poster | Series poster |
 | Small image | Jellyfin logo | Jellyfin logo |
-| Timer | Elapsed playback position | Elapsed playback position |
+| Timer | Native progress bar when duration is known | Native progress bar when duration is known |
 
-On pause the state becomes, for example, `2016 · Paused · 12:34`. The timer keeps
+On pause the state becomes, for example, `Фильм · 2016 · Пауза · 12:34`. The timer keeps
 its existing start timestamp through pauses, buffering and periodic refreshes,
 instead of resetting to Discord's fallback session timer. Discord cannot freeze
 its standard timer, so it continues advancing during a pause; the position in
 the state text is the exact paused position. Resuming or seeking recalculates the
-start time from the media position, excluding paused time. Only a start timestamp
-is sent for elapsed time. Discord controls the card layout.
+start time from the media position, excluding paused time. Both start and end
+timestamps are sent when duration is available, enabling Discord's native Watching
+time bar. Jellyfin's full runtime is preferred, with mpv duration as a fallback.
+With unknown duration, only a start timestamp is sent for elapsed time. The bar
+also advances during pauses and is corrected on resume. Discord controls the card
+layout, bar colors, image size and which elements appear in compact views.
+The native Watching heading communicates playback; hovering the Jellyfin logo
+also shows `Просмотр`, `Пауза` or `Загрузка`. No buttons are added.
 
 Discord renders the poster in a square image area and may crop portrait posters.
 The Jellyfin image endpoint does not add square letterboxing; forcing both width
@@ -93,7 +105,8 @@ ctest --test-dir build/discord-tests -C Release --output-on-failure
 ```
 
 Tests cover metadata formatting, series posters, missing data, Unicode limits,
-credential stripping, local image fallback, elapsed/paused timestamps, fragmented
+credential stripping, local image fallback, elapsed/paused timestamps, progress bar
+duration and fallback, absence of buttons, fragmented
 IPC frames, handshake, PING/PONG, acknowledgements, update coalescing, clearing,
 disconnect/reconnect, invalid IDs and oversized frames. They use a fake Discord
 peer and do not modify a real Discord account.
@@ -103,6 +116,7 @@ Manual acceptance with real Discord:
 - Movie: verify name, year, poster, Jellyfin overlay and elapsed playback time.
 - Episode: verify series poster/name, season and episode, including specials.
 - Pause/resume and seek: verify status and timer, allowing five seconds to update.
+- Known duration: verify the native progress bar in the expanded Discord profile.
 - Switch episodes, stop, playback failure and app exit: verify no stale activity.
 - Restart Discord during playback: verify reconnection (allow up to 30 seconds).
 - Disable/re-enable presence in Client Settings; verify removal and restoration.

@@ -76,7 +76,7 @@ qint64 DiscordActivity::startTimestamp(qint64 previousStart, qint64 positionMs, 
 
 QJsonObject DiscordActivity::build(const QVariantMap& item, const QUrl& playbackUrl,
                                    qint64 positionMs, bool playing, bool buffering, qint64 nowSeconds,
-                                   qint64 retainedStart)
+                                   qint64 retainedStart, qint64 fallbackDurationMs)
 {
   const QString type = item.value("Type").toString();
   if (type != QStringLiteral("Movie") && type != QStringLiteral("Episode"))
@@ -105,24 +105,33 @@ QJsonObject DiscordActivity::build(const QVariantMap& item, const QUrl& playback
   else if (item.value("ProductionYear").toInt() > 0)
     state << QString::number(item.value("ProductionYear").toInt());
 
-  const QString status = buffering ? QStringLiteral("Buffering")
-    : playing ? QStringLiteral("Watching") : QStringLiteral("Paused");
-  QString stateText = state.join(QLatin1Char(' '));
-  if (!stateText.isEmpty())
-    stateText += QStringLiteral(" \u00b7 ");
-  stateText += status;
+  const QString status = buffering ? QStringLiteral("\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430")
+    : playing ? QStringLiteral("\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440")
+              : QStringLiteral("\u041f\u0430\u0443\u0437\u0430");
+  QString stateText = episode ? QStringLiteral("\u0421\u0435\u0440\u0438\u0430\u043b")
+                             : QStringLiteral("\u0424\u0438\u043b\u044c\u043c");
+  if (!state.isEmpty())
+    stateText += QStringLiteral(" \u00b7 ") + state.join(QLatin1Char(' '));
+  // Watching is already shown by Discord's activity type; keep the main line minimal.
   if (!playing)
-    stateText += QStringLiteral(" \u00b7 ") + clockText(positionMs);
+    stateText += QStringLiteral(" \u00b7 ") + status + QStringLiteral(" \u00b7 ") + clockText(positionMs);
 
   const QString poster = posterUrl(item, playbackUrl);
   QJsonObject assets{{"large_image", poster.isEmpty() ? Logo : poster},
                      {"large_text", clipped(title)}, {"small_image", Logo},
-                     {"small_text", QStringLiteral("Jellyfin Desktop")}};
+                     {"small_text", QStringLiteral("Jellyfin Desktop \u00b7 ") + status}};
   QJsonObject activity{{"type", 3}, {"details", clipped(title)},
                        {"state", clipped(stateText)}, {"assets", assets}, {"instance", false}};
   // Removing timestamps on pause makes Discord fall back to a new session timer.
   // Its timer cannot freeze: retain the anchor and show the exact paused position in state.
   const qint64 start = startTimestamp(retainedStart, positionMs, playing, nowSeconds);
-  activity.insert("timestamps", QJsonObject{{"start", static_cast<double>(start)}});
+  QJsonObject timestamps{{"start", static_cast<double>(start)}};
+  // RPC timestamps use seconds. Watching supports a native time bar with both endpoints.
+  // Prefer Jellyfin's full runtime over mpv's potentially shorter transcoded stream.
+  const qint64 runtimeMs = item.value("RunTimeTicks").toLongLong() / 10000;
+  const qint64 durationSeconds = (runtimeMs > 0 ? runtimeMs : fallbackDurationMs) / 1000;
+  if (durationSeconds > 0)
+    timestamps.insert("end", static_cast<double>(start + durationSeconds));
+  activity.insert("timestamps", timestamps);
   return activity;
 }

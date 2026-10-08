@@ -25,6 +25,8 @@ jobs:
   build-win64:
     needs: test-js
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.package-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt 5.15.2
@@ -107,15 +109,65 @@ jobs:
           ninja windows_package
         shell: cmd
       - name: Name Discord installer
-        run: Move-Item (Get-ChildItem build\JellyfinMediaPlayer-*.exe).FullName build\JellyfinMediaPlayer-1.12.1-discord.1-win64.exe
-        shell: powershell
+        id: package-version
+        run: |
+          $source = Get-Content CMakeModules\VersionConfiguration.cmake -Raw
+          if ($source -notmatch 'set\(VERSION_STRING "(\d+\.\d+\.\d+-discord\.\d+)"\)') {
+            throw "Discord version not found"
+          }
+          $version = $Matches[1]
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "DISCORD_VERSION=$version" >> $env:GITHUB_ENV
+          $installers = @(Get-ChildItem build\JellyfinMediaPlayer-*.exe)
+          if ($installers.Count -ne 1) { throw "Expected exactly one installer" }
+          Move-Item $installers[0].FullName "build\JellyfinMediaPlayer-$version-win64.exe"
+        shell: pwsh
       - name: Package portable build
-        run: Compress-Archive -Path build\output\* -DestinationPath build\JellyfinMediaPlayer-1.12.1-discord.1-portable-win64.zip
-        shell: powershell
+        run: Compress-Archive -Path build\output\* -DestinationPath "build\JellyfinMediaPlayer-$env:DISCORD_VERSION-portable-win64.zip"
+        shell: pwsh
       - name: Archive installer
         uses: actions/upload-artifact@v4
         with:
-          name: windows-discord-rich-presence
-          path: |
-            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.1-discord.1-win64.exe
-            ${{ github.workspace }}/build/JellyfinMediaPlayer-1.12.1-discord.1-portable-win64.zip
+          name: windows-discord-installer
+          compression-level: 0
+          if-no-files-found: error
+          path: ${{ github.workspace }}/build/JellyfinMediaPlayer-${{ env.DISCORD_VERSION }}-win64.exe
+      - name: Archive portable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-discord-portable
+          compression-level: 0
+          if-no-files-found: error
+          path: ${{ github.workspace }}/build/JellyfinMediaPlayer-${{ env.DISCORD_VERSION }}-portable-win64.zip
+
+  release:
+    needs: build-win64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: windows-discord-*
+          merge-multiple: true
+          path: release
+      - name: Publish Discord prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DISCORD_VERSION: ${{ needs.build-win64.outputs.version }}
+        run: |
+          cat > release-notes.md <<'EOF'
+          Windows test build of Jellyfin Desktop with Discord Rich Presence.
+
+          - Native Watching progress bar when runtime is available.
+          - Minimal movie/year and series/episode text, poster and Jellyfin logo; no buttons.
+          - Retains the timer through pauses; Discord's timer continues during pause and resyncs on resume.
+          - Includes existing SyncPlay external audio/subtitle support.
+
+          Download the win64.exe installer to update an installed copy. Close the player first; uninstalling is not required.
+          The portable ZIP is an alternative, not a required second download.
+          EOF
+          gh release create "v$DISCORD_VERSION" release/* --target "$GITHUB_SHA" \
+            --title "Jellyfin Desktop $DISCORD_VERSION" --prerelease --latest=false \
+            --notes-file release-notes.md

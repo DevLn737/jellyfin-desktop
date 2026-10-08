@@ -22,12 +22,12 @@ endif()
 
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 12)
-set(VERSION_NANO 2)
+set(VERSION_NANO 3)
 
 option(UPGRADE_DEBUG "" OFF)
 
-set(VERSION_STRING "1.12.2-discord.2")
-set(VERSION_STRING_SHORT "1.12.2")
-set(CANONICAL_VERSION_STRING "1.12.2")
+set(VERSION_STRING "1.12.3-discord.3")
+set(VERSION_STRING_SHORT "1.12.3")
+set(CANONICAL_VERSION_STRING "1.12.3")
 
 configure_file(src/core/Version.cpp.in src/core/Version.cpp)

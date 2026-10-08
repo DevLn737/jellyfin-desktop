@@ -19,6 +19,7 @@ bool DiscordComponent::componentInitialize()
       m_playbackUrl = url.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment);
       m_positionMs = positionMs;
       m_timestampStart = 0;
+      m_durationMs = 0;
       m_positionClock.invalidate();
       m_active = true;
       m_playing = false;
@@ -51,6 +52,13 @@ bool DiscordComponent::componentInitialize()
       publish();
     }
   });
+  connect(&player, &PlayerComponent::updateDuration, this, [this](qint64 durationMs) {
+    if (m_active && durationMs > 0 && durationMs != m_durationMs)
+    {
+      m_durationMs = durationMs;
+      publish();
+    }
+  });
   // Explicit stop also covers stopping before mpv ever enters a playback state.
   connect(&player, &PlayerComponent::presenceStopped, this, &DiscordComponent::clear);
   connect(&SettingsComponent::Get(), &SettingsComponent::sectionValueUpdate, this,
@@ -79,6 +87,7 @@ void DiscordComponent::clear()
 {
   m_active = false;
   m_timestampStart = 0;
+  m_durationMs = 0;
   m_playing = false;
   m_buffering = false;
   m_item.clear();
@@ -99,5 +108,5 @@ void DiscordComponent::publish()
     (m_playing && m_positionClock.isValid() ? m_positionClock.elapsed() : 0);
   m_timestampStart = DiscordActivity::startTimestamp(m_timestampStart, position, m_playing, now);
   m_ipc.setActivity(DiscordActivity::build(m_item, m_playbackUrl, position,
-    m_playing, m_buffering, now, m_timestampStart));
+    m_playing, m_buffering, now, m_timestampStart, m_durationMs));
 }

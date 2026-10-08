@@ -9,7 +9,7 @@ namespace DiscordActivity
 // Pure payload builder, shared by the Windows component and its tests.
 QJsonObject build(const QVariantMap& item, const QUrl& playbackUrl,
                   qint64 positionMs, bool playing, bool buffering, qint64 nowSeconds,
-                  qint64 retainedStart = 0);
+                  qint64 retainedStart = 0, qint64 fallbackDurationMs = 0);
 // Keep the anchor during pause/buffering; rebase on playback or an explicit reset.
 qint64 startTimestamp(qint64 previousStart, qint64 positionMs, bool playing, qint64 nowSeconds);
 QString posterUrl(const QVariantMap& item, const QUrl& playbackUrl);
