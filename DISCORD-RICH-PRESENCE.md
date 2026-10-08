@@ -24,6 +24,8 @@ The Discord build is version `1.12.1-discord.1` (Windows Installer version
 without a manual uninstall. Close the player before updating. The existing
 UpgradeCode and settings location are preserved. The portable ZIP can be
 extracted to a separate directory, but uses the same user settings by default.
+This build suppresses upstream update offers, since upstream packages do not
+contain the fork's Discord integration. Install future fork builds manually.
 
 ## Display
 

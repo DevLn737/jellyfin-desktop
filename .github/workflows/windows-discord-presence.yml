@@ -19,6 +19,8 @@ jobs:
           node-version: 22
       - name: Test external audio and subtitle mapping
         run: node scripts/test-external-audio.js
+      - name: Test fork update behavior
+        run: node scripts/test-discord-update.js
 
   build-win64:
     needs: test-js
