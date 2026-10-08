@@ -20,7 +20,7 @@ const vm = require('node:vm');
     vm.createContext(context);
     vm.runInContext(fs.readFileSync('native/jmpUpdatePlugin.js', 'utf8'), context);
     new context.window._jmpUpdatePlugin({ confirm() { prompted = true; return Promise.resolve(); } });
-    await Promise.resolve();
+    await new Promise(resolve => setImmediate(resolve));
     assert.equal(typeof notify, 'function');
     await notify('https://github.com/jellyfin/jellyfin-media-player/releases/tag/v1.12.0');
     assert.equal(prompted, false, 'a fork must not offer an upstream replacement');
