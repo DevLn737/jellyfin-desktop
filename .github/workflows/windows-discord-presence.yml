@@ -70,7 +70,7 @@ jobs:
           "JMP_CMAKE=$cmakeExe" | Out-File -FilePath $env:GITHUB_ENV -Append
           & $cmakeExe --version
         shell: pwsh
-      - name: Test Discord activity and Windows IPC
+      - name: Compile Discord tests
         shell: cmd
         run: |
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
@@ -80,8 +80,13 @@ jobs:
           if errorlevel 1 exit /b 1
           "%JMP_CMAKE%" --build build/discord-tests
           if errorlevel 1 exit /b 1
-          build\discord-tests\discord-presence-tests.exe
-          if errorlevel 1 exit /b 1
+      - name: Run Discord activity and Windows IPC tests
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:Qt5_DIR\bin;$env:PATH"
+          $ctest = Join-Path (Split-Path $env:JMP_CMAKE) "ctest.exe"
+          & $ctest --test-dir build/discord-tests --verbose --output-on-failure
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build installer
         run: |
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
