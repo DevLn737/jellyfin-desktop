@@ -12,17 +12,36 @@ if (-not $nativeBuildDirectory.StartsWith($sourceRoot + [IO.Path]::DirectorySepa
 }
 . (Join-Path $PSScriptRoot 'bootstrap-windows.ps1') -SkipInstallerTools:($SkipInstallerTools -or $Diagnostic)
 $state = Get-Content (Join-Path $sourceRoot 'build/windows-toolchain.json') -Raw | ConvertFrom-Json
+$assetBaseName = "JellyfinMediaPlayer-$($state.appVersion)-windows-x64"
 $cmake = $state.cmakeExe
 $ctest = Join-Path (Split-Path $cmake) 'ctest.exe'
 function Invoke-Checked([string]$Program, [string[]]$Arguments) {
     & $Program @Arguments
     if ($LASTEXITCODE -ne 0) { throw "$Program failed with exit code $LASTEXITCODE" }
 }
+function Get-CurrentWindowsAssetPaths([string]$BuildDirectory, [string]$AssetBaseName, [bool]$Diagnostic, [bool]$SkipInstallerTools) {
+    [string[]]$names = if ($Diagnostic) {
+        @("$AssetBaseName-diagnostic-tracy-portable.zip", "$AssetBaseName-diagnostic-symbols.zip")
+    } else {
+        @("$AssetBaseName-portable.zip")
+    }
+    if (-not $Diagnostic -and -not $SkipInstallerTools) { $names += "$AssetBaseName.exe" }
+    $paths = @()
+    foreach ($name in $names) {
+        $path = Join-Path $BuildDirectory $name
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "Missing current-version build artifact: $name"
+        }
+        $paths += $path
+    }
+    return $paths
+}
 Push-Location $sourceRoot
 try {
     Invoke-Checked 'python' @('scripts/validate-build-manifest.py')
     Invoke-Checked 'python' @('scripts/test-release-validation.py')
     Invoke-Checked 'python' @('scripts/test-windows-runtime-validation.py')
+    & (Join-Path $PSScriptRoot 'test-build-assets.ps1')
     & (Join-Path $PSScriptRoot 'test-diagnostic-symbols-validation.ps1')
     foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js', 'test-find-webclient.js')) {
         Invoke-Checked 'node' @("scripts/$test")
@@ -55,18 +74,18 @@ try {
             -BuildDirectory (Join-Path $nativeBuildDirectory 'tests/render')
     }
     if ($Diagnostic) {
-        $symbols = Get-ChildItem -LiteralPath $nativeBuildDirectory -Filter '*-diagnostic-symbols.zip' | Select-Object -First 1
-        & (Join-Path $PSScriptRoot 'test-diagnostic-symbols.ps1') -ZipPath $symbols.FullName
+        $symbols = Join-Path $nativeBuildDirectory "$assetBaseName-diagnostic-symbols.zip"
+        & (Join-Path $PSScriptRoot 'test-diagnostic-symbols.ps1') -ZipPath $symbols
     }
     if (-not $Diagnostic -and -not $SkipInstallerTools) {
         Invoke-Checked $cmake @('--build', $nativeBuildDirectory, '--target', 'windows_package')
-        $zip = Get-ChildItem -LiteralPath $nativeBuildDirectory -Filter '*-portable.zip' | Select-Object -First 1
-        & (Join-Path $PSScriptRoot 'test-windows-packaging.ps1') -MsiPath (Join-Path $nativeBuildDirectory 'JellyfinMediaPlayer.msi') -PortableZip $zip.FullName -IsolatedPortable:$IsolatedPortable
+        $zip = Join-Path $nativeBuildDirectory "$assetBaseName-portable.zip"
+        & (Join-Path $PSScriptRoot 'test-windows-packaging.ps1') -MsiPath (Join-Path $nativeBuildDirectory 'JellyfinMediaPlayer.msi') -PortableZip $zip -IsolatedPortable:$IsolatedPortable
     }
+    $currentAssetPaths = @(Get-CurrentWindowsAssetPaths $nativeBuildDirectory $assetBaseName $Diagnostic.IsPresent $SkipInstallerTools.IsPresent)
     $assetDirectory = Join-Path $nativeBuildDirectory 'assets'
     New-Item -ItemType Directory -Force -Path $assetDirectory | Out-Null
-    Get-ChildItem -LiteralPath $nativeBuildDirectory -File | Where-Object { $_.Name -like 'JellyfinMediaPlayer-*.zip' -or $_.Name -like 'JellyfinMediaPlayer-*.exe' } |
-        Copy-Item -Destination $assetDirectory
+    Copy-Item -LiteralPath $currentAssetPaths -Destination $assetDirectory
     if (-not $Diagnostic) { Copy-Item -LiteralPath (Join-Path $sourceRoot 'build-manifest.json') -Destination $assetDirectory }
     Write-Host "Build assets ready: $assetDirectory"
 } finally { Pop-Location }
