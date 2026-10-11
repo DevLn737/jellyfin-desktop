@@ -247,9 +247,10 @@ try {
         $status = Get-Content -LiteralPath $scenario.statusPath -Raw | ConvertFrom-Json
         if ($scenario.driver.ExitCode -ne 0 -or -not $status.passed) { throw 'A real workload cadence or native playback check failed.' }
         $samples = $scenario.samples
-        $peak = ($samples | Measure-Object rssBytes -Maximum).Maximum
+        [long]$peak = 0
+        foreach ($sample in $samples) { $peak = [Math]::Max($peak, [long]$sample.rssBytes) }
         $baseline = $samples[0].rssBytes; $final = $samples[$samples.Count - 1].rssBytes
-        if ($final - $baseline -gt $protocol.finalGrowthLimitBytes) { throw 'Final memory growth exceeded the predeclared ceiling.' }
+        if (-not $Smoke -and $final - $baseline -gt $protocol.finalGrowthLimitBytes) { throw 'Final memory growth exceeded the predeclared ceiling.' }
         $report.scenarios += [ordered]@{ name = $scenario.name; durationSeconds = $samples[$samples.Count - 1].elapsedSeconds
             rssBaselineBytes = $baseline; rssPeakBytes = $peak; rssFinalBytes = $final; limitBytes = $protocol.absoluteRssLimitBytes }
         $workloads += $status
