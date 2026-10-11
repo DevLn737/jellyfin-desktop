@@ -1,69 +1,78 @@
 {
   "schemaVersion": 1,
-  "completedObservations": 3,
-  "totalVerifiedSamples": 126000,
+  "completedObservations": 4,
+  "totalVerifiedSamples": 186000,
   "qualificationEligible": false,
+  "qualified": false,
   "withinSyntheticThresholds": false,
-  "sourceSha256ByRole": {
-    "concurrentSummary": "b8e4df7c94f0a3a5d3f88c0cd368a5215ff1c607a448971a331cd2c821befc36",
-    "concurrentRaw": "78373d27edf60e3b34e0022da8aa7d57d2dcda7190b752501be7138c2f55c5a5",
-    "quietSummary": "e51358a84d092ce9a2b0ca5e1b88b2f6675f2db758a9188f3ab66d1fbafe708e",
-    "quietRaw": "b144bd0cd65d6d493cdb1d96fcc27db4d199f904f729998e65afdd2f3125dda9",
-    "quietProtocol": "65e837ae7d0f86e63c32cca073022f3e9249cfedd4e2341642152879b835b80f",
-    "highresSummary": "eddcc510780015758185a7b5bf8a85e5fae87335a331564b6c0ce4085d9ad0ff",
-    "highresRaw": "cc4617e23cd8c191a36db39e424351d92a2887cf8134da5dd4890ad3eaf095ce",
-    "highresProtocol": "9412e00b5ecb5717384071dd5bb832784e5fcdf4d02406da7d8091b935d96284"
-  },
-  "exportSha256ByRole": {
-    "concurrentDerived": "5529fc91cc248168f445e3c1ebe990eaccf1e160bbc4fa41d1bc31e2489ef479",
-    "concurrentNumericRaw": "00d402f4dd9f0580633cd1ad83e4a1cd584739f47879c9e04ad8b6550807ac9b",
-    "quietDerived": "fe9be1630aca074f605c832cd49df66a712bc3cdbc92c0309407d1a74cecb563",
-    "quietNumericRaw": "28afe67976f21990670887e3f62b685f5a231e28748160fe7b1bceb9018bc2e1",
-    "quietSanitizedProtocol": "6d64f2cdae448088d547752920b01699706fe02420f7f54d957e05e128543e60",
-    "previousEvidenceIndex": "e5b9a4c0273b2f0b120c608354939e89b0112f1d52cf95c2b305c5b5f5b42d37",
-    "highresDerived": "3db619a514a70877903008d75d17f3ca27254fc2115f9c6d76bac3e2a2984966",
-    "highresNumericRaw": "a58916f157319e00d11de230ea1a9ece5fd1d0834c3e4d757679b343819f9e7e",
-    "highresSanitizedProtocol": "a652b75a7ef33171d0515d950580d36f66be5de692e1e9c29167af47ef66e01e",
-    "productionPathReview": "00f11284e6ee17be9cfe9d3edb27404fb8b5273c34fee59e1f2f27062b8a3942"
-  },
-  "exportFilenameByRole": {
-    "concurrentDerived": "concurrent-derived.json",
-    "concurrentNumericRaw": "concurrent-numeric-raw.json",
-    "quietDerived": "quiet-derived.json",
-    "quietNumericRaw": "quiet-numeric-raw.json",
-    "quietSanitizedProtocol": "quiet-protocol.json",
-    "previousEvidenceIndex": "previous-evidence-index.json",
-    "highresDerived": "highres-derived.json",
-    "highresNumericRaw": "highres-numeric-raw.json",
-    "highresSanitizedProtocol": "highres-protocol.json",
-    "productionPathReview": "highres-production-path-review.json"
-  },
-  "observations": [
-    {
-      "name": "concurrent",
-      "verifiedReplies": 6000,
-      "failedPair": 2,
-      "p95IncreasePercent": 24.999995032946476
+  "oldObservationsSuperseded": false,
+  "retrospectiveCausalAttribution": false,
+  "priorThreeWithinSyntheticThresholds": false,
+  "postWorkerWithinSyntheticThresholds": false,
+  "allHistoricalObservationsWithinSyntheticThresholds": false,
+  "priorThreeEvidenceIndexSha256": "33e8cafbe80ed2efc5f562a95ae7463889101ebf325a9c891774792990aaabe7",
+  "postWorkerSourceSummarySha256": "3f333ffdc23520372358b0bd8129d6c3147aa9af1a43a033ba436dc75ba426f5",
+  "postWorkerSourceRawSha256": "43cbf0f0e17249940c2aceae59de0d5e1c3b23acdd326697049292e9319113bb",
+  "files": {
+    "README.md": {
+      "sha256": "3b1427c9152b3beac3bbe8e3453d96331e1cbbe3d7743865b2347419377eda63",
+      "bytes": 1617
     },
-    {
-      "name": "quiet",
-      "verifiedReplies": 60000,
-      "failedPair": 1,
-      "p95IncreasePercent": 11.111106695952412
+    "concurrent-derived.json": {
+      "sha256": "5529fc91cc248168f445e3c1ebe990eaccf1e160bbc4fa41d1bc31e2489ef479",
+      "bytes": 4359
     },
-    {
-      "name": "highres",
-      "verifiedReplies": 60000,
-      "failedPair": 3,
-      "p95IncreasePercent": 6.190470216495991
+    "concurrent-numeric-raw.json": {
+      "sha256": "00d402f4dd9f0580633cd1ad83e4a1cd584739f47879c9e04ad8b6550807ac9b",
+      "bytes": 158113
+    },
+    "highres-derived.json": {
+      "sha256": "3db619a514a70877903008d75d17f3ca27254fc2115f9c6d76bac3e2a2984966",
+      "bytes": 13203
+    },
+    "highres-numeric-raw.json": {
+      "sha256": "a58916f157319e00d11de230ea1a9ece5fd1d0834c3e4d757679b343819f9e7e",
+      "bytes": 1645881
+    },
+    "highres-production-path-review.json": {
+      "sha256": "00f11284e6ee17be9cfe9d3edb27404fb8b5273c34fee59e1f2f27062b8a3942",
+      "bytes": 2599
+    },
+    "highres-protocol.json": {
+      "sha256": "a652b75a7ef33171d0515d950580d36f66be5de692e1e9c29167af47ef66e01e",
+      "bytes": 1969
+    },
+    "post-worker-derived.json": {
+      "sha256": "5736d9f697eec72de710319f66fd0ffbc6863755f0a4cdf6599f0cb9b9418ca5",
+      "bytes": 14437
+    },
+    "post-worker-numeric-raw.json": {
+      "sha256": "7dae84e26e850ed489e9ff69f46a4b208858540684152ff052720579e5beed22",
+      "bytes": 1644153
+    },
+    "post-worker-protocol.json": {
+      "sha256": "b48bd83ea11f04c618f40218f8fc79b268da01f19848308a9ca7f8cfec551404",
+      "bytes": 3961
+    },
+    "previous-evidence-index.json": {
+      "sha256": "e5b9a4c0273b2f0b120c608354939e89b0112f1d52cf95c2b305c5b5f5b42d37",
+      "bytes": 1909
+    },
+    "prior-three-evidence-index.json": {
+      "sha256": "33e8cafbe80ed2efc5f562a95ae7463889101ebf325a9c891774792990aaabe7",
+      "bytes": 3650
+    },
+    "quiet-derived.json": {
+      "sha256": "fe9be1630aca074f605c832cd49df66a712bc3cdbc92c0309407d1a74cecb563",
+      "bytes": 5023
+    },
+    "quiet-numeric-raw.json": {
+      "sha256": "28afe67976f21990670887e3f62b685f5a231e28748160fe7b1bceb9018bc2e1",
+      "bytes": 1568659
+    },
+    "quiet-protocol.json": {
+      "sha256": "6d64f2cdae448088d547752920b01699706fe02420f7f54d957e05e128543e60",
+      "bytes": 889
     }
-  ],
-  "limitations": [
-    "All three completed observations retain a p95 threshold-failing pair; no pooled, median or later result supersedes them.",
-    "The first concurrent observation lacks raw CPU counters; quiet and highres CPU windows are independently reconstructable.",
-    "The earlier two observations align with 0.1 ms steps; highres recorded approximately 0.005 ms steps in thirteen isolated probes.",
-    "Higher clock precision did not make the final three-pair criterion pass.",
-    "Synchronous diagnostics process enumeration is confirmed GUI work, but no cause of the pair-three p95 increase is established.",
-    "These idle hidden observations do not qualify playback, rendering, mixed clients, user acceptance or separate Tracy overhead."
-  ]
+  }
 }

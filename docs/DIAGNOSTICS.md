@@ -41,6 +41,11 @@ most one pending sample. A busy worker skips the next one-second timer tick.
 Capture generations discard late results after stop/restart. CPU intervals use
 the worker's monotonic observation times and process creation identity; process
 IDs, names and creation timestamps remain internal and are never exported.
+Descendants are accepted only through a valid chain of queried parents, with
+each child's creation time at least its direct parent's. A rejected or
+inaccessible parent excludes its entire branch, including newer descendants of
+an older orphan. The Toolhelp snapshot and handle queries are not atomic;
+unverifiable branches are conservatively omitted.
 
 Tokens, cookies, headers, complete URLs, file paths, media titles, user data,
 raw API responses and IPC payloads are not admitted. The normal log and debug

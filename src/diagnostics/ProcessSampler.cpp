@@ -1,6 +1,7 @@
 #include "ProcessSampler.h"
 #include "profiling/Trace.h"
 #include <QSet>
+#include <QList>
 #include <QThread>
 #include <QtConcurrent/QtConcurrentRun>
 #include <algorithm>
@@ -139,6 +140,35 @@ QJsonObject ProcessSampler::metrics(const ProcessSnapshot& current) const
   if (std::isfinite(current.sampleMs) && current.sampleMs >= 0) result.insert("sampleMs", current.sampleMs);
   return result;
 }
+QHash<quint32, ProcessCounter> ProcessSampler::selectDescendants(
+  quint32 rootPid, const ProcessCounter& root,
+  const QHash<quint32, quint32>& parents,
+  const QHash<quint32, ProcessCounter>& candidates)
+{
+  if (!rootPid || !root.valid) return {};
+  // Build adjacency only for already queried raw candidates, never all host
+  // processes. A missing/invalid/reused ancestor prevents its entire branch.
+  QHash<quint32, QList<quint32>> childrenByParent;
+  for (auto it = candidates.cbegin(); it != candidates.cend(); ++it) {
+    const auto parent = parents.constFind(it.key());
+    if (it.key() && it.key() != rootPid && parent != parents.cend())
+      childrenByParent[parent.value()].append(it.key());
+  }
+  QHash<quint32, ProcessCounter> accepted{{rootPid, root}};
+  QList<quint32> frontier{rootPid};
+  for (qsizetype index = 0; index < frontier.size(); ++index) {
+    const auto parentPid = frontier[index];
+    const auto parentBirth = accepted.value(parentPid).creationTicks;
+    for (quint32 pid : childrenByParent.value(parentPid)) {
+      const auto counter = candidates.value(pid);
+      if (accepted.contains(pid) || !counter.valid || counter.creationTicks < parentBirth) continue;
+      accepted.insert(pid, counter);
+      frontier.append(pid);
+    }
+  }
+  accepted.remove(rootPid);
+  return accepted;
+}
 ProcessSnapshot ProcessSampler::collect()
 {
   const auto startedNs = monotonicNs();
@@ -147,14 +177,15 @@ ProcessSnapshot ProcessSampler::collect()
   result.parent = processNumbers(GetCurrentProcess());
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if (snapshot != INVALID_HANDLE_VALUE) {
-    QHash<DWORD, DWORD> parents;
+    QHash<quint32, quint32> parents;
     PROCESSENTRY32W entry{};
     entry.dwSize = sizeof(entry);
     const bool populated = Process32FirstW(snapshot, &entry);
     if (populated) do { parents.insert(entry.th32ProcessID, entry.th32ParentProcessID); } while (Process32NextW(snapshot, &entry));
     CloseHandle(snapshot);
     if (populated) {
-      QSet<DWORD> descendants{GetCurrentProcessId()};
+      const quint32 rootPid = GetCurrentProcessId();
+      QSet<quint32> descendants{rootPid};
       bool changed = true;
       while (changed) {
         changed = false;
@@ -163,14 +194,16 @@ ProcessSnapshot ProcessSampler::collect()
             descendants.insert(it.key()); changed = true;
           }
       }
-      descendants.remove(GetCurrentProcessId());
-      for (DWORD pid : descendants) {
+      descendants.remove(rootPid);
+      QHash<quint32, ProcessCounter> candidates;
+      for (quint32 pid : descendants) {
         HANDLE child = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, FALSE, pid);
         if (!child) continue;
         const auto counter = processNumbers(child);
         CloseHandle(child);
-        if (counter.valid) result.children.insert(pid, counter);
+        if (counter.valid) candidates.insert(pid, counter);
       }
+      result.children = selectDescendants(rootPid, result.parent, parents, candidates);
       result.childrenAvailable = true;
     }
   }

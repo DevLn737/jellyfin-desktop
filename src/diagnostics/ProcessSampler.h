@@ -37,6 +37,12 @@ signals:
 private:
   friend class ::ProcessSamplerTest;
   static ProcessSnapshot collect();
+  // Validate each queried candidate through an accepted direct parent before
+  // flattening the process tree. OS PIDs and creation times remain internal.
+  static QHash<quint32, ProcessCounter> selectDescendants(
+    quint32 rootPid, const ProcessCounter& root,
+    const QHash<quint32, quint32>& parents,
+    const QHash<quint32, ProcessCounter>& candidates);
   QJsonObject metrics(const ProcessSnapshot& current) const;
   void consume();
   Collector m_collector;

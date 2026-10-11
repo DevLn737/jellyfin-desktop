@@ -260,6 +260,108 @@ private slots:
     QVERIFY(metrics.value("privateBytes").toDouble() > 0);
 #endif
   }
+  void validatedTreeExcludesOldOrphanAndItsNewerDescendant() {
+    const auto root = snapshot(1000000, 1000000000, 1000).parent;
+    const QHash<quint32, quint32> parents{{101, 100}, {102, 101}, {103, 100}};
+    const QHash<quint32, ProcessCounter> candidates{
+      {101, {500, 8000000, 999999, 1000000000, true}},
+      {102, {1500, 8000000, 999999, 1000000000, true}},
+      {103, {1100, 1000000, 4096, 1000000000, true}}};
+    auto selected = ProcessSampler::selectDescendants(100, root, parents, candidates);
+    QCOMPARE(selected.size(), 1);
+    QVERIFY(selected.contains(103));
+    QVERIFY(!selected.contains(101));
+    QVERIFY(!selected.contains(102));
+    // Exercise the real aggregation with the helper's output, not a copied filter.
+    ProcessSampler sampler;
+    sampler.startCapture(2);
+    sampler.m_previous = snapshot(1000000, 1000000000, 1000);
+    sampler.m_previous.children = selected;
+    auto current = snapshot(2000000, 2000000000, 1000);
+    auto next = candidates;
+    for (auto it = next.begin(); it != next.end(); ++it) {
+      it.value().cpuTicks += 1000000;
+      it.value().observedNs = 2000000000;
+    }
+    current.children = ProcessSampler::selectDescendants(100, current.parent, parents, next);
+    const auto metrics = sampler.metrics(current);
+    QCOMPARE(metrics.value("childCount").toInt(), 1);
+    QCOMPARE(metrics.value("childPrivateBytes").toDouble(), 4096.0);
+    QCOMPARE(metrics.value("childCpuPercent").toDouble(), 5.0);
+  }
+  void validatedTreeRejectsParentPidReusedAfterChildBirth() {
+    const auto root = snapshot(100, 1000000000, 1000).parent;
+    const QHash<quint32, quint32> parents{{101, 100}, {102, 101}, {103, 102}, {104, 101}};
+    const QHash<quint32, ProcessCounter> candidates{
+      {101, {2000, 100, 4096, 1000000000, true}},
+      {102, {1500, 100, 4096, 1000000000, true}},
+      {103, {2500, 100, 4096, 1000000000, true}},
+      {104, {2200, 100, 4096, 1000000000, true}}};
+    const auto selected = ProcessSampler::selectDescendants(100, root, parents, candidates);
+    QCOMPARE(selected.size(), 2);
+    QVERIFY(selected.contains(101));
+    QVERIFY(selected.contains(104));
+    QVERIFY(!selected.contains(102));
+    QVERIFY(!selected.contains(103));
+  }
+  void validatedTreeRequiresValidAndCompleteIntermediateCounters() {
+    const auto root = snapshot(100, 1000000000, 1000).parent;
+    const QHash<quint32, quint32> parents{
+      {101, 100}, {102, 101}, {201, 100}, {202, 201}, {401, 100}};
+    const QHash<quint32, ProcessCounter> candidates{
+      {101, {1100, 100, 4096, 1000000000, false}},
+      {102, {1200, 100, 4096, 1000000000, true}},
+      // 201 could not be queried; 301 has no PPID snapshot entry.
+      {202, {1200, 100, 4096, 1000000000, true}},
+      {301, {1200, 100, 4096, 1000000000, true}},
+      {401, {1200, 100, 4096, 1000000000, true}}};
+    const auto selected = ProcessSampler::selectDescendants(100, root, parents, candidates);
+    QCOMPARE(selected.size(), 1);
+    QVERIFY(selected.contains(401));
+    auto invalidRoot = root;
+    invalidRoot.valid = false;
+    QVERIFY(ProcessSampler::selectDescendants(100, invalidRoot, parents, candidates).isEmpty());
+    QVERIFY(ProcessSampler::selectDescendants(0, root, parents, candidates).isEmpty());
+  }
+  void validatedTreeAcceptsMultiLevelBranchesRegardlessOfCandidateOrder() {
+    const auto root = snapshot(100, 1000000000, 1000).parent;
+    const QHash<quint32, quint32> parents{
+      {101, 100}, {102, 101}, {103, 102}, {104, 100}, {105, 104}};
+    const QList<quint32> orders[] = {{101, 102, 103, 104, 105}, {105, 104, 103, 102, 101}};
+    for (const auto& order : orders) {
+      QHash<quint32, ProcessCounter> candidates;
+      for (quint32 pid : order)
+        candidates.insert(pid, {1000 + pid, pid, pid * 16, 1000000000, true});
+      const auto selected = ProcessSampler::selectDescendants(100, root, parents, candidates);
+      QCOMPARE(selected.size(), 5);
+      for (quint32 pid : order) {
+        QVERIFY(selected.contains(pid));
+        QCOMPARE(selected.value(pid).creationTicks, quint64(1000 + pid));
+        QCOMPARE(selected.value(pid).privateBytes, quint64(pid * 16));
+      }
+    }
+  }
+  void validatedTreeTerminatesOnCyclesAndNeverReplacesRootSeed() {
+    const auto root = snapshot(100, 1000000000, 1000).parent;
+    const QHash<quint32, quint32> parents{
+      {100, 101}, {101, 100}, {201, 202}, {202, 201}, {301, 301}};
+    const QHash<quint32, ProcessCounter> candidates{
+      {100, {1, 100, 999999, 1000000000, true}},
+      {101, {1100, 100, 4096, 1000000000, true}},
+      {201, {1200, 100, 4096, 1000000000, true}},
+      {202, {1300, 100, 4096, 1000000000, true}},
+      {301, {1400, 100, 4096, 1000000000, true}}};
+    const auto selected = ProcessSampler::selectDescendants(100, root, parents, candidates);
+    QCOMPARE(selected.size(), 1);
+    QVERIFY(selected.contains(101));
+    QVERIFY(!selected.contains(100));
+    // Equal FILETIME births are valid (clock granularity); older ones are not.
+    auto equal = candidates;
+    equal[101].creationTicks = 1000;
+    QVERIFY(ProcessSampler::selectDescendants(100, root, parents, equal).contains(101));
+    equal[101].creationTicks = 999;
+    QVERIFY(ProcessSampler::selectDescendants(100, root, parents, equal).isEmpty());
+  }
 };
 QTEST_GUILESS_MAIN(ProcessSamplerTest)
 #include "ProcessSamplerTest.moc"

@@ -112,11 +112,28 @@ preserve actual results: SVG +278.44 MiB and native music
 remain unchanged. Additional SBOM and numeric diagnostics cannot turn this
 failed result into passing release evidence; no user acceptance is recorded.
 
-The final v4 [diagnostics performance index](diagnostics-performance/evidence-index.json)
+The preserved v4 [diagnostics performance index](diagnostics-performance/prior-three-evidence-index.json)
 retains three completed synthetic observations with failed overall criteria.
 The high-resolution observation's third pair was +6.190470216495991% against
 the unchanged 5% p95 limit. The later process sampler worker is outside the measured
 source; these historical results cannot qualify it or establish causality.
+
+The later [post-worker observation](diagnostics-performance/post-worker-derived.json) is a
+separate completed measurement on clean `ebd33bb`, not a replacement of these
+three failures. It contains 60,000 verified replies and thirteen actual clock
+probes at about 5 microseconds. All CPU differences satisfy the two-percentage-
+point limit. P95 differences are +1.28205%, **+13.26531%** and +1.53062%; pair2
+fails the unchanged 5% limit. Overall synthetic thresholds remain false and
+the observation is ineligible for release qualification or user acceptance.
+
+The [retained development package record](observations/desktop-development-ebd33bb.json)
+binds the normal and diagnostic packages to their actual tested source, manifest,
+operation outputs, complete stage inventories, installer contents and PDB.
+Those selected build/runtime checks passed, while current-source full-hour memory
+is explicitly not run. Aggregate checks, ready RC, release qualification and
+user acceptance remain false. The source ID of these retained local packages
+stays `ebd33bb` after later commits. The subsequent process-ancestry correction
+is outside that source and its measurements.
 
 The [pinned Web clearQueue finding](../docs/server-web-clearqueue-finding.md)
 is a separately reproduced Server/Web lifecycle defect. It is recorded without

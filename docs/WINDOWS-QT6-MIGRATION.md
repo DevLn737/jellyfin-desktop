@@ -55,6 +55,30 @@ for internal verification and the Windows toolchain. The release qualification
 remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
+The retained local development packages at the last completed checkpoint were
+built from clean commit
+`ebd33bb096f72fdd05912ab576f92747446b3743`, with manifest SHA256
+`af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc`.
+Both full normal and diagnostic pipelines, their native regression tests,
+production offscreen renderer, staged PE import checks, actual NativeShell/CSP
+probe and localhost Tracy probe completed successfully. Nine process-sampler
+tests also cover blocked collection, queued delivery, stop/restart, destruction,
+counter identity and failures. Read-only Burn/MSI extraction binds the installer
+to the tested EXE and manifest; both portable ZIPs match their complete staging
+inventories. The diagnostic EXE/PDB GUID and age match. Sanitized package and
+operation identities are retained in
+[the development-build record](../quality/observations/desktop-development-ebd33bb.json).
+[Push CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38170112494)
+and [PR CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38170115815)
+also passed for that exact commit; publication was skipped.
+
+These packages remain unqualified. No full-hour memory qualification was
+performed on that source. The earlier failed observation belongs to
+`6eeebfa` and cannot qualify a later production change. The retained package
+record has `checksPassed`, `readyForReleaseCandidate`, `releaseQualified` and
+`userAcceptanceCompleted` all false. Later documentation/evidence commits do
+not change the source identity embedded in these local packages.
+
 The completed internal memory observation at commit
 `6eeebfa3298e68f452b58b47b14bbf0e7f69e97f` failed its SVG final-growth limit
 by retaining 278.44 MiB above its baseline (limit 128 MiB). The native music
@@ -67,8 +91,22 @@ qualify the application. The complete evidence and limitations are in
 Three historical diagnostics observations also retain threshold-failing p95
 pairs. Confirmed synchronous Windows process queries have now been moved off
 the GUI thread, with one pending worker and stale-capture rejection. That
-source change requires its own measurements; historical results do not apply
-as qualification of the new source. The separate pinned Web clearQueue defect
+change was measured once on `ebd33bb` with the prospectively fixed off/on/on/off/
+off/on protocol: 60,000 verified replies, thirteen actual clock probes at about
+5 microseconds, and unchanged limits. CPU increases of 0.17166, 0.08398 and
+0.14804 percentage points stayed below the two-point target. P95 increases were
+1.28205%, **13.26531%** and 1.53062%; the second pair exceeded 5%, so the overall
+synthetic criterion failed. The successful command exit means the measurement
+completed, not that it passed. The new result and the three historical failures
+remain separate; no causal explanation or successful qualification is asserted.
+See [the retained diagnostics observations](../quality/diagnostics-performance/README.md).
+An independent review then found a separate process-accounting edge: an old
+orphan was rejected after PPID expansion, but its newer descendant could remain.
+The sampler now validates each branch through accepted direct parents before
+flattening it; five added tests cover the rejected ancestry, missing counters,
+reused parents, valid branches and cycles. This correctness change is outside
+the measured `ebd33bb` source and has no established relation to its p95 result.
+The separate pinned Web clearQueue defect
 is described in [the Server/Web finding](server-web-clearqueue-finding.md).
 
 The pinned libmpv directly imports `vulkan-1.dll`, including when playback uses

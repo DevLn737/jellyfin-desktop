@@ -161,7 +161,7 @@ and exact implementation references are retained in
 ## Separate diagnostics performance evidence
 
 The final sanitized export `performance-evidence-6eeebfa-v4` is recorded in
-[the diagnostics performance index](../quality/diagnostics-performance/evidence-index.json),
+[the diagnostics performance index](../quality/diagnostics-performance/prior-three-evidence-index.json),
 SHA256 `33e8cafbe80ed2efc5f562a95ae7463889101ebf325a9c891774792990aaabe7`.
 It preserves three completed synthetic observations and 126000 verified replies;
 all three have a threshold-failing pair. The latest high-resolution observation
