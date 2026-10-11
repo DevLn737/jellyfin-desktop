@@ -237,11 +237,11 @@ void SettingsComponent::loadConf(const QString& path, bool storage)
 
   int version = json["version"].toInt(0);
 
-  if (version == 4 && m_settingsVersion == 6)
+  if (version == 4 && m_settingsVersion >= 6)
   {
     migrateJmpSettings4 = true;
   }
-  else if (version == 5 && m_settingsVersion == 6)
+  else if (version == 5 && m_settingsVersion >= 6)
   {
     migrateJmpSettings5 = true;
   }
@@ -300,9 +300,11 @@ void SettingsComponent::loadConf(const QString& path, bool storage)
     if (getSection(SETTINGS_SECTION_VIDEO)->value("hardwareDecoding") == "enabled") {
       getSection(SETTINGS_SECTION_VIDEO)->setValue("hardwareDecoding", "copy");
     }
-  } else if (migrateJmpSettings6) {
-    if (getSection(SETTINGS_SECTION_MAIN)->value("autodetectCertBundle") == "false") {
-      getSection(SETTINGS_SECTION_MAIN)->setValue("autodetectCertBundle", "true");
+  }
+  // Direct upgrades from 4/5 also pass through the 6-to-7 certificate change.
+  if (migrateJmpSettings6 || ((migrateJmpSettings4 || migrateJmpSettings5) && m_settingsVersion >= 7)) {
+    if (!getSection(SETTINGS_SECTION_MAIN)->value("autodetectCertBundle").toBool()) {
+      getSection(SETTINGS_SECTION_MAIN)->setValue("autodetectCertBundle", true);
     }
   }
 }

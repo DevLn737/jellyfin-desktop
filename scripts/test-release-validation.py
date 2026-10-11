@@ -214,9 +214,10 @@ class ReleaseValidationTest(unittest.TestCase):
                     "absoluteRssLimitBytes": 2147483648, "finalGrowthLimitBytes": 134217728}
         # In-memory synthetic unit data, never written as qualification evidence.
         raw = {"schemaVersion": 1, "scope": protocol["scope"], "scenarios": [
-            {"name": name, "samples": [{"elapsedSeconds": 0, "rssBytes": 100000000, "processCount": 3},
-                                       {"elapsedSeconds": 1800, "rssBytes": 150000000, "processCount": 4},
-                                       {"elapsedSeconds": 3600, "rssBytes": 110000000, "processCount": 3}]}
+            {"name": name, "samples": [
+                {"elapsedSeconds": seconds, "rssBytes": 100000000 if seconds == 0 else 150000000 if seconds == 1800 else 110000000,
+                 "processCount": 4 if seconds == 1800 else 3}
+                for seconds in range(0, 3601, 5)]}
             for name in protocol["requiredScenarios"]]}
         manifest = self.prepared_manifest()
         memory, _ = self.source_report(manifest)
@@ -266,6 +267,7 @@ class ReleaseValidationTest(unittest.TestCase):
     def release_proof_fixture(self):
         manifest = self.prepared_manifest()
         proof = {"releaseEvidenceUrl": manifest["qt"]["qualification"]["releaseEvidenceUrl"],
+                 "archiveSha1s": {archive["name"]: archive["officialSha1"] for archive in manifest["qt"]["archives"]},
                  "observedUtc": "2020-01-02T00:00:00Z", "metadata": {
                      "name": manifest["qt"]["version"], "released": True, "releaseDate": "2020-01-01"}}
         return manifest, proof
@@ -294,8 +296,10 @@ class ReleaseValidationTest(unittest.TestCase):
         response.geturl.return_value = proof["releaseEvidenceUrl"]
         response.read.return_value = json.dumps(proof["metadata"]).encode()
         with patch.object(validation, "committed_json", return_value=proof), \
-             patch.object(validation.urllib.request, "urlopen", return_value=response) as network:
+             patch.object(validation.urllib.request, "urlopen", return_value=response) as network, \
+             patch.object(validation, "check_live_qt_archive_sha1s") as archives:
             validation.check_release_proof(manifest, verify_live=True)
+            archives.assert_called_once_with(manifest)
             self.assertEqual(network.call_args.kwargs["timeout"], 10)
             self.assertEqual(network.call_args.args[0].full_url, proof["releaseEvidenceUrl"])
             response.read.return_value = json.dumps({**proof["metadata"], "released": False}).encode()
@@ -307,6 +311,91 @@ class ReleaseValidationTest(unittest.TestCase):
             network.side_effect = OSError("test-only offline error")
             with self.assertRaises(OSError):
                 validation.check_release_proof(manifest, verify_live=True)
+
+    def test_offline_release_proof_requires_all_locked_archive_identities(self):
+        manifest, proof = self.release_proof_fixture()
+        for kind in ("missing", "changed", "extra", "absent"):
+            invalid = copy.deepcopy(proof)
+            first = manifest["qt"]["archives"][0]["name"]
+            if kind == "missing":
+                del invalid["archiveSha1s"][first]
+            elif kind == "changed":
+                invalid["archiveSha1s"][first] = "0" * 40
+            elif kind == "extra":
+                invalid["archiveSha1s"]["unreviewed.7z"] = "0" * 40
+            else:
+                del invalid["archiveSha1s"]
+            with patch.object(validation, "committed_json", return_value=invalid), self.subTest(kind=kind), \
+                 self.assertRaisesRegex(ValueError, "archive SHA1 identities"):
+                validation.check_release_proof(manifest)
+
+    def mocked_sidecar_opener(self, manifest, payload=None, final_url=None):
+        by_url = {archive["url"] + ".sha1": archive for archive in manifest["qt"]["archives"]}
+        opener = MagicMock()
+
+        def open_sidecar(request, timeout):
+            archive = by_url[request.full_url]
+            response = MagicMock()
+            response.__enter__.return_value = response
+            response.geturl.return_value = final_url or request.full_url
+            response.read.return_value = payload if payload is not None else (archive["officialSha1"] + "\n").encode()
+            return response
+
+        opener.open.side_effect = open_sidecar
+        return opener
+
+    def test_tag_gate_rechecks_every_archive_with_bounded_requests(self):
+        manifest, proof = self.release_proof_fixture()
+        opener = self.mocked_sidecar_opener(manifest)
+        executor = validation.concurrent.futures.ThreadPoolExecutor
+        with patch.object(validation.urllib.request, "build_opener", return_value=opener), \
+             patch.object(validation.concurrent.futures, "ThreadPoolExecutor", wraps=executor) as workers:
+            observed = validation.check_live_qt_archive_sha1s(manifest)
+        self.assertEqual(observed, proof["archiveSha1s"])
+        self.assertEqual(opener.open.call_count, len(manifest["qt"]["archives"]))
+        self.assertEqual({call.args[0].full_url for call in opener.open.call_args_list},
+                         {archive["url"] + ".sha1" for archive in manifest["qt"]["archives"]})
+        self.assertTrue(all(call.kwargs["timeout"] == 10 for call in opener.open.call_args_list))
+        workers.assert_called_once_with(max_workers=4)
+
+    def test_tag_gate_rejects_changed_archive_or_malformed_official_checksum(self):
+        manifest, _ = self.release_proof_fixture()
+        opener = self.mocked_sidecar_opener(manifest)
+        original = opener.open.side_effect
+        last_url = manifest["qt"]["archives"][-1]["url"] + ".sha1"
+
+        def last_archive_changed(request, timeout):
+            response = original(request, timeout)
+            if request.full_url == last_url:
+                response.read.return_value = b"0" * 40
+            return response
+
+        opener.open.side_effect = last_archive_changed
+        with patch.object(validation.urllib.request, "build_opener", return_value=opener), \
+             self.assertRaisesRegex(ValueError, "differs from the tested package"):
+            validation.check_live_qt_archive_sha1s(manifest)
+        for payload in (b"0" * 40, b"", b"g" * 40, b"a" * 39, b"a" * 41,
+                        b"a" * 40 + b" archive.7z", b"a" * 65):
+            opener = self.mocked_sidecar_opener(manifest, payload=payload)
+            with patch.object(validation.urllib.request, "build_opener", return_value=opener), \
+                 self.subTest(payload=payload), self.assertRaises(ValueError):
+                validation.check_live_qt_archive_sha1s(manifest)
+
+    def test_tag_gate_fails_closed_on_untrusted_redirect_and_offline_sidecar(self):
+        manifest, _ = self.release_proof_fixture()
+        opener = self.mocked_sidecar_opener(manifest, final_url="https://unreviewed.example/archive.7z.sha1")
+        with patch.object(validation.urllib.request, "build_opener", return_value=opener), \
+             self.assertRaisesRegex(ValueError, "redirected"):
+            validation.check_live_qt_archive_sha1s(manifest)
+        opener.open.side_effect = OSError("test-only unavailable sidecar")
+        with patch.object(validation.urllib.request, "build_opener", return_value=opener), self.assertRaises(OSError):
+            validation.check_live_qt_archive_sha1s(manifest)
+        handler = validation.OfficialQtSidecarRedirect()
+        request = validation.urllib.request.Request(manifest["qt"]["archives"][0]["url"] + ".sha1")
+        for url in ("http://download.qt.io/archive.sha1", "https://download.qt.io.evil.example/archive.sha1",
+                    "https://mirror.example/archive.sha1", "https://download.qt.io/archive.sha1?changed=1"):
+            with self.subTest(url=url), self.assertRaisesRegex(ValueError, "redirected"):
+                handler.redirect_request(request, None, 302, "Found", {}, url)
 
     def test_release_metadata_rejects_unofficial_endpoints_and_redirects(self):
         manifest, proof = self.release_proof_fixture()
@@ -361,6 +450,19 @@ class ReleaseValidationTest(unittest.TestCase):
         fixture[3]["scope"] = "main-process-only"
         with self.assertRaisesRegex(ValueError, "process scope"):
             self.check_memory(*fixture)
+
+    def test_memory_gate_rejects_late_baseline_missing_intervals_and_two_point_reports(self):
+        for mutation in ("late-baseline", "missed-intervals", "two-points"):
+            fixture = self.memory_fixture()
+            samples = fixture[3]["scenarios"][0]["samples"]
+            if mutation == "late-baseline":
+                samples[0]["elapsedSeconds"] = 1
+            elif mutation == "missed-intervals":
+                del samples[1:3]
+            else:
+                fixture[3]["scenarios"][0]["samples"] = [samples[0], samples[-1]]
+            with self.subTest(mutation=mutation), self.assertRaisesRegex(ValueError, "elapsed zero|sample cadence|sample count"):
+                self.check_memory(*fixture)
 
     def test_memory_gate_checks_predeclared_peak_and_final_growth_limits(self):
         fixture = self.memory_fixture()

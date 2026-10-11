@@ -45,14 +45,18 @@ New-Item -ItemType Directory -Path (Join-Path $isolatedRoot 'data') | Out-Null
 $settingsVersion = (Get-Content (Join-Path $sourceRoot 'resources/settings/settings_description.json') -Raw |
     ConvertFrom-Json | Where-Object { $_.section -eq '__meta__' }).version
 $configuration = @{
-    version = $settingsVersion
+    # A direct legacy upgrade must retain values instead of replacing defaults.
+    version = 4
     sections = @{
         path = @{ startupurl_desktop = 'bundled'; startupurl_extension = 'bundled' }
-        main = @{ checkForUpdates = $false; fullscreen = $false; webMode = 'desktop'; layout = 'desktop'; logLevel = 'debug' }
+        main = @{ checkForUpdates = $false; fullscreen = $false; webMode = 'desktop'; layout = 'desktop'; logLevel = 'debug'; autodetectCertBundle = $false }
+        video = @{ hardwareDecoding = 'disabled' }
         system = @{ systemname = 'Тест — 日本語 ✓' }
     }
 }
 $configuration | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $isolatedRoot 'data/jellyfinmediaplayer.conf') -Encoding utf8
+@{ version = 5; sections = @{ migrationSmoke = @{ unknownUnicode = '保留'; nested = @{ value = 17 } } } } |
+    ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $isolatedRoot 'data/storage.json') -Encoding utf8
 # Synthetic audio exercises actual libmpv readiness without an audio device.
 # Hidden Qt windows do not render video; tests/render supplies an offscreen GL
 # render pass for the production renderer instead.
@@ -123,7 +127,7 @@ try {
     $env:QTWEBENGINE_REMOTE_DEBUGGING = '0.0.0.0:9222'
     $env:QTWEBENGINE_CHROMIUM_FLAGS = '"--remote-debugging-address=0.0.0.0" --remote-"debugging"-port=9222 "--remote-debugging-pipe" --disable-background-timer-throttling'
     $application = Start-Process -FilePath (Join-Path $isolatedRoot 'JellyfinMediaPlayer.exe') `
-        -ArgumentList @('--desktop', '--windowed', '--terminal') -WorkingDirectory $isolatedRoot `
+        -ArgumentList @('--desktop', '--windowed', '--terminal', '--disable-gpu') -WorkingDirectory $isolatedRoot `
         -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $reportRoot 'normal.stdout') `
         -RedirectStandardError (Join-Path $reportRoot 'normal.stderr')
     $normalDeadline = [DateTime]::UtcNow.AddSeconds(15)

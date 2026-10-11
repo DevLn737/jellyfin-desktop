@@ -15,7 +15,7 @@ $protocolPath = Join-Path $sourceRoot $manifest.qt.qualification.memoryProtocolP
 $protocol = Get-Content -LiteralPath $protocolPath -Raw | ConvertFrom-Json
 $state = Get-Content -LiteralPath (Join-Path $sourceRoot 'build/windows-toolchain.json') -Raw | ConvertFrom-Json
 $node = [IO.Path]::GetFullPath($state.nodeExe)
-$python = (Get-Command python -CommandType Application).Source
+$python = (Get-Command python -CommandType Application | Select-Object -First 1).Source
 $commit = (& git -C $sourceRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $commit -notmatch '^[a-f0-9]{40}$' -or @(& git -C $sourceRoot status --porcelain).Count) {
     throw 'Memory measurements require a clean immutable source commit.'

@@ -216,8 +216,8 @@ int main(int argc, char *argv[])
 
     // An inherited Chromium flag must not override the explicit localhost-only
     // diagnostic launch or silently open a debugger on an ordinary launch.
-    const QString chromiumFlags = ApplicationScope::withoutRemoteDebugging(
-      QString::fromUtf8(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS")));
+    const QString chromiumFlags = ApplicationScope::chromiumLaunchFlags(
+      QString::fromUtf8(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS")), g_qtFlags, parser.isSet("disable-gpu"));
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromiumFlags.toUtf8());
     if (parser.isSet(devOption))
       qputenv("QTWEBENGINE_REMOTE_DEBUGGING", QString("127.0.0.1:%1").arg(*devPort).toUtf8());

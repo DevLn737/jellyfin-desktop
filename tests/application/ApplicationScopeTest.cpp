@@ -54,6 +54,17 @@ int main(int argc, char** argv)
   check(ApplicationScope::withoutRemoteDebugging("--remote-debugging-port --disable-gpu") == "--disable-gpu", "missing debugger value consumed the next legitimate flag");
   check(ApplicationScope::chromiumArguments("  --a=\"b c\" x\"y\" \"\" z\tq  ")
       == QStringList({"--a=b c", "xy", "", "z\tq"}), "Chromium environment quote grammar differs from Qt");
+  const QStringList defaults = {"--enable-gpu-rasterization", "--disable-features=MediaSessionService"};
+  const QStringList normal = ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags("", defaults, false));
+  check(normal == defaults, "default Chromium switches were lost");
+  const QStringList fallback = ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
+    "\"--remote-debugging-port=9222\" --disable-features=One,Two --proxy-pac-url=\"C:\\Two Words\\proxy.pac\"", defaults, true));
+  check(fallback == QStringList({"--disable-features=One,Two,MediaSessionService", "--proxy-pac-url=C:\\Two Words\\proxy.pac",
+    "--enable-gpu-rasterization", "--disable-gpu"}), "GPU fallback lost inherited flags or default feature merge");
+  check(ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
+    "--disable-features=One,MediaSessionService<Trial:param/value --disable-gpu", defaults, true))
+    == QStringList({"--disable-features=One,MediaSessionService<Trial:param/value", "--disable-gpu", "--enable-gpu-rasterization"}),
+    "feature parameters changed or GPU/default features duplicated");
   std::puts("portable socket identity and strict DevTools port checks passed");
   return 0;
 }

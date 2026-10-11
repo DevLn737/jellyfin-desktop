@@ -69,10 +69,19 @@ Once Qt's official Jira version metadata actually marks this exact package
 version `released: true`, commit the reviewed snapshot at `releaseProofPath`,
 with `releaseEvidenceUrl` matching the locked Jira version endpoint,
 `observedUtc` in UTC, and `metadata` containing matching `name`, `released: true`
-and its real `releaseDate`. Do not create this proof from unreleased metadata.
+and its real `releaseDate`. Also include `archiveSha1s`, a complete map from each
+locked Qt archive name to the matching official `.sha1` observed for that
+released package. A missing, extra, or changed archive identity is rejected.
+Do not create this proof from unreleased metadata.
 Ordinary CI checks the committed snapshot without network access; tag
 qualification also re-fetches that exact official endpoint with a ten-second
-timeout and fails on unreleased, inconsistent or unavailable metadata. Official
+timeout and fails on unreleased, inconsistent or unavailable metadata. It also
+rechecks every locked Qt archive's official `.sha1`, with at most four parallel
+requests and a ten-second timeout per request. Changed checksums, malformed
+responses and unavailable sidecars fail the tag gate even if cached packages
+still match the old manifest. Sidecar redirects outside HTTPS `download.qt.io`
+fail closed before they are followed; review an official mirror change before
+changing that policy. Official
 proof may be added under `quality/` after the tested commit if all archive and
 manifest locks remain unchanged.
 

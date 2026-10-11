@@ -50,8 +50,9 @@ responsibility. Server SSH reads are used only for compatibility evidence.
 
 ## Build and release status
 
-`build-manifest.json` locks development Qt/WebEngine 6.11.2 and the Windows
-toolchain. The release qualification remains false. Local successful builds and
+`build-manifest.json` locks a prepared, unreleased Qt/WebEngine 6.11.3 candidate
+for internal verification and the Windows toolchain. The release qualification
+remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
 The pinned libmpv directly imports `vulkan-1.dll`, including when playback uses

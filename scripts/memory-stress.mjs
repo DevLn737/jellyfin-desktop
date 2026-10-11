@@ -204,7 +204,9 @@ try {
     // Reports expose only a bounded generic failure reason, never raw protocol.
     status.failure = String(error.message).slice(0, 180); process.exitCode = 1;
 } finally {
-    writeStatus(); socket?.close();
-    for (const waiter of pending.values()) clearTimeout(waiter.timer);
-    pending.clear(); server?.close();
+    try { writeStatus(); } finally {
+        socket?.close();
+        for (const waiter of pending.values()) clearTimeout(waiter.timer);
+        pending.clear(); server?.close();
+    }
 }

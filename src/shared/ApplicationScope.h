@@ -74,6 +74,15 @@ inline bool isRemoteDebuggingArgument(const QString& argument)
     || name.compare("remote-debugging-pipe", Qt::CaseInsensitive) == 0;
 }
 
+inline QString encodeChromiumArguments(const QStringList& arguments)
+{
+  QStringList encoded;
+  for (const QString& argument : arguments)
+    encoded.append(argument.isEmpty() || argument.contains(' ')
+      ? '"' + argument + '"' : argument);
+  return encoded.join(' ');
+}
+
 inline QString withoutRemoteDebugging(const QString& text)
 {
   const QStringList arguments = chromiumArguments(text);
@@ -92,10 +101,36 @@ inline QString withoutRemoteDebugging(const QString& text)
       }
       continue;
     }
-    // Re-encode parsed arguments, preserving spaces in paths and values.
-    retained.append(argument.isEmpty() || argument.contains(' ')
-      ? '"' + argument + '"' : argument);
+    retained.append(argument);
   }
-  return retained.join(' ');
+  return encodeChromiumArguments(retained);
+}
+
+inline QString chromiumLaunchFlags(const QString& inherited, const QStringList& defaults, bool disableGpu)
+{
+  QStringList arguments = chromiumArguments(withoutRemoteDebugging(inherited));
+  for (const QString& flag : defaults)
+  {
+    if (flag.startsWith("--disable-features="))
+    {
+      // Chromium uses the last occurrence of a switch. Extend that effective
+      // vector, retaining inherited feature names and field-trial parameters.
+      qsizetype lastVector = -1;
+      for (qsizetype index = 0; index < arguments.size(); ++index)
+        if (arguments[index].startsWith("--disable-features=", Qt::CaseInsensitive)) lastVector = index;
+      if (lastVector < 0) { arguments.append(flag); continue; }
+      QString& vector = arguments[lastVector];
+      for (const QString& feature : flag.mid(flag.indexOf('=') + 1).split(',', Qt::SkipEmptyParts))
+      {
+        bool present = false;
+        for (const QString& entry : vector.mid(vector.indexOf('=') + 1).split(','))
+          if (entry.section('<', 0, 0).section(':', 0, 0).trimmed() == feature) present = true;
+        if (!present) vector += (vector.endsWith('=') ? QString() : QStringLiteral(",")) + feature;
+      }
+    }
+    else if (!arguments.contains(flag)) arguments.append(flag);
+  }
+  if (disableGpu && !arguments.contains("--disable-gpu")) arguments.append("--disable-gpu");
+  return encodeChromiumArguments(arguments);
 }
 }

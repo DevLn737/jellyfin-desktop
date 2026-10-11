@@ -1,6 +1,7 @@
 """Validate locked dependencies; release mode requires committed qualification evidence."""
 import argparse
 import copy
+import concurrent.futures
 import datetime
 import hashlib
 import json
@@ -113,6 +114,55 @@ def check_release_metadata(metadata, version, observed):
     require(datetime.date.fromisoformat(release_date) <= observed.date(), "Official Qt release date is still in the future")
 
 
+def official_qt_sidecar_url(url):
+    parts = urllib.parse.urlsplit(url)
+    return (parts.scheme == "https" and parts.hostname == "download.qt.io"
+            and parts.port in (None, 443) and not parts.username and not parts.password
+            and not parts.query and not parts.fragment and parts.path.endswith(".sha1"))
+
+
+class OfficialQtSidecarRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, message, headers, new_url):
+        # Fail closed if the canonical endpoint delegates to an unreviewed
+        # mirror. Never follow that redirect before deciding it is trusted.
+        require(official_qt_sidecar_url(new_url), "Official Qt checksum redirected outside download.qt.io")
+        return super().redirect_request(request, fp, code, message, headers, new_url)
+
+
+def locked_qt_archive_sha1s(manifest):
+    archives = manifest["qt"]["archives"]
+    require(isinstance(archives, list) and archives, "Qt release proof requires locked archives")
+    locked = {}
+    for archive in archives:
+        require(official_qt_sidecar_url(archive["url"] + ".sha1"), "Qt release checksums require exact official archive URLs")
+        name, digest = archive["name"], archive.get("officialSha1")
+        require(isinstance(name, str) and name and name not in locked, "Qt release proof has duplicate or missing archive names")
+        require(isinstance(digest, str) and re.fullmatch(r"[a-f0-9]{40}", digest), "Qt release proof requires every official SHA1")
+        locked[name] = digest
+    return locked
+
+
+def check_live_qt_archive_sha1s(manifest):
+    locked = locked_qt_archive_sha1s(manifest)
+
+    def check_archive(archive):
+        url = archive["url"] + ".sha1"
+        request = urllib.request.Request(url, headers={"User-Agent": "JellyfinDesktopRelease/2"})
+        opener = urllib.request.build_opener(OfficialQtSidecarRedirect())
+        with opener.open(request, timeout=10) as response:
+            require(official_qt_sidecar_url(response.geturl()), "Official Qt checksum redirected outside download.qt.io")
+            payload = response.read(65)
+        require(len(payload) <= 64 and re.fullmatch(rb"[a-fA-F0-9]{40}", payload.strip()), "Official Qt checksum must contain exactly forty hexadecimal digits")
+        digest = payload.strip().decode("ascii").lower()
+        require(digest == locked[archive["name"]], "Released Qt archive differs from the tested package: " + archive["name"])
+        return archive["name"], digest
+
+    # The tag gate rechecks every archive, independently of a populated cache.
+    # Four workers bound parallel requests; each official read has a deadline.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        return dict(executor.map(check_archive, manifest["qt"]["archives"]))
+
+
 def check_release_proof(manifest, verify_live=False):
     qualification = manifest["qt"]["qualification"]
     url = qualification["releaseEvidenceUrl"]
@@ -122,6 +172,8 @@ def check_release_proof(manifest, verify_live=False):
             and parts.port in (None, 443) and not parts.username and not parts.password, "Qt release proof requires the exact official Jira version endpoint")
     proof = committed_json(qualification["releaseProofPath"])
     require(proof["releaseEvidenceUrl"] == url, "Qt release proof differs from its locked evidence URL")
+    require(proof.get("archiveSha1s") == locked_qt_archive_sha1s(manifest),
+            "Qt release proof differs from the locked archive SHA1 identities")
     observed = datetime.datetime.fromisoformat(proof["observedUtc"].replace("Z", "+00:00"))
     require(observed.tzinfo is not None and observed.utcoffset() == datetime.timedelta(0), "Qt release proof requires a UTC observation time")
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -139,6 +191,7 @@ def check_release_proof(manifest, verify_live=False):
         metadata = json.loads(payload)
         check_release_metadata(metadata, manifest["qt"]["version"], now)
         require(metadata["releaseDate"] == proof["metadata"]["releaseDate"], "Committed Qt release proof differs from current official metadata")
+        check_live_qt_archive_sha1s(manifest)
 
 
 def check_source_evidence(report, manifest, manifest_sha):
@@ -217,12 +270,18 @@ def check_memory_evidence(memory, manifest):
     for scenario_name in sorted(expected):
         samples = observations[scenario_name]["samples"]
         require(isinstance(samples, list) and len(samples) >= 2, "Memory qualification requires raw observation samples")
+        require(samples[0]["elapsedSeconds"] == 0, "Memory sampling must start at elapsed zero")
+        maximum_gap = 2 * protocol["sampleIntervalSeconds"]
         previous = -1
         for sample in samples:
             require(finite_number(sample["elapsedSeconds"]) and sample["elapsedSeconds"] > previous, "Memory samples must have strictly increasing finite elapsed times")
             require(finite_number(sample["rssBytes"], 1), "Memory RSS observations must be finite positive bytes")
             require(type(sample["processCount"]) is int and sample["processCount"] > 0, "Memory samples must count the owned process tree")
+            require(previous < 0 or sample["elapsedSeconds"] - previous <= maximum_gap,
+                    "Memory sample cadence exceeds twice the predeclared interval")
             previous = sample["elapsedSeconds"]
+        minimum_samples = math.floor(samples[-1]["elapsedSeconds"] / maximum_gap) + 1
+        require(len(samples) >= minimum_samples, "Memory sample count is below the predeclared cadence")
         require(samples[-1]["elapsedSeconds"] >= protocol["minimumDurationSeconds"], "Memory scenarios must run for at least one hour")
         baseline = samples[0]["rssBytes"]
         peak = max(sample["rssBytes"] for sample in samples)

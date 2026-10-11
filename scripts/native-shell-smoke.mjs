@@ -99,6 +99,13 @@ try {
             new Promise((resolve, reject) => setTimeout(() => reject(Error('Native API timeout')), 2000))]);
         result.api = api ? Object.keys(api) : [];
         result.diagnosticsCapturing = api?.diagnostics?.capturing;
+        const setting = (...args) => new Promise(resolve => api.settings.value(...args, resolve));
+        result.legacyMigration = {
+            hardwareDecoding: await setting('video', 'hardwareDecoding'),
+            autodetectCertBundle: await setting('main', 'autodetectCertBundle'),
+            unknownUnicode: await setting('migrationSmoke', 'unknownUnicode'),
+            nested: await setting('migrationSmoke', 'nested')
+        };
         result.plugins = [];
         for (const name of window.NativeShell?.getPlugins() || []) {
             const plugin = await Promise.race([window[name](),
@@ -123,6 +130,8 @@ try {
                 // Display can be absent on a headless Windows runner.
                 assert.ok(requiredApi.every(name => value.api.includes(name)), JSON.stringify(value.api));
                 assert.equal(value.diagnosticsCapturing, false);
+                assert.deepEqual(value.legacyMigration, { hardwareDecoding: 'copy', autodetectCertBundle: true,
+                    unknownUnicode: '保留', nested: { value: 17 } });
                 assert.deepEqual(value.plugins.map(plugin => plugin.name),
                     ['mpvVideoPlayer', 'mpvAudioPlayer', 'jmpInputPlugin', 'jmpDiagnosticsPlugin', 'jmpUpdatePlugin']);
                 assert.ok(value.plugins.every(plugin => plugin.loaded));
