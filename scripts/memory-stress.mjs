@@ -208,5 +208,8 @@ try {
         socket?.close();
         for (const waiter of pending.values()) clearTimeout(waiter.timer);
         pending.clear(); server?.close();
+        // The tested page keeps issuing XHR until the owner closes the app.
+        // Do not keep this driver alive waiting for those owned HTTP sockets.
+        server?.closeAllConnections(); server?.unref();
     }
 }
