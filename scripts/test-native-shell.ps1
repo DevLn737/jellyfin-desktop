@@ -52,8 +52,12 @@ $configuration = @{
     }
 }
 $configuration | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $isolatedRoot 'data/jellyfinmediaplayer.conf') -Encoding utf8
+# Synthetic audio exercises actual libmpv readiness without an audio device.
+Set-Content -LiteralPath (Join-Path $isolatedRoot 'data/mpv.conf') -Value 'ao=null' -Encoding ascii
+Copy-Item -LiteralPath (Join-Path $sourceRoot 'tests/playback/fixtures/hls-silent-30') -Destination (Join-Path $isolatedRoot 'data/hls-silent-30') -Recurse
 $application = $null
 $probe = $null
+$launchPhase = 'native-shell'
 $debuggingEnvironment = [Environment]::GetEnvironmentVariable('QTWEBENGINE_REMOTE_DEBUGGING', 'Process')
 $chromiumEnvironment = [Environment]::GetEnvironmentVariable('QTWEBENGINE_CHROMIUM_FLAGS', 'Process')
 function Stop-OwnedApplication {
@@ -69,6 +73,17 @@ function Stop-OwnedApplication {
         $script:application = $null
     }
 }
+function Get-OwnedProcessState([Diagnostics.Process]$Process) {
+    if (-not $Process) { return [ordered]@{ started = $false } }
+    $Process.Refresh()
+    $exited = $Process.HasExited
+    $state = [ordered]@{ started = $true; processId = $Process.Id; hasExited = $exited }
+    if ($exited) {
+        $state.exitCode = $Process.ExitCode
+        $state.exitCodeHex = '0x' + [BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$Process.ExitCode), 0).ToString('X8')
+    }
+    return $state
+}
 try {
     $probeArguments = @(
         '"' + (Join-Path $PSScriptRoot 'native-shell-smoke.mjs') + '"',
@@ -81,7 +96,15 @@ try {
         -ArgumentList @('--webengine-devtools', '--desktop', '--windowed', '--terminal') -WorkingDirectory $isolatedRoot `
         -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $reportRoot 'app.stdout') `
         -RedirectStandardError (Join-Path $reportRoot 'app.stderr')
-    if (-not $probe.WaitForExit(55000)) { throw 'NativeShell runtime probe timed out after 55 seconds.' }
+    $probeDeadline = [DateTime]::UtcNow.AddSeconds(55)
+    do {
+        $application.Refresh()
+        if ($application.HasExited) { throw 'Application exited before the NativeShell probe completed.' }
+        $probe.Refresh()
+        if ($probe.HasExited) { break }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $probeDeadline)
+    if (-not $probe.HasExited) { throw 'NativeShell runtime probe timed out after 55 seconds.' }
     if ($probe.ExitCode -ne 0) { throw "NativeShell probe failed; inspect $reportRoot" }
     $application.Refresh()
     if ($application.HasExited) { throw 'Application exited during the NativeShell check.' }
@@ -89,6 +112,7 @@ try {
     if ($listeners.Count -ne 1 -or $listeners[0].LocalAddress -ne '127.0.0.1' -or
         $listeners[0].OwningProcess -ne $application.Id) { throw 'Explicit DevTools launch did not bind only localhost.' }
     Stop-OwnedApplication
+    $launchPhase = 'normal-launch'
     $env:QTWEBENGINE_REMOTE_DEBUGGING = '0.0.0.0:9222'
     $env:QTWEBENGINE_CHROMIUM_FLAGS = '--remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 --remote-debugging-pipe'
     $application = Start-Process -FilePath (Join-Path $isolatedRoot 'JellyfinMediaPlayer.exe') `
@@ -111,6 +135,22 @@ try {
     [ordered]@{ passed = $true; explicitAddress = '127.0.0.1'; normalListenerCount = 0 } |
         ConvertTo-Json | Set-Content -LiteralPath (Join-Path $reportRoot 'devtools.json') -Encoding utf8
     Write-Host "NativeShell runtime checks passed. Reports: $reportRoot"
+} catch {
+    $originalFailure = $_
+    try {
+        $failure = [ordered]@{
+            passed = $false
+            phase = $launchPhase
+            reason = $originalFailure.Exception.Message
+            application = Get-OwnedProcessState $application
+            probe = Get-OwnedProcessState $probe
+        }
+        $failure | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $reportRoot 'startup-failure.json') -Encoding utf8
+        Write-Host "NativeShell failure report: $(Join-Path $reportRoot 'startup-failure.json')"
+    } catch {
+        Write-Host 'Could not record the owned test process state.'
+    }
+    throw $originalFailure
 } finally {
     Stop-OwnedApplication
     if ($probe) {

@@ -24,6 +24,16 @@ the earlier tree reset in place. The target integration branch is `master`.
   duplicate/stale request rejection and independent participant selections.
   Preloaded metadata and tracks activate only at the matching START_FILE event.
   Windows media controls also retain the playing episode until that event.
+- Native load acknowledgement and playback readiness are separate. The injected
+  client waits for mpv's real decode/seek restart and a fresh millisecond position
+  before reporting Ready, including paused operations. Client-local request IDs
+  reject replies belonging to a previous file or superseded seek.
+- Logical SyncPlay positions include progressive-transcode offsets exactly once
+  through an adapter on the owned native Web wrapper. Server HLS/copytimestamps
+  streams preserve media timestamps through per-file mpv options and absolute
+  start times. Ordinary direct transport streams keep their default rebasing.
+  The version-sensitive wrapper hook is recorded in the pinned API contract;
+  an unavailable hook rejects an offset-dependent group load visibly.
 - Existing Windows Discord IPC, Unicode, posters, progress and reconnect behavior.
   Its standard Discord timer continues during pause; the text shows the paused
   position, and resume/seek corrects timestamps. See the Discord feature document.
@@ -40,12 +50,18 @@ responsibility. Server SSH reads are used only for compatibility evidence.
 toolchain. The release qualification remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
-The source-pinned contract records the deployed Server/Web 12.2-syncplay.1 pair,
-exact immutable commits, a Desktop contract revision and synthetic fixture
-hashes. It uses the authorized read-only fallback: no separate server-agent API
-handoff was available. The live image, public version and release manifest were
-cross-checked. If a later handoff selects another pair, revise the contract and
-repeat compatibility checks. RequiredHttpHeaders forwarding remains unsupported
+The final server-agent handoff confirms the deployed Server/Web 12.2-syncplay.1
+pair and the immutable commits independently checked through read-only inventory
+and the public version API. The archive SHA256 is
+`98f1708c6ac758fec11877c471bc898b6a6246562e5c80e41acd4e857f619c6d`.
+Its file hashes and supplied Web Git bundle were verified. The sanitized
+`contracts/desktop-api-contract.json` records Desktop-derived revision
+`desktop-handoff-12.2-syncplay.1-r1`; the handoff does not declare a separate
+server API revision. Fixtures are source-derived synthetic data, not captured
+production responses. The 21 passing server-agent browser checks establish Web
+behavior only, not Windows native or user acceptance.
+
+RequiredHttpHeaders forwarding remains unsupported
 because its origin/redirect guarantees are unspecified; header-dependent remote
 sources need a scoped implementation or server-mediated URL. No server legacy-auth
 setting or new endpoint is introduced by this client migration.
@@ -57,11 +73,13 @@ Release prerequisites:
    is not proof. Qt6.12 and a GC workaround are outside this update.
 2. Confirm the agreed Server/Web pair still matches the recorded contract and
    verify client behavior against it, including auth, external URLs and SyncPlay
-   rate/errors. Agree drift tolerances for the qualification scenarios; the
-   protocol's algorithm defaults are not a guarantee of maximum observed drift.
-3. Run the native/WebEngine memory qualification and complete the single final
-   acceptance checklist on one agreed build. Automated checks stay inside the
-   agents' implementation work.
+   rate/errors. The final handoff requires mixed Windows Desktop/Web drift below
+   400 ms at 10, 15 and 20 seconds for 1, 1.25 and 1.5x with correction enabled
+   and a cold second client. Measure actual logical media positions on a common
+   clock; browser receipts and algorithm defaults do not prove native drift.
+3. Run the native/WebEngine memory qualification and prepare the single final
+   acceptance checklist for the integrated build. Automated checks stay inside
+   the agents' implementation work.
 4. Publish a qualified `2.0.0-rc.N` prerelease with `latest=false`.
 5. After the user's complete acceptance and client fixes, integrate into
    `master`, increment the three-part package version, and publish `v2.0.0`.
@@ -72,9 +90,31 @@ Desktop workflow. Do not manufacture passing quality reports to bypass a gate.
 
 The isolated `scripts/test-native-shell.ps1` probe verifies first navigation,
 strict CSP, page reload, Unicode configuration and explicit localhost-only
-DevTools. It copies the deployment into its own temporary profile and refuses
+DevTools. A generated silent WAV with null audio output exercises real mpv paused
+load/seek readiness and rapid replacement. A compact synthetic HLS fixture checks
+30-second original timestamps, paused seek and ordinary direct-TS rebasing.
+These probes use no server media or account.
+The probe copies the deployment into its own temporary profile and refuses
 to interfere with an already running application. It does not replace hardware
 playback, installation-upgrade or long-running memory qualification.
+
+## Existing installation and rollback
+
+Before installing the qualified candidate, close the app and privately back up
+the existing native settings/storage and WebEngine profile. The default Windows
+locations are `%LOCALAPPDATA%/JellyfinMediaPlayer` (including
+`jellyfinmediaplayer.conf` and `storage.json`) and
+`%LOCALAPPDATA%/Jellyfin Media Player/QtWebEngine/Default`. Retain any existing
+Roaming profile as well. The default ZIP uses these same locations; an explicit
+`portable` or `portable.txt` marker selects adjacent `data` and `cache` instead.
+Record the installed package version and executable checksum before upgrading.
+Profile backups can contain login secrets and must never enter Git, release
+assets or diagnostics exports.
+
+For rollback, close every app process, restore the previous installed package
+and its matching profile snapshot before launching it. Do not run the old and
+new apps against the same profile simultaneously. Test this procedure with the
+installer upgrade scenarios during the single final acceptance.
 
 ## One final acceptance
 

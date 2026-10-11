@@ -38,6 +38,7 @@ class mpvAudioPlayer {
         self.appSettings = appSettings;
         self._toast = toast;
         self._playbackManager = playbackManager;
+        self._lifecycle = new window._mpvPlaybackLifecycle(self);
 
         self.name = 'MPV Audio Player';
         self.type = 'mediaplayer';
@@ -73,25 +74,22 @@ class mpvAudioPlayer {
         };
 
         function setCurrentSrc(options) {
-            return new Promise((resolve) => {
+            {
                 const val = options.url;
                 self._currentSrc = val;
                 console.debug('playing url: ' + val);
 
-                // Convert to seconds
-                const ms = (options.playerStartPositionTicks || 0) / 10000;
-                self._currentPlayOptions = options;
+                self._currentPlayOptions = { ...options };
 
-                window.api.player.load(val,
-                    { startMilliseconds: ms, autoplay: true },
+                return self._lifecycle.load(val, options,
                     {type: 'music', headers: {'User-Agent': 'JellyfinMediaPlayer'}, metadata: options.item, media: {}},
                     '#1',
-                    '',
-                    resolve);
-            });
+                    '');
+            }
         }
 
         self.onEndedInternal = () => {
+            self._lifecycle.cancel();
             const stopInfo = {
                 src: self._currentSrc
             };
@@ -104,6 +102,7 @@ class mpvAudioPlayer {
         };
 
         self.stop = (destroyPlayer) => {
+            self._lifecycle.cancel();
             cancelFadeTimeout();
 
             const src = self._currentSrc;
@@ -137,6 +136,7 @@ class mpvAudioPlayer {
             player.updateDuration.disconnect(onDuration);
             player.error.disconnect(onError);
             player.paused.disconnect(onPause);
+            self._lifecycle.dispose();
         };
 
         function onDuration(duration) {
@@ -155,31 +155,36 @@ class mpvAudioPlayer {
             }
         }
 
-        function onPlaying() {
+        self.onNativeReady = () => {
             if (!self._started) {
                 self._started = true;
+                const volume = self.getSavedVolume() * 100;
+                self.setVolume(volume, volume != self._volume);
+                // The SyncPlay core applies its authoritative base separately.
+                self.setPlaybackRate(self.getPlaybackRate());
+                self.setMute(false, false);
             }
+        };
 
-            const volume = self.getSavedVolume() * 100;
-            self.setVolume(volume, volume != self._volume);
-
-            self.setPlaybackRate(1);
-            self.setMute(false, false);
+        function onPlaying() {
+            self.onNativeReady();
 
             if (self._paused) {
                 self._paused = false;
                 self.events.trigger(self, 'unpause');
             }
 
-            self.events.trigger(self, 'playing');
+            self._lifecycle.playing();
         }
 
         function onPause() {
             self._paused = true;
+            self._lifecycle.paused();
             self.events.trigger(self, 'pause');
         }
 
         function onError(error) {
+            self._lifecycle.cancel('Native playback failed.');
             console.error(`media error: ${error}`);
             toast(`media error: ${error}`);
 
@@ -216,7 +221,7 @@ class mpvAudioPlayer {
             const position = typeof val === 'number' || (typeof val === 'string' && val.trim())
                 ? Number(val) : NaN;
             if (Number.isFinite(position) && position >= 0 && position <= Number.MAX_SAFE_INTEGER) {
-                window.api.player.seekTo(Math.round(position));
+                this._lifecycle.seek(position);
             }
             return;
         }
@@ -225,9 +230,7 @@ class mpvAudioPlayer {
     }
 
     currentTimeAsync() {
-        return new Promise((resolve) => {
-            window.api.player.getPosition(resolve);
-        });
+        return this._lifecycle.position();
     }
 
     duration() {
@@ -247,6 +250,7 @@ class mpvAudioPlayer {
     }
 
     pause() {
+        this._lifecycle.pause();
         window.api.player.pause();
     }
 
@@ -277,6 +281,7 @@ class mpvAudioPlayer {
         const previousRate = this._playRate;
         this._playRate = perMille / 1000;
         const generation = this._rateRequestGeneration = (this._rateRequestGeneration || 0) + 1;
+        const settleRate = this._lifecycle.rateRequest();
         window.api.player.setPlaybackRate(perMille, (accepted) => {
             if (accepted === true && generation >= (this._acceptedRateGeneration || 0)) {
                 this._acceptedRateGeneration = generation;
@@ -288,6 +293,7 @@ class mpvAudioPlayer {
                 console.warn('Native player rejected playback rate');
                 this.notifyPlaybackRateFailure();
             }
+            settleRate(accepted);
         });
         return true;
     }

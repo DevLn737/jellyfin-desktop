@@ -336,18 +336,28 @@ bool PlayerComponent::load(const QString& url, const QVariantMap& options, const
   DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Load);
   JMP_PROFILE_ZONE("Player load");
   stop();
-  queueMedia(url, options, metadata, audioStream, subtitleStream);
-  return true;
+  return queueMedia(url, options, metadata, audioStream, subtitleStream);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream)
+bool PlayerComponent::queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream)
 {
   DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Queue);
   JMP_PROFILE_ZONE("Player queue");
   InputComponent::Get().cancelAutoRepeat();
 
   QUrl qurl = url;
+  if (qurl.isEmpty() || !qurl.isValid()) return false;
+  quint64 nativeRequestId = 0;
+  if (options.contains("nativeRequestId"))
+  {
+    const auto value = options.value("nativeRequestId");
+    if (value.typeId() != QMetaType::Double && value.typeId() != QMetaType::Int &&
+        value.typeId() != QMetaType::LongLong && value.typeId() != QMetaType::ULongLong) return false;
+    const double request = value.toDouble();
+    if (!PlaybackValues::isNativeRequestId(request)) return false;
+    nativeRequestId = static_cast<quint64>(request);
+  }
   QString host = qurl.host();
 
   QVariantList command;
@@ -361,8 +371,15 @@ void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
   QVariantMap extraArgs;
 
   const qint64 startMilliseconds = qMax<qint64>(0, options["startMilliseconds"].toLongLong());
+  const auto preserveOption = options.value("preserveTimestamps");
+  const bool preserveTimestamps = preserveOption.typeId() == QMetaType::Bool && preserveOption.toBool();
+  if (preserveTimestamps)
+    extraArgs.insert("rebase-start-time", "no");
   if (startMilliseconds != 0)
-    extraArgs.insert("start", "+" + QString::number(startMilliseconds / 1000.0));
+    // With preserved timestamps '+' adds the demuxer start offset again.
+    // Bare time is absolute media PTS; ordinary files keep the relative syntax.
+    extraArgs.insert("start", (preserveTimestamps ? "" : "+") +
+      QString::number(startMilliseconds / 1000.0, 'f', 3));
 
   // we're going to select these streams later, in the preloaded hook
   extraArgs.insert("aid", "no");
@@ -391,9 +408,10 @@ void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
     m_presenceQueue.enqueue({metadata["metadata"].toMap(),
       qurl.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment),
       startMilliseconds, playlistId, audioStream, subtitleStream,
-      metadata["frameRate"].toFloat(), metadata["media"].toMap()});
+      metadata["frameRate"].toFloat(), metadata["media"].toMap(), nativeRequestId});
+    return true;
   }
-
+  return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -571,6 +589,7 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       if (presenceIndex >= 0)
       {
         const auto media = m_presenceQueue.takeAt(presenceIndex);
+        m_readiness.startFile(true, media.nativeRequestId);
         // Queueing the next episode must not replace the active file's track
         // selection or codec/refresh-rate metadata before its START_FILE.
         m_currentAudioStream = media.audioStream;
@@ -583,6 +602,8 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
         emit onMetaData(media.item, media.url.adjusted(
           QUrl::RemovePath | QUrl::RemoveQuery | QUrl::RemoveUserInfo | QUrl::RemoveFragment));
       }
+      else
+        m_readiness.startFile(false, 0); // stale or unrelated START_FILE cannot resolve a request
       break;
     }
     case MPV_EVENT_END_FILE:
@@ -590,6 +611,7 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       mpv_event_end_file *endFile = (mpv_event_end_file *)event->data;
 
       m_inPlayback = false;
+      m_readiness.invalidate();
       m_videoTrackRestore.nextFile();
       m_playbackCanceled = false;
       m_playbackError = "";
@@ -695,6 +717,12 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       }
       break;
     }
+    case MPV_EVENT_SEEK:
+      m_readiness.seekEvent();
+      break;
+    case MPV_EVENT_PLAYBACK_RESTART:
+      m_readiness.restartEvent();
+      break;
     case MPV_EVENT_COMMAND_REPLY:
     {
       if (!m_externalAudioRequest.complete(event->reply_userdata))
@@ -836,6 +864,19 @@ void PlayerComponent::handleMpvEvents()
   }
   // Once we got all status updates, determine the new canonical state.
   updatePlaybackState();
+  // Events may contain restart, seek and end in the same drain. Publish only
+  // after their final state is known, using a fresh position rather than the
+  // preceding timeupdate cache. A paused player need not transition to playing.
+  if (const auto request = m_readiness.takeSeeking()) emit seekStarted(*request);
+  if (m_readiness.readyPending())
+  {
+    qint64 positionMs = 0;
+    const bool positionAvailable = currentPosition(positionMs);
+    const auto seeking = mpv::qt::get_property(m_mpv, "seeking");
+    const bool seekComplete = seeking.typeId() == QMetaType::Bool && !seeking.toBool();
+    if (const auto request = m_readiness.takeReady(positionAvailable, positionMs, seekComplete, m_paused))
+      emit playbackReady(*request, positionMs, m_paused);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -864,6 +905,7 @@ void PlayerComponent::stop()
   DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Stop);
   JMP_PROFILE_ZONE("Player stop");
   m_presenceQueue.clear();
+  m_readiness.invalidate();
   m_videoTrackRestore.nextFile();
   m_diagnosticMetrics.clear();
   const auto pendingAudio = m_externalAudioRequest.nextFile();
@@ -880,7 +922,19 @@ void PlayerComponent::stop()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::clearQueue()
 {
-  m_presenceQueue.clear();
+  // playlist_clear excludes the current item even if START_FILE is still
+  // queued for GUI delivery. Preserve that item's metadata/request identity.
+  QQueue<PresenceMedia> currentMetadata;
+  const auto playlist = mpv::qt::get_property(m_mpv, "playlist").toList();
+  for (const auto& entry : playlist)
+  {
+    const auto item = entry.toMap();
+    if (!item.value("current").toBool()) continue;
+    const qint64 id = item.value("id", -1).toLongLong();
+    for (const auto& media : m_presenceQueue)
+      if (media.playlistId == id) currentMetadata.enqueue(media);
+  }
+  m_presenceQueue = currentMetadata;
   QStringList args("playlist_clear");
   mpv::qt::command(m_mpv, args);
 }
@@ -901,9 +955,27 @@ void PlayerComponent::seekTo(qint64 ms)
   JMP_PROFILE_ZONE("Player seek");
   if (ms < 0)
     return;
+  m_readiness.beginSeek(0, ms);
   double timeSecs = ms / 1000.0;
   QVariantList args = (QVariantList() << "seek" << timeSecs << "absolute+exact");
   mpv::qt::command(m_mpv, args);
+}
+
+bool PlayerComponent::seekToForReady(qint64 ms, double nativeRequestId)
+{
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Seek);
+  JMP_PROFILE_ZONE("Player seek with readiness");
+  if (ms < 0 || !PlaybackValues::isNativeRequestId(nativeRequestId)) return false;
+  const auto request = static_cast<quint64>(nativeRequestId);
+  if (!m_readiness.beginSeek(request, ms)) return false;
+  const auto result = mpv::qt::command(m_mpv,
+    QVariantList() << "seek" << ms / 1000.0 << "absolute+exact");
+  if (mpv::qt::get_error(result) < 0)
+  {
+    m_readiness.failedRequest(request);
+    return false;
+  }
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1227,10 +1299,19 @@ void PlayerComponent::setDiagnosticObservation(bool enabled)
 /////////////////////////////////////////////////////////////////////////////////////////
 qint64 PlayerComponent::getPosition()
 {
+  qint64 positionMs = 0;
+  return currentPosition(positionMs) ? positionMs : 0;
+}
+
+bool PlayerComponent::currentPosition(qint64& positionMs)
+{
   QVariant time = mpv::qt::get_property(m_mpv, "playback-time");
   bool valid = false;
   const double seconds = time.toDouble(&valid);
-  return valid ? PlaybackValues::millisecondsFromSeconds(seconds) : 0;
+  std::int64_t converted = 0;
+  if (!valid || !PlaybackValues::tryMillisecondsFromSeconds(seconds, converted)) return false;
+  positionMs = converted;
+  return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

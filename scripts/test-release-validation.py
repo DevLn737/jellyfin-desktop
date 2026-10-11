@@ -12,6 +12,8 @@ spec = importlib.util.spec_from_file_location("release_validation", ROOT / "scri
 validation = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(validation)
 MANIFEST = json.loads((ROOT / "build-manifest.json").read_text(encoding="utf-8-sig"))
+CONTRACT = json.loads((ROOT / "contracts/desktop-api-contract.json").read_text(encoding="utf-8-sig"))
+FIXTURE = json.loads((ROOT / CONTRACT["fixturePath"]).read_text(encoding="utf-8-sig"))
 
 
 class ReleaseValidationTest(unittest.TestCase):
@@ -67,6 +69,57 @@ class ReleaseValidationTest(unittest.TestCase):
              patch.object(validation.subprocess, "run"), patch.object(validation, "git", return_value="src/player/PlayerComponent.cpp"):
             with self.assertRaisesRegex(ValueError, "Source changed after"):
                 validation.check_source_evidence(report, stable, "unused")
+
+    def test_final_handoff_and_synthetic_fixtures_keep_honest_provenance(self):
+        validation.check_final_contract(CONTRACT, FIXTURE)
+        for field, value in (("contractRevision", "old-revision"), ("serverCommit", "0" * 40), ("capturedFromLiveServer", True)):
+            fixture = copy.deepcopy(FIXTURE)
+            fixture[field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                validation.check_final_contract(CONTRACT, fixture)
+        contract = copy.deepcopy(CONTRACT)
+        contract["evidence"]["finalServerAgentHandoffReceived"] = False
+        with self.assertRaisesRegex(ValueError, "handoff has not been verified"):
+            validation.check_final_contract(contract, FIXTURE)
+        # A separately source-reviewed contract remains a valid fallback; it
+        # must not claim final handoff receipt that never happened.
+        contract["evidence"]["kind"] = "immutable-deployed-source-and-source-derived-synthetic-fixtures"
+        validation.check_final_contract(contract, FIXTURE)
+
+    def native_acceptance_fixture(self):
+        return {"accepted": True, "acceptedBy": "user", "nativeAcceptancePerformed": True,
+                "apiRevision": CONTRACT["apiRevision"], "serverCommit": CONTRACT["serverCommit"], "webCommit": CONTRACT["webCommit"],
+                "syncPlay": {"composition": "windows-desktop-and-web", "correctionEnabled": True, "coldSecondClient": True,
+                    "mixedClientCases": ["pause-seek", "rejoin-reconnect", "legacy-409", "personal-speed-restoration", "independent-audio-subtitles", "direct-play", "hls"],
+                    "driftSamples": [{"baseRate": rate, "afterSeconds": seconds, "absoluteDriftMilliseconds": 12}
+                        for rate in CONTRACT["syncPlay"]["driftAcceptance"]["baseRates"]
+                        for seconds in CONTRACT["syncPlay"]["driftAcceptance"]["sampleAfterSeconds"]]}}
+
+    def test_browser_receipt_or_different_contract_cannot_be_native_acceptance(self):
+        acceptance = self.native_acceptance_fixture()
+        validation.check_native_acceptance(acceptance, CONTRACT)
+        acceptance["nativeAcceptancePerformed"] = False
+        with self.assertRaisesRegex(ValueError, "Browser acceptance"):
+            validation.check_native_acceptance(acceptance, CONTRACT)
+        acceptance = self.native_acceptance_fixture()
+        acceptance["apiRevision"] = "another-revision"
+        with self.assertRaisesRegex(ValueError, "final API"):
+            validation.check_native_acceptance(acceptance, CONTRACT)
+
+    def test_mixed_client_drift_must_cover_every_contract_case_below_limit(self):
+        acceptance = self.native_acceptance_fixture()
+        acceptance["syncPlay"]["driftSamples"].pop()
+        with self.assertRaisesRegex(ValueError, "rate/time observation"):
+            validation.check_native_acceptance(acceptance, CONTRACT)
+        for invalid_drift in (CONTRACT["syncPlay"]["driftAcceptance"]["absoluteDriftMillisecondsExclusiveMaximum"], float("nan"), -1, True):
+            acceptance = self.native_acceptance_fixture()
+            acceptance["syncPlay"]["driftSamples"][0]["absoluteDriftMilliseconds"] = invalid_drift
+            with self.subTest(drift=invalid_drift), self.assertRaises(ValueError):
+                validation.check_native_acceptance(acceptance, CONTRACT)
+        acceptance = self.native_acceptance_fixture()
+        acceptance["syncPlay"]["mixedClientCases"].remove("legacy-409")
+        with self.assertRaisesRegex(ValueError, "mixed-client case"):
+            validation.check_native_acceptance(acceptance, CONTRACT)
 
 
 if __name__ == "__main__":

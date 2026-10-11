@@ -8,15 +8,25 @@ async function testPlayer(file, className) {
   const toasts = [];
   const playbackManager = { syncPlayEnabled: false };
   let now = 10000;
+  const signal = () => {
+    const handlers = new Set();
+    return { connect(fn) { handlers.add(fn); }, disconnect(fn) { handlers.delete(fn); },
+      emit(...args) { for (const fn of handlers) fn(...args); } };
+  };
+  const playbackReady = signal();
   const context = {
     Date: class extends Date { static now() { return now; } },
     console: { debug() {}, error() {}, log() {}, warn(message) { warnings.push(message); } },
     window: {
+      setTimeout, clearTimeout,
       jmpInfo: { settings: { video: { default_playback_speed: 1 } } },
       api: {
         player: {
           setPlaybackRate(value, callback) { calls.push({ value, callback }); },
-          seekTo(value) { calls.push({ seek: value }); },
+          playbackReady, seekStarted: signal(),
+          seekToForReady(value, id, callback) {
+            calls.push({ seek: value }); callback(true); playbackReady.emit(id, value, false);
+          },
           getPosition(callback) { callback(123456); }
         },
         power: {}
@@ -24,6 +34,7 @@ async function testPlayer(file, className) {
     }
   };
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync('native/mpvPlaybackLifecycle.js', 'utf8'), context);
   vm.runInContext(`${fs.readFileSync(file, 'utf8')}\nthis.Player = ${className};`, context);
   const player = new context.Player({
     events: { trigger() {} }, loading: { show() {}, hide() {} }, appRouter: {},
@@ -129,6 +140,7 @@ async function testPlayer(file, className) {
     context.window.jmpInfo.settings.video.default_playback_speed = '1.25';
     assert.equal(player.getPlaybackRate(), 1.25);
   }
+  player._lifecycle.dispose();
 }
 
 (async () => {

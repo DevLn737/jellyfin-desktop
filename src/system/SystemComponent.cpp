@@ -348,6 +348,7 @@ QString SystemComponent::getNativeShellScript()
     + QString::fromUtf8(channelSource.readAll())
     + QStringLiteral("\nwindow.QWebChannel = QWebChannel;\n})(); }\n");
   const QStringList plugins {
+    QStringLiteral("mpvPlaybackLifecycle"),
     QStringLiteral("mpvVideoPlayer"), QStringLiteral("mpvAudioPlayer"),
     QStringLiteral("jmpInputPlugin"), QStringLiteral("jmpDiagnosticsPlugin"),
     QStringLiteral("jmpUpdatePlugin")

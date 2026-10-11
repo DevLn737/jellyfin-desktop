@@ -46,14 +46,22 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
 - void updateSubtitleSettings()
 - void updateVideoSettings()
 - bool load(str url, dict options, dict metadata, str audioStream="", str subtitleStream="")
-    - options: dict { int startMilliseconds, bool autoplay }
+    - options: dict { int startMilliseconds, bool autoplay, optional int nativeRequestId,
+      optional bool preserveTimestamps }
+    - true means the load was queued; wait for playbackReady for decode readiness
+    - nativeRequestId: client-local positive safe integer (1..9007199254740991),
+      unrelated to server, media or session identifiers
+    - preserveTimestamps: per-file original timestamps and absolute start time;
+      used for server HLS/copytimestamps transcoding, not ordinary direct TS
     - metadata: dict { bool interlaced, float frameRate, str type }
         - type can be "video" or "music"
     - audioStream: "#" + index from mkv, or pass external url
     - subtitleStream: "#" + index from mkv, or pass external url
-- void queueMedia(str url, dict options, dict metadata, str audioStream, str subtitleStream)
+- bool queueMedia(str url, dict options, dict metadata, str audioStream, str subtitleStream)
 - void clearQueue()
 - void seekTo(int ms)
+- bool seekToForReady(int ms, int nativeRequestId) - seek with a client-local
+  readiness correlation ID; true acknowledges the seek command, not readiness
 - void stop()
 - void streamSwitch()
 - void pause()
@@ -93,8 +101,13 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
 - stateChanged(state newState, state oldState)
 - videoPlaybackActive(bool active) - true if the video (or music) is actually playing
 - windowVisible(bool visible)
-- updateDuration(int ms) - duration of the file
-- positionUpdate(int ms) - emitted twice a second
+- updateDuration(qint64 ms) - duration of the file
+- positionUpdate(quint64 ms) - emitted twice a second
+- seekStarted(int nativeRequestId) - mpv reports a seek beginning, including while
+  paused; loading alone need not produce this event
+- playbackReady(int nativeRequestId, qint64 positionMs, bool paused) - actual
+  mpv playback restart, after draining its events and sampling the new position;
+  emitted for the matching active file only, including paused load/seek
 - onVideoRecangleChanged()
 - onMpvEvents()
 ## types:

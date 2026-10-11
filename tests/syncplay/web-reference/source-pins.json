@@ -1,0 +1,43 @@
+{
+  "provenance": "Exact immutable custom Web source used only as native integration test fixtures.",
+  "commit": "b2a97d40c6898726b030b0233a0c9dc89734d3e3",
+  "sourceBundleSha256": "1e549b26ad87ffae9b30da442d0f5569e5ebc6dd5292651505326ffa41ea9e56",
+  "files": {
+    "PlaybackRate.ts": {
+      "sourcePath": "src/plugins/syncPlay/core/PlaybackRate.ts",
+      "sha256": "7143711ccdd19d41caa1de584bb5bcfe61d8d12104aadfe15d980db6d945b3da"
+    },
+    "PlaybackCore.js": {
+      "sourcePath": "src/plugins/syncPlay/core/PlaybackCore.js",
+      "sha256": "d6571dc76dc116155ed2a83653daa6e77453dc9515c5241377f381fcbbe07bd9"
+    },
+    "QueueCore.js": {
+      "sourcePath": "src/plugins/syncPlay/core/QueueCore.js",
+      "sha256": "f6eb846f2245742404a2defbe196685f8e62489aeba539a3836df1dd5e2f6a92"
+    },
+    "GenericPlayer.js": {
+      "sourcePath": "src/plugins/syncPlay/core/players/GenericPlayer.js",
+      "sha256": "68c11b08e52c662bdc34a116dd6d6fdd49ffbdf55d62236939d1c52f1bfa7d19"
+    },
+    "NoActivePlayer.js": {
+      "sourcePath": "src/plugins/syncPlay/ui/players/NoActivePlayer.js",
+      "sha256": "601fdd25c1002b8b4701ab8f8ae2c0b7e8e0c50792fa84964085589cab86a112"
+    },
+    "HtmlVideoPlayer.js": {
+      "sourcePath": "src/plugins/syncPlay/ui/players/HtmlVideoPlayer.js",
+      "sha256": "0da1b2a434eeb79025c7f19e6f0c1b32c0635131477992a0e3e48c2a2c7dcd84"
+    },
+    "QueueManager.js": {
+      "sourcePath": "src/plugins/syncPlay/ui/players/QueueManager.js",
+      "sha256": "60fc964dc27b52745e9c5662d531e2c5434edaec93fed8e824c69774654ffa43"
+    },
+    "PlayerPosition.ts": {
+      "sourcePath": "src/plugins/syncPlay/ui/players/PlayerPosition.ts",
+      "sha256": "29830f4aeae174fed2300f890e064c43f59296f64b6a74d363510019c26c1402"
+    },
+    "LICENSE": {
+      "sourcePath": "LICENSE",
+      "sha256": "f371b80469fb235bc500ec29e0e85b682d4a6157a158567d828ff0be544d4f1d"
+    }
+  }
+}

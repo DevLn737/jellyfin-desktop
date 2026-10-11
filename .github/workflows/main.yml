@@ -56,7 +56,7 @@ jobs:
       - name: Check isolated NativeShell startup and strict CSP
         if: matrix.variant == 'release'
         shell: pwsh
-        run: ./scripts/test-native-shell.ps1 -StagePath build/windows/release/output -ReportDirectory build/windows/release/native-shell-smoke
+        run: ./scripts/test-native-shell.ps1 -StagePath build/windows/release/portable-stage -ReportDirectory build/windows/release/native-shell-smoke
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-${{ matrix.variant }}
@@ -71,7 +71,9 @@ jobs:
           path: |
             build/windows/${{ matrix.variant }}/CMakeFiles/CMakeConfigureLog.yaml
             build/windows/${{ matrix.variant }}/tests/**/Testing/Temporary/LastTest.log
-            build/windows/${{ matrix.variant }}/native-shell-smoke/**
+            build/windows/${{ matrix.variant }}/native-shell-smoke/*.json
+            build/windows/${{ matrix.variant }}/native-shell-smoke/*.stdout
+            build/windows/${{ matrix.variant }}/native-shell-smoke/*.stderr
             build/toolchain/wix/extract.log
           if-no-files-found: ignore
 

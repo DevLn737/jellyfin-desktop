@@ -11,6 +11,7 @@ const context = {
 };
 
 vm.createContext(context);
+vm.runInContext(fs.readFileSync('native/mpvPlaybackLifecycle.js', 'utf8'), context);
 vm.runInContext(`${source}\nthis.MpvVideoPlayer = mpvVideoPlayer;`, context);
 
 const player = new context.MpvVideoPlayer({

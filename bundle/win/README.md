@@ -49,10 +49,29 @@ seconds, with finite positive `rssBaselineBytes`, `rssPeakBytes`, `rssFinalBytes
 and `limitBytes`; observed peak/final RSS must stay within the agreed limit.
 The tested commit must be an ancestor of the release commit, with subsequent
 changes restricted to `docs/` and `quality/` evidence. Release tags also require
-`contracts/desktop-api-contract.json` with a final server/Web handoff. Stable
+`contracts/desktop-api-contract.json` with the final Server/Web source pins and
+explicit Desktop contract revision. Source-derived synthetic fixtures are
+accepted as protocol evidence when their revision, source commits and byte
+checksum match the contract; they must retain `capturedFromLiveServer: false`.
+For this verified server-agent handoff, the recorded handoff hashes and receipt
+flags must also remain consistent. An independently source-reviewed contract
+can serve as a fallback without claiming receipt of a server-agent handoff.
+Server/Web browser acceptance establishes its browser scope only. RC packages
+remain complete candidates for the user's single native application acceptance.
+Stable
 acceptance is recorded in `quality/desktop-acceptance.json` with
 `accepted: true`, `acceptedBy: "user"`, `appVersion`, `qtVersion`, `buildCommit`
-and `buildManifestSha256`, after the actual user test. A tested and accepted RC
+and `buildManifestSha256`, after the actual user test. That receipt also records
+`nativeAcceptancePerformed: true`, `apiRevision`, `serverCommit` and `webCommit`
+matching the final contract. Its `syncPlay` object identifies
+`composition: "windows-desktop-and-web"`, `correctionEnabled: true`,
+`coldSecondClient: true`, and `mixedClientCases` containing `pause-seek`,
+`rejoin-reconnect`, `legacy-409`, `personal-speed-restoration`,
+`independent-audio-subtitles`, `direct-play` and `hls`. Record actual
+`driftSamples` with `baseRate`, `afterSeconds` and `absoluteDriftMilliseconds`:
+the final contract requires all 1x/1.25x/1.5x combinations at 10/15/20 seconds,
+each strictly below 400 ms. A browser-only receipt or synthetic passing fixture
+does not satisfy this native acceptance gate. A tested and accepted RC
 can be promoted to the same stable core version with only `appVersion` and the
 monotonically increasing `packageVersion` changed. The gate verifies the tested
 commit's original manifest checksum and all other manifest fields, and rejects

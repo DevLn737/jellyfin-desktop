@@ -75,6 +75,66 @@ def check_source_evidence(report, manifest, manifest_sha):
     require(all(path.startswith(("docs/", "quality/")) or (promotion and path == "build-manifest.json") for path in changed), "Source changed after the tested build")
 
 
+def finite_number(value, minimum=0):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value >= minimum
+
+
+def check_final_contract(contract, fixture):
+    require(contract["status"] == "final", "Server/Web API contract is still provisional")
+    for field in ("serverVersion", "serverCommit", "webVersion", "webCommit", "apiRevision", "fixtureSha256"):
+        require(contract.get(field), "Final API contract is missing " + field)
+    require(re.fullmatch(r"[a-f0-9]{64}", contract["fixtureSha256"]), "Final API fixtures require a SHA256")
+    for field in ("serverCommit", "webCommit"):
+        require(re.fullmatch(r"[a-f0-9]{40}", contract[field]), "Final API contract requires immutable " + field)
+        require(fixture[field] == contract[field], "API fixtures differ from the pinned " + field)
+    for field in ("serverVersion", "webVersion"):
+        require(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?", contract[field]), "Invalid final " + field)
+    require(isinstance(contract["apiRevision"], str) and contract["apiRevision"].strip(), "Final API revision must be explicit")
+    require(contract.get("apiRevisionProvenance"), "Explain the Desktop contract revision provenance")
+    require(fixture["contractRevision"] == contract["apiRevision"], "API fixtures differ from the finalized contract revision")
+    evidence = contract["evidence"]
+    require(evidence["immutableDeploymentPinsVerified"] is True, "Final API contract requires verified deployment pins")
+    require(fixture["provenance"] == "source-derived-synthetic" and fixture["capturedFromLiveServer"] is False,
+            "Source-derived API fixtures must not claim live capture")
+    require(evidence["capturedFromLiveServer"] is False, "Contract fixture provenance must match the synthetic fixtures")
+    # A source-reviewed fallback can qualify a contract without a server-agent
+    # handoff. This pinned final-handoff contract must retain its actual proof.
+    if evidence["kind"].startswith("verified-final-server-handoff"):
+        require(evidence["finalServerAgentHandoffReceived"] is True and evidence["handoffFileHashesVerified"] is True,
+                "Final server-agent handoff has not been verified")
+        require(re.fullmatch(r"[a-f0-9]{64}", evidence["handoffArchiveSha256"]), "Final handoff archive requires a SHA256")
+        server_contract_sha = evidence["handoffFiles"]["server-contract.json"]
+        require(re.fullmatch(r"[a-f0-9]{64}", server_contract_sha) and fixture["handoffServerContractSha256"] == server_contract_sha,
+                "API fixtures differ from the verified server handoff")
+    drift = contract["syncPlay"]["driftAcceptance"]
+    require(drift["protocolGuaranteesMaximumDrift"] is False and drift["sourceDefaultsAreNotAcceptanceLimits"] is True,
+            "Native drift qualification must be separate from protocol defaults")
+    require(finite_number(drift["absoluteDriftMillisecondsExclusiveMaximum"], minimum=1), "Final contract requires a finite positive drift limit")
+    require(drift["correctionEnabled"] is True and drift["baseRates"] and drift["sampleAfterSeconds"], "Final contract requires mixed-client timing scenarios")
+    require(all(finite_number(value, minimum=0.01) for value in drift["baseRates"] + drift["sampleAfterSeconds"]), "Invalid final drift scenario values")
+
+
+def check_native_acceptance(acceptance, contract):
+    require(acceptance["accepted"] is True and acceptance.get("acceptedBy") == "user", "Stable release requires recorded final user acceptance")
+    require(acceptance.get("nativeAcceptancePerformed") is True, "Browser acceptance does not establish Windows native acceptance")
+    for field in ("apiRevision", "serverCommit", "webCommit"):
+        require(acceptance.get(field) == contract[field], "Native acceptance differs from the final API " + field)
+    sync_play = acceptance["syncPlay"]
+    require(sync_play["composition"] == "windows-desktop-and-web" and sync_play["correctionEnabled"] is True and sync_play["coldSecondClient"] is True,
+            "Native acceptance requires mixed Desktop/Web clients and correction")
+    required_cases = {"pause-seek", "rejoin-reconnect", "legacy-409", "personal-speed-restoration", "independent-audio-subtitles", "direct-play", "hls"}
+    require(required_cases <= set(sync_play["mixedClientCases"]), "Native acceptance is missing an integrated mixed-client case")
+    drift = contract["syncPlay"]["driftAcceptance"]
+    observed = set()
+    for sample in sync_play["driftSamples"]:
+        require(finite_number(sample["baseRate"], minimum=0.01) and finite_number(sample["afterSeconds"], minimum=0.01)
+                and finite_number(sample["absoluteDriftMilliseconds"]), "Native drift observations must be finite numbers")
+        require(sample["absoluteDriftMilliseconds"] < drift["absoluteDriftMillisecondsExclusiveMaximum"], "Native drift observation exceeds the final contract's exclusive limit")
+        observed.add((sample["baseRate"], sample["afterSeconds"]))
+    required_samples = {(rate, seconds) for rate in drift["baseRates"] for seconds in drift["sampleAfterSeconds"]}
+    require(required_samples <= observed, "Native acceptance is missing a final-contract rate/time observation")
+
+
 def check_release(manifest, tag):
     require(tag == "v" + manifest["appVersion"], "Release tag must match the locked app version")
     qualification = manifest["qt"]["qualification"]
@@ -97,22 +157,14 @@ def check_release(manifest, tag):
         require(scenario["rssPeakBytes"] >= max(scenario["rssBaselineBytes"], scenario["rssFinalBytes"]), "Peak RSS is inconsistent")
         require(max(scenario["rssPeakBytes"], scenario["rssFinalBytes"]) <= scenario["limitBytes"], "Memory scenario exceeds its agreed RSS limit")
     contract = committed_json("contracts/desktop-api-contract.json")
-    require(contract["status"] == "final", "Server/Web API handoff is still provisional")
-    for field in ("serverVersion", "serverCommit", "webVersion", "webCommit", "apiRevision", "fixtureSha256"):
-        require(contract.get(field), "Final API handoff is missing " + field)
-    require(re.fullmatch(r"[a-f0-9]{64}", contract["fixtureSha256"]), "Final API fixtures require a SHA256")
-    for field in ("serverCommit", "webCommit"):
-        require(re.fullmatch(r"[a-f0-9]{40}", contract[field]), "Final API handoff requires immutable " + field)
-    for field in ("serverVersion", "webVersion"):
-        require(re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?", contract[field]), "Invalid final " + field)
-    require(isinstance(contract["apiRevision"], str) and contract["apiRevision"].strip(), "Final API revision must be explicit")
     fixture_path = contract["fixturePath"]
-    committed_json(fixture_path)
+    fixture = committed_json(fixture_path)
+    check_final_contract(contract, fixture)
     require(hashlib.sha256((ROOT / fixture_path).read_bytes()).hexdigest() == contract["fixtureSha256"], "Final API fixture bytes do not match their SHA256")
     if "-rc." not in manifest["appVersion"]:
         acceptance = committed_json("quality/desktop-acceptance.json")
         check_source_evidence(acceptance, manifest, manifest_sha)
-        require(acceptance["accepted"] is True and acceptance.get("acceptedBy") == "user", "Stable release requires recorded final user acceptance")
+        check_native_acceptance(acceptance, contract)
         subprocess.run(["git", "merge-base", "--is-ancestor", "HEAD", "origin/master"], cwd=ROOT, check=True)
 
 

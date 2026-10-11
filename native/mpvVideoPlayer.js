@@ -16,6 +16,7 @@
             this.appSettings = appSettings;
             this._toast = toast;
             this._playbackManager = playbackManager;
+            this._lifecycle = new window._mpvPlaybackLifecycle(this);
 
             this.setTransparency = dashboard.default.setBackdropTransparency.bind(dashboard);
 
@@ -117,6 +118,7 @@
              * @private
              */
             this.onEnded = () => {
+                this._lifecycle.cancel();
                 this.onEndedInternal();
             };
 
@@ -145,7 +147,7 @@
             /**
              * @private
              */
-            this.onPlaying = () => {
+            this.onNativeReady = () => {
                 if (!this._started) {
                     this._started = true;
 
@@ -156,23 +158,27 @@
 
                     this.setPlaybackRate(this.getPlaybackRate());
 
-                    if (this._currentPlayOptions.fullscreen) {
+                    if (this._currentPlayOptions?.fullscreen) {
                         this.appRouter.showVideoOsd().then(this.onNavigatedToOsd);
                     } else {
                         this.setTransparency('backdrop');
-                        this._videoDialog.dlg.style.zIndex = 'unset';
+                        if (this._videoDialog) this._videoDialog.style.zIndex = 'unset';
                     }
 
                     // Need to override default style.
-                    this._videoDialog.style.setProperty('background', 'transparent', 'important');
+                    this._videoDialog?.style.setProperty('background', 'transparent', 'important');
                 }
+            };
+
+            this.onPlaying = () => {
+                this.onNativeReady();
 
                 if (this._paused) {
                     this._paused = false;
                     this.events.trigger(this, 'unpause');
                 }
 
-                this.events.trigger(this, 'playing');
+                this._lifecycle.playing();
             };
 
             /**
@@ -180,6 +186,7 @@
              */
             this.onPause = () => {
                 this._paused = true;
+                this._lifecycle.paused();
                 // For Syncplay ready notification
                 this.events.trigger(this, 'pause');
             };
@@ -193,6 +200,7 @@
              * @param e {Event} The event received from the `<video>` element
              */
             this.onError = async (error) => {
+                this._lifecycle.cancel('Native playback failed.');
                 this.removeMediaDialog();
                 console.error(`media error: ${error}`);
 
@@ -398,14 +406,12 @@
          * @private
          */
         setCurrentSrc(elem, options) {
-            return new Promise((resolve) => {
+            {
                 const val = options.url;
                 this._currentSrc = val;
                 console.debug(`playing url: ${val}`);
 
-                // Convert to seconds
-                const ms = (options.playerStartPositionTicks || 0) / 10000;
-                this._currentPlayOptions = options;
+                this._currentPlayOptions = { ...options };
                 this._subtitleTrackIndexToSetOnPlaying = options.mediaSource.DefaultSubtitleStreamIndex == null ? -1 : options.mediaSource.DefaultSubtitleStreamIndex;
                 this._audioTrackIndexToSetOnPlaying = options.playMethod === 'Transcode' ? null : options.mediaSource.DefaultAudioStreamIndex;
 
@@ -415,14 +421,9 @@
                     streamdata.frameRate = fps;
                 }
 
-                const player = window.api.player;
-                player.load(val,
-                    { startMilliseconds: ms, autoplay: true },
-                    streamdata,
-                    this.getAudioParam(),
-                    this.getSubtitleParam(),
-                    resolve);
-            });
+                return this._lifecycle.load(val, options, streamdata,
+                    this.getAudioParam(), this.getSubtitleParam());
+            }
         }
 
         setSubtitleStreamIndex(index) {
@@ -501,6 +502,7 @@
         }
 
         stop(destroyPlayer) {
+            this._lifecycle.cancel();
             window.api.player.stop();
             window.api.power.setScreensaverEnabled(true);
 
@@ -513,6 +515,7 @@
         }
 
         removeMediaDialog() {
+            this._lifecycle.cancel();
             this.loading.hide();
             window.api.player.stop();
             window.api.power.setScreensaverEnabled(true);
@@ -545,6 +548,7 @@
             player.updateDuration.disconnect(this.onDuration);
             player.error.disconnect(this.onError);
             player.paused.disconnect(this.onPause);
+            this._lifecycle.dispose();
         }
 
         /**
@@ -650,7 +654,7 @@
             const position = typeof val === 'number' || (typeof val === 'string' && val.trim())
                 ? Number(val) : NaN;
             if (Number.isFinite(position) && position >= 0 && position <= Number.MAX_SAFE_INTEGER) {
-                window.api.player.seekTo(Math.round(position));
+                this._lifecycle.seek(position);
             }
             return;
         }
@@ -659,9 +663,7 @@
     }
 
     currentTimeAsync() {
-        return new Promise((resolve) => {
-            window.api.player.getPosition(resolve);
-        });
+        return this._lifecycle.position();
     }
 
     duration() {
@@ -703,6 +705,7 @@
     }
 
     pause() {
+        this._lifecycle.pause();
         window.api.player.pause();
         window.api.power.setScreensaverEnabled(true);
     }
@@ -735,6 +738,7 @@
         const previousRate = this.getPlaybackRate();
         this._playRate = perMille / 1000;
         const generation = this._rateRequestGeneration = (this._rateRequestGeneration || 0) + 1;
+        const settleRate = this._lifecycle.rateRequest();
         window.api.player.setPlaybackRate(perMille, (accepted) => {
             if (accepted === true && generation >= (this._acceptedRateGeneration || 0)) {
                 this._acceptedRateGeneration = generation;
@@ -746,6 +750,7 @@
                 console.warn('Native player rejected playback rate');
                 this.notifyPlaybackRateFailure();
             }
+            settleRate(accepted);
         });
         return true;
     }

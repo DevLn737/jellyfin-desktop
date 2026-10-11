@@ -1,8 +1,12 @@
 // Local-only runtime check driven by test-native-shell.ps1. No server account
-// or media is used; the app runs with a fresh portable profile.
+// or user media is used; the app runs with a fresh portable profile and a
+// generated silent WAV through mpv's null audio output.
 import http from 'node:http';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const [reportPath, expectedRoot] = process.argv.slice(2);
 if (!reportPath || !expectedRoot) throw new Error('Report path and isolated app root are required');
@@ -10,14 +14,28 @@ const expectedDevice = 'Тест — 日本語 ✓';
 const deadline = Date.now() + 45000;
 const events = [];
 const report = { expectedDevice, expectedRoot, phases: {} };
+const fixtureRoot = path.join(expectedRoot, 'data', 'hls-silent-30');
+const fixtureNames = new Set(['index.m3u8', 'segment-000.ts', 'segment-001.ts', 'segment-002.ts', 'segment-003.ts']);
 let socket;
 const server = http.createServer((_request, response) => {
+    const requested = new URL(_request.url, 'http://127.0.0.1').pathname;
+    const fixtureName = requested.startsWith('/fixture-hls/') ? requested.slice('/fixture-hls/'.length) : null;
+    if (fixtureNames.has(fixtureName)) {
+        response.setHeader('Content-Type', fixtureName.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp2t');
+        response.end(fs.readFileSync(path.join(fixtureRoot, fixtureName)));
+        return;
+    }
     response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'");
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.end('<!doctype html><html><head><meta charset="utf-8"><title>NativeShell CSP smoke</title></head><body>Local NativeShell smoke</body></html>');
 });
 const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 try {
+    const fixtureInfo = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'fixture-info.json'), 'utf8'));
+    for (const [name, sha256] of Object.entries(fixtureInfo.sha256)) {
+        assert.ok(fixtureNames.has(name), 'Fixture contains an unexpected filename');
+        assert.equal(createHash('sha256').update(fs.readFileSync(path.join(fixtureRoot, name))).digest('hex'), sha256);
+    }
     await new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(0, '127.0.0.1', resolve);
@@ -52,12 +70,12 @@ try {
             pending.delete(value.id);
         } else if (value.method) events.push(value);
     });
-    const command = (method, params = {}) => new Promise((resolve, reject) => {
+    const command = (method, params = {}, timeoutMs = 6000) => new Promise((resolve, reject) => {
         const id = ++sequence;
         const timer = setTimeout(() => {
             pending.delete(id);
             reject(new Error(`${method} timed out`));
-        }, 6000);
+        }, timeoutMs);
         pending.set(id, value => {
             clearTimeout(timer);
             if (value.error) reject(new Error(`${method}: ${JSON.stringify(value.error)}`));
@@ -125,8 +143,106 @@ try {
     const cspFailures = events.filter(event => event.method === 'Log.entryAdded' &&
         event.params.entry.source === 'security' && event.params.entry.level === 'error');
     assert.equal(cspFailures.length, 0, JSON.stringify(cspFailures));
+
+    const sampleRate = 16000;
+    const dataLength = sampleRate * 2 * 12;
+    const wav = Buffer.alloc(44 + dataLength);
+    wav.write('RIFF', 0); wav.writeUInt32LE(36 + dataLength, 4);
+    wav.write('WAVEfmt ', 8); wav.writeUInt32LE(16, 16);
+    wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+    wav.writeUInt32LE(sampleRate, 24); wav.writeUInt32LE(sampleRate * 2, 28);
+    wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34);
+    wav.write('data', 36); wav.writeUInt32LE(dataLength, 40);
+    const fixturePath = path.join(expectedRoot, 'data', 'readiness-fixture.wav');
+    fs.writeFileSync(fixturePath, wav);
+    const mediaUrl = pathToFileURL(fixturePath).href;
+    const hlsUrl = new URL('fixture-hls/index.m3u8', report.syntheticUrl).href;
+    const directTsUrl = pathToFileURL(path.join(fixtureRoot, 'segment-000.ts')).href;
+    const readinessExpression = `(async () => {
+        const player = (await window.apiPromise).player;
+        const samples = [], seeks = [];
+        const pending = new Map();
+        const ready = (id, positionMs, paused) => {
+            const sample = { id, positionMs, paused };
+            samples.push(sample);
+            const waiter = pending.get(id);
+            if (waiter) { pending.delete(id); clearTimeout(waiter.timer); waiter.resolve(sample); }
+        };
+        const seeking = id => seeks.push(id);
+        player.playbackReady.connect(ready);
+        player.seekStarted.connect(seeking);
+        const waitFor = id => new Promise((resolve, reject) => {
+            const timer = setTimeout(() => { pending.delete(id); reject(Error('Native ready timeout: ' + id)); }, 4000);
+            pending.set(id, { resolve, reject, timer });
+        });
+        const call = (method, ...args) => new Promise(resolve => player[method](...args, resolve));
+        const load = (id, startMilliseconds) => call('load', ${JSON.stringify(mediaUrl)},
+            { startMilliseconds, autoplay: false, nativeRequestId: id },
+            { type: 'music', metadata: {}, media: {} }, '#1', '');
+        try {
+            const coldPromise = waitFor(101);
+            if (await load(101, 0) !== true) throw Error('Native load rejected');
+            const cold = await coldPromise;
+            const seekPromise = waitFor(102);
+            if (await call('seekToForReady', 2750, 102) !== true) throw Error('Native seek rejected');
+            const seek = await seekPromise;
+            const positionMs = await call('getPosition');
+            await load(103, 1000);
+            const latestPromise = waitFor(104);
+            if (await load(104, 2000) !== true) throw Error('Latest native load rejected');
+            const latest = await latestPromise;
+            const hlsPromise = waitFor(105);
+            if (await call('load', ${JSON.stringify(hlsUrl)},
+                { startMilliseconds: 30000, preserveTimestamps: true, autoplay: false, nativeRequestId: 105 },
+                { type: 'music', metadata: {}, media: {} }, '#1', '') !== true) throw Error('Native HLS load rejected');
+            const hls = await hlsPromise;
+            const hlsSeekPromise = waitFor(106);
+            if (await call('seekToForReady', 32000, 106) !== true) throw Error('Native HLS seek rejected');
+            const hlsSeek = await hlsSeekPromise;
+            const directPromise = waitFor(107);
+            if (await call('load', ${JSON.stringify(directTsUrl)},
+                { startMilliseconds: 0, autoplay: false, nativeRequestId: 107 },
+                { type: 'music', metadata: {}, media: {} }, '#1', '') !== true) throw Error('Native direct TS load rejected');
+            const directTs = await directPromise;
+            await call('stop');
+            const countAfterStop = samples.length;
+            await new Promise(resolve => setTimeout(resolve, 200));
+            return { cold, seek, latest, hls, hlsSeek, directTs, positionMs, seeks,
+                stoppedWithoutLateReady: samples.length === countAfterStop };
+        } finally {
+            player.playbackReady.disconnect(ready);
+            player.seekStarted.disconnect(seeking);
+            for (const waiter of pending.values()) clearTimeout(waiter.timer);
+            pending.clear();
+            await call('stop');
+        }
+    })()`;
+    const readiness = await command('Runtime.evaluate', {
+        expression: readinessExpression, awaitPromise: true, returnByValue: true
+    }, 30000);
+    assert.ok(!readiness.exceptionDetails, JSON.stringify(readiness.exceptionDetails));
+    const native = readiness.result.value;
+    assert.equal(native.cold.id, 101);
+    assert.equal(native.cold.paused, true);
+    assert.ok(Number.isFinite(native.cold.positionMs) && native.cold.positionMs <= 20);
+    assert.equal(native.seek.id, 102);
+    assert.equal(native.seek.paused, true);
+    assert.ok(Math.abs(native.seek.positionMs - 2750) <= 20, JSON.stringify(native));
+    assert.ok(Math.abs(native.positionMs - 2750) <= 20, JSON.stringify(native));
+    assert.ok(native.seeks.includes(102), JSON.stringify(native));
+    assert.equal(native.latest.id, 104);
+    assert.equal(native.latest.paused, true);
+    assert.ok(Math.abs(native.latest.positionMs - 2000) <= 20, JSON.stringify(native));
+    assert.equal(native.hls.paused, true);
+    assert.ok(Math.abs(native.hls.positionMs - 30000) <= 50, JSON.stringify(native));
+    assert.equal(native.hlsSeek.paused, true);
+    assert.ok(Math.abs(native.hlsSeek.positionMs - 32000) <= 50, JSON.stringify(native));
+    assert.equal(native.directTs.paused, true);
+    assert.ok(native.directTs.positionMs >= 0 && native.directTs.positionMs <= 50, JSON.stringify(native));
+    assert.equal(native.stoppedWithoutLateReady, true);
+    report.phases.nativePausedReadiness = native;
     report.passed = true;
-    console.log('NativeShell first launch, strict CSP, reload and Unicode passed');
+    console.log('NativeShell startup/CSP/reload/Unicode, mpv paused readiness and HLS/TS timestamps passed');
 } catch (error) {
     report.passed = false;
     report.failure = String(error.stack || error);

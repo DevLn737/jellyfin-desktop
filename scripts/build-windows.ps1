@@ -22,7 +22,7 @@ Push-Location $sourceRoot
 try {
     Invoke-Checked 'python' @('scripts/validate-build-manifest.py')
     Invoke-Checked 'python' @('scripts/test-release-validation.py')
-    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js')) {
+    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js')) {
         Invoke-Checked 'node' @("scripts/$test")
     }
     $configure = @('-S', $sourceRoot, '-B', $nativeBuildDirectory, '-G', 'Ninja',

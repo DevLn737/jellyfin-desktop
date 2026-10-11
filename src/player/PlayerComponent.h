@@ -17,6 +17,7 @@
 #include "QtHelper.h"
 #include "ExternalAudioRequest.h"
 #include "VideoTrackRestore.h"
+#include "PlaybackReadiness.h"
 
 #include <mpv/client.h>
 
@@ -44,7 +45,9 @@ public:
   // options:
   //  - startMilliseconds: start playback at this time (in ms)
   //  - autoplay: if false, start playback paused; if true, start normally
-  Q_INVOKABLE void queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream);
+  //  - nativeRequestId: optional positive safe JS integer for playbackReady
+  //  - preserveTimestamps: per-file HLS/copy-timestamp original media timeline
+  Q_INVOKABLE bool queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream);
 
   // This clears all items queued with queueMedia().
   // It explicitly excludes the currently playing item. The main use of this function
@@ -53,6 +56,7 @@ public:
   Q_INVOKABLE void clearQueue();
 
   Q_INVOKABLE virtual void seekTo(qint64 ms);
+  Q_INVOKABLE bool seekToForReady(qint64 ms, double nativeRequestId);
 
   // Stop playback and clear all queued items.
   Q_INVOKABLE virtual void stop();
@@ -194,6 +198,10 @@ Q_SIGNALS:
   // current position in ms should be triggered 2 times a second
   // when position updates
   void positionUpdate(quint64);
+  // Real decode/seek restart, also while paused. IDs correlate only to local
+  // native requests; they are never media/server/session identifiers.
+  void seekStarted(quint64 nativeRequestId);
+  void playbackReady(quint64 nativeRequestId, qint64 positionMs, bool paused);
 
   void onVideoRecangleChanged();
 
@@ -232,6 +240,7 @@ private:
   void updateVideoAspectSettings();
   QVariantList findStreamsForURL(const QString &url);
   void reselectStream(const QString &streamSelection, MediaType target);
+  bool currentPosition(qint64& positionMs);
 
   mpv::qt::Handle m_mpv;
 
@@ -262,6 +271,7 @@ private:
   QString m_pendingExternalAudioStream;
   ExternalAudioRequest m_externalAudioRequest;
   VideoTrackRestore m_videoTrackRestore;
+  PlaybackReadiness m_readiness;
   QVariantMap m_diagnosticMetrics;
   bool m_diagnosticObservationEnabled = false;
   struct PresenceMedia
@@ -274,6 +284,7 @@ private:
     QString subtitleStream;
     float frameRate;
     QVariantMap serverMediaInfo;
+    quint64 nativeRequestId;
   };
   QQueue<PresenceMedia> m_presenceQueue;
   QRect m_videoRectangle;

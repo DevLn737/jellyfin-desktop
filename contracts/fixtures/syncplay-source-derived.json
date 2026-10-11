@@ -2,6 +2,9 @@
   "schemaVersion": 1,
   "provenance": "source-derived-synthetic",
   "capturedFromLiveServer": false,
+  "contractRevision": "desktop-handoff-12.2-syncplay.1-r1",
+  "handoffServerContractSha256": "c317dbe527cdb020c20b3643b68d1fc94461519f0daac1d6abae91805cbe922f",
+  "wireEnumFormat": "string names; fixtures derived from final handoff, never captured live",
   "serverCommit": "494362e6b354385a00b7ae879814e2908c23f725",
   "webCommit": "b2a97d40c6898726b030b0233a0c9dc89734d3e3",
   "messages": [
@@ -53,6 +56,26 @@
       "name": "seek waiting is not buffering",
       "payload": { "MessageType": "SyncPlayGroupUpdate", "Data": { "Type": "StateUpdate", "Data": { "Reason": "Seek", "State": "Waiting" } } },
       "expected": null
+    },
+    {
+      "name": "rate-change waiting is not buffering",
+      "payload": { "MessageType": "SyncPlayGroupUpdate", "Data": { "Type": "StateUpdate", "Data": { "Reason": "SetPlaybackRate", "State": "Waiting" } } },
+      "expected": null
+    },
+    {
+      "name": "PlayQueue base rate belongs to Web playback, not a diagnostic buffering event",
+      "payload": { "MessageType": "SyncPlayGroupUpdate", "Data": { "Type": "PlayQueue", "Data": { "PlaybackRate": 1.5, "StartPositionTicks": 300000000, "IsPlaying": false } } },
+      "expected": null
+    },
+    {
+      "name": "legacy seek without rate: diagnostics do not invent a rate metric",
+      "payload": { "MessageType": "SyncPlayCommand", "Data": { "Command": "Seek", "PositionTicks": 300000000 } },
+      "expected": { "event": "seek", "metrics": { "status": 3, "positionMs": 30000 } }
+    },
+    {
+      "name": "legacy null rate: Web uses 1x, diagnostics omit absent numeric measurement",
+      "payload": { "MessageType": "SyncPlayCommand", "Data": { "Command": "Stop", "PlaybackRate": null } },
+      "expected": { "event": "command", "metrics": { "status": 2 } }
     }
   ]
 }
