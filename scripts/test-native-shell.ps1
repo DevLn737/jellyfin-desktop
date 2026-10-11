@@ -121,7 +121,7 @@ try {
     Stop-OwnedApplication
     $launchPhase = 'normal-launch'
     $env:QTWEBENGINE_REMOTE_DEBUGGING = '0.0.0.0:9222'
-    $env:QTWEBENGINE_CHROMIUM_FLAGS = '--remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 --remote-debugging-pipe'
+    $env:QTWEBENGINE_CHROMIUM_FLAGS = '"--remote-debugging-address=0.0.0.0" --remote-"debugging"-port=9222 "--remote-debugging-pipe" --disable-background-timer-throttling'
     $application = Start-Process -FilePath (Join-Path $isolatedRoot 'JellyfinMediaPlayer.exe') `
         -ArgumentList @('--desktop', '--windowed', '--terminal') -WorkingDirectory $isolatedRoot `
         -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $reportRoot 'normal.stdout') `

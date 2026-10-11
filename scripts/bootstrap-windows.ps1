@@ -22,7 +22,19 @@ function Get-LockedArchive($archive) {
         throw 'Every dependency must have an HTTPS URL and a SHA256 lock.'
     }
     if ([IO.Path]::GetFileName($archive.name) -ne $archive.name) { throw 'Invalid archive filename' }
-    $destination = Join-Path $archiveDirectory $archive.name
+    # Qt patch archives reuse filenames; keep each version's verified payload
+    # separate instead of mistaking a previous patch's cache for a corrupt file.
+    $cache = $archiveDirectory
+    if (([uri]$archive.url).Host -eq 'download.qt.io') {
+        $cache = Join-Path $archiveDirectory ('qt-' + $manifest.qt.version)
+        New-Item -ItemType Directory -Force -Path $cache | Out-Null
+    }
+    $destination = Join-Path $cache $archive.name
+    $legacy = Join-Path $archiveDirectory $archive.name
+    if ($destination -ne $legacy -and -not (Test-Path -LiteralPath $destination) -and (Test-Path -LiteralPath $legacy) -and
+        (Get-FileHash -LiteralPath $legacy -Algorithm SHA256).Hash.ToLowerInvariant() -eq $archive.sha256) {
+        Copy-Item -LiteralPath $legacy -Destination $destination
+    }
     if (-not (Test-Path -LiteralPath $destination)) {
         Write-Host "Downloading $($archive.name)"
         Invoke-WebRequest -Uri $archive.url -OutFile ($destination + '.partial') -UseBasicParsing

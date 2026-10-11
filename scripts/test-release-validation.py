@@ -22,6 +22,30 @@ FIXTURE = json.loads((ROOT / CONTRACT["fixturePath"]).read_text(encoding="utf-8-
 
 
 class ReleaseValidationTest(unittest.TestCase):
+    def prepared_manifest(self):
+        # Test-only source metadata, never a real qualification report or lock.
+        manifest = copy.deepcopy(MANIFEST)
+        manifest["qt"]["qualification"].update(
+            qualified=False, fixRelease=manifest["qt"]["version"],
+            releaseEvidenceUrl="https://qt-project.atlassian.net/rest/api/2/version/16945",
+            fixEvidenceUrl="https://qt-project.atlassian.net/test-only-fix-evidence",
+            memoryReportPath="quality/test-only-memory.json", memoryProtocolPath="quality/memory-protocol.json",
+            releaseProofPath="quality/test-only-release-proof.json")
+        return manifest
+
+    def source_report(self, manifest):
+        tested_bytes = (json.dumps(manifest, indent=2) + "\n").encode()
+        report = {"appVersion": manifest["appVersion"], "qtVersion": manifest["qt"]["version"],
+                  "buildCommit": "1" * 40, "buildManifestSha256": hashlib.sha256(tested_bytes).hexdigest()}
+        return report, tested_bytes
+
+    def check_source(self, tested, current, changed="build-manifest.json\nquality/test-only-memory.json"):
+        report, tested_bytes = self.source_report(tested)
+        current_sha = hashlib.sha256(json.dumps(current).encode()).hexdigest()
+        with patch.object(validation.subprocess, "check_output", return_value=tested_bytes), \
+             patch.object(validation.subprocess, "run"), patch.object(validation, "git", return_value=changed):
+            validation.check_source_evidence(report, current, current_sha)
+
     def test_development_lock_cannot_publish(self):
         manifest = copy.deepcopy(MANIFEST)
         manifest["qt"]["qualification"]["qualified"] = False
@@ -132,6 +156,223 @@ class ReleaseValidationTest(unittest.TestCase):
              patch.object(validation.subprocess, "run"), patch.object(validation, "git", return_value="src/player/PlayerComponent.cpp"):
             with self.assertRaisesRegex(ValueError, "Source changed after"):
                 validation.check_source_evidence(report, stable, "unused")
+
+    def test_only_false_to_true_qualification_result_can_follow_measurement(self):
+        tested = self.prepared_manifest()
+        current = copy.deepcopy(tested)
+        current["qt"]["qualification"]["qualified"] = True
+        self.check_source(tested, current)
+        with self.assertRaisesRegex(ValueError, "changed dependencies or release evidence"):
+            self.check_source(current, tested)
+        with self.assertRaisesRegex(ValueError, "Source changed after"):
+            self.check_source(tested, current, "build-manifest.json\nsrc/player/PlayerComponent.cpp")
+        report, tested_bytes = self.source_report(tested)
+        current_sha = hashlib.sha256(json.dumps(current).encode()).hexdigest()
+        report["buildManifestSha256"] = current_sha
+        with patch.object(validation.subprocess, "check_output", return_value=tested_bytes), \
+             patch.object(validation.subprocess, "run"), self.assertRaisesRegex(ValueError, "tested manifest bytes"):
+            validation.check_source_evidence(report, current, current_sha)
+
+    def test_result_transition_cannot_change_dependencies_or_prelocked_evidence(self):
+        tested = self.prepared_manifest()
+        for field, value in (("releaseEvidenceUrl", "https://qt.io/changed"), ("fixEvidenceUrl", "https://qt.io/changed"),
+                             ("memoryReportPath", "quality/changed.json"), ("memoryProtocolPath", "quality/changed-protocol.json"),
+                             ("releaseProofPath", "quality/changed-proof.json"), ("fixRelease", "6.11.999")):
+            current = copy.deepcopy(tested)
+            current["qt"]["qualification"].update(qualified=True, **{field: value})
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "changed dependencies or release evidence"):
+                self.check_source(tested, current)
+        current = copy.deepcopy(tested)
+        current["qt"]["qualification"]["qualified"] = True
+        current["qt"]["archives"][0]["sha256"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "changed dependencies or release evidence"):
+            self.check_source(tested, current)
+
+    def test_result_transition_requires_fix_proof_and_paths_before_measuring(self):
+        for field in ("releaseEvidenceUrl", "fixEvidenceUrl", "memoryReportPath", "memoryProtocolPath", "releaseProofPath", "fixRelease"):
+            tested = self.prepared_manifest()
+            tested["qt"]["qualification"][field] = ""
+            current = copy.deepcopy(tested)
+            current["qt"]["qualification"]["qualified"] = True
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.check_source(tested, current)
+
+    def test_version_promotion_and_result_transition_preserve_all_other_fields(self):
+        tested = self.prepared_manifest()
+        stable = copy.deepcopy(tested)
+        stable.update(appVersion="2.0.0", packageVersion="2.0.2")
+        stable["qt"]["qualification"]["qualified"] = True
+        self.check_source(tested, stable)
+        stable["tools"]["vulkanRuntime"]["sha256"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "changed qualified dependencies"):
+            self.check_source(tested, stable)
+
+    def memory_fixture(self):
+        protocol = {"schemaVersion": 1, "scope": "windows-owned-process-tree-rss",
+                    "requiredScenarios": ["navigation-svg", "long-playback"], "minimumDurationSeconds": 3600,
+                    "warmupSeconds": 120, "sampleIntervalSeconds": 5,
+                    "absoluteRssLimitBytes": 2147483648, "finalGrowthLimitBytes": 134217728}
+        # In-memory synthetic unit data, never written as qualification evidence.
+        raw = {"schemaVersion": 1, "scope": protocol["scope"], "scenarios": [
+            {"name": name, "samples": [{"elapsedSeconds": 0, "rssBytes": 100000000, "processCount": 3},
+                                       {"elapsedSeconds": 1800, "rssBytes": 150000000, "processCount": 4},
+                                       {"elapsedSeconds": 3600, "rssBytes": 110000000, "processCount": 3}]}
+            for name in protocol["requiredScenarios"]]}
+        manifest = self.prepared_manifest()
+        memory, _ = self.source_report(manifest)
+        memory.update(issue="QTBUG-141377", passed=True, processTreeIncluded=True,
+                      rawSamplesPath="quality/test-only-raw.json", scenarios=[
+                          {"name": name, "durationSeconds": 3600, "rssBaselineBytes": 100000000,
+                           "rssPeakBytes": 150000000, "rssFinalBytes": 110000000, "limitBytes": protocol["absoluteRssLimitBytes"]}
+                          for name in protocol["requiredScenarios"]])
+        return manifest, memory, protocol, raw
+
+    def check_memory(self, manifest, memory, protocol, raw, tested_protocol=None, preserve_hashes=False):
+        protocol_bytes = (json.dumps(protocol) + "\n").encode()
+        raw_bytes = (json.dumps(raw) + "\n").encode()
+        if not preserve_hashes:
+            memory["protocolSha256"] = hashlib.sha256(protocol_bytes).hexdigest()
+            memory["rawSamplesSha256"] = hashlib.sha256(raw_bytes).hexdigest()
+        files = {manifest["qt"]["qualification"]["memoryProtocolPath"]: protocol_bytes, memory["rawSamplesPath"]: raw_bytes}
+        with patch.object(validation, "committed_bytes", side_effect=lambda path: files[path]), \
+             patch.object(validation.subprocess, "check_output", return_value=tested_protocol or protocol_bytes):
+            validation.check_memory_evidence(memory, manifest)
+
+    def test_memory_gate_derives_summaries_from_committed_tree_samples(self):
+        self.check_memory(*self.memory_fixture())
+        for field in ("durationSeconds", "rssBaselineBytes", "rssPeakBytes", "rssFinalBytes", "limitBytes"):
+            fixture = self.memory_fixture()
+            fixture[1]["scenarios"][0][field] += 1
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "summary differs"):
+                self.check_memory(*fixture)
+        fixture = self.memory_fixture()
+        fixture[1]["passed"] = False
+        with self.assertRaisesRegex(ValueError, "passing Qt memory"):
+            self.check_memory(*fixture)
+        fixture[1]["passed"] = True
+        fixture[1]["processTreeIncluded"] = False
+        with self.assertRaisesRegex(ValueError, "process tree"):
+            self.check_memory(*fixture)
+
+    def test_qualification_flag_alone_cannot_publish(self):
+        manifest, memory, _, _ = self.memory_fixture()
+        manifest["qt"]["qualification"]["qualified"] = True
+        memory["passed"] = False
+        with patch.object(validation, "git", return_value=""), patch.object(validation, "committed_json", return_value=memory), \
+             patch.object(validation, "check_source_evidence"), patch.object(validation, "check_release_proof"), \
+             self.assertRaisesRegex(ValueError, "passing Qt memory"):
+            validation.check_release(manifest, "v" + manifest["appVersion"])
+
+    def release_proof_fixture(self):
+        manifest = self.prepared_manifest()
+        proof = {"releaseEvidenceUrl": manifest["qt"]["qualification"]["releaseEvidenceUrl"],
+                 "observedUtc": "2020-01-02T00:00:00Z", "metadata": {
+                     "name": manifest["qt"]["version"], "released": True, "releaseDate": "2020-01-01"}}
+        return manifest, proof
+
+    def test_offline_release_proof_requires_released_metadata_and_exact_url(self):
+        manifest, proof = self.release_proof_fixture()
+        with patch.object(validation, "committed_json", return_value=proof), patch.object(validation.urllib.request, "urlopen") as network:
+            validation.check_release_proof(manifest)
+            network.assert_not_called()
+            for field, value in (("released", False), ("released", 1), ("name", "different-version"), ("releaseDate", "2099-01-01")):
+                invalid = copy.deepcopy(proof)
+                invalid["metadata"][field] = value
+                with patch.object(validation, "committed_json", return_value=invalid), self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                    validation.check_release_proof(manifest)
+        for field, value in (("releaseEvidenceUrl", "https://qt.io/changed"), ("observedUtc", "2020-01-02T00:00:00"),
+                             ("observedUtc", "2099-01-02T00:00:00Z")):
+            invalid = copy.deepcopy(proof)
+            invalid[field] = value
+            with patch.object(validation, "committed_json", return_value=invalid), self.subTest(field=field), self.assertRaises(ValueError):
+                validation.check_release_proof(manifest)
+
+    def test_tag_release_proof_rechecks_live_jira_with_timeout_and_fails_closed(self):
+        manifest, proof = self.release_proof_fixture()
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.geturl.return_value = proof["releaseEvidenceUrl"]
+        response.read.return_value = json.dumps(proof["metadata"]).encode()
+        with patch.object(validation, "committed_json", return_value=proof), \
+             patch.object(validation.urllib.request, "urlopen", return_value=response) as network:
+            validation.check_release_proof(manifest, verify_live=True)
+            self.assertEqual(network.call_args.kwargs["timeout"], 10)
+            self.assertEqual(network.call_args.args[0].full_url, proof["releaseEvidenceUrl"])
+            response.read.return_value = json.dumps({**proof["metadata"], "released": False}).encode()
+            with self.assertRaisesRegex(ValueError, "mark the locked version as released"):
+                validation.check_release_proof(manifest, verify_live=True)
+            response.read.return_value = b"not-json"
+            with self.assertRaises(ValueError):
+                validation.check_release_proof(manifest, verify_live=True)
+            network.side_effect = OSError("test-only offline error")
+            with self.assertRaises(OSError):
+                validation.check_release_proof(manifest, verify_live=True)
+
+    def test_release_metadata_rejects_unofficial_endpoints_and_redirects(self):
+        manifest, proof = self.release_proof_fixture()
+        for url in ("http://qt-project.atlassian.net/rest/api/2/version/16945",
+                    "https://qt-project.atlassian.net.evil.example/rest/api/2/version/16945",
+                    "https://qt-project.atlassian.net/rest/api/2/version/16945?changed=1"):
+            manifest["qt"]["qualification"]["releaseEvidenceUrl"] = url
+            with self.subTest(url=url), self.assertRaisesRegex(ValueError, "official Jira"):
+                validation.check_release_proof(manifest)
+        manifest, proof = self.release_proof_fixture()
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.geturl.return_value = "https://example.invalid/version/16945"
+        with patch.object(validation, "committed_json", return_value=proof), \
+             patch.object(validation.urllib.request, "urlopen", return_value=response), self.assertRaisesRegex(ValueError, "redirected"):
+            validation.check_release_proof(manifest, verify_live=True)
+
+    def test_evidence_paths_cannot_escape_checkout_on_windows(self):
+        for path in ("", "/quality/report.json", "../report.json", "C:/quality/report.json", "quality\\report.json"):
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                validation.evidence_path(path)
+
+    def test_memory_gate_binds_protocol_to_tested_commit_and_raw_byte_hashes(self):
+        fixture = self.memory_fixture()
+        original = (json.dumps(fixture[2]) + "\n").encode()
+        fixture[2]["absoluteRssLimitBytes"] *= 2
+        with self.assertRaisesRegex(ValueError, "protocol changed"):
+            self.check_memory(*fixture, tested_protocol=original)
+        for field in ("protocolSha256", "rawSamplesSha256"):
+            fixture = self.memory_fixture()
+            self.check_memory(*fixture)
+            fixture[1][field] = "0" * 64
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "protocol bytes|SHA256"):
+                self.check_memory(*fixture, preserve_hashes=True)
+
+    def test_memory_gate_requires_distinct_scenarios_hour_and_finite_tree_samples(self):
+        for container in (1, 3):
+            fixture = self.memory_fixture()
+            fixture[container]["scenarios"][1]["name"] = "navigation-svg"
+            with self.subTest(container=container), self.assertRaisesRegex(ValueError, "both navigation"):
+                self.check_memory(*fixture)
+        for field, value in (("elapsedSeconds", 1800), ("elapsedSeconds", float("nan")),
+                             ("rssBytes", 0), ("rssBytes", float("inf")), ("processCount", True)):
+            fixture = self.memory_fixture()
+            fixture[3]["scenarios"][0]["samples"][-1][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                self.check_memory(*fixture)
+        fixture = self.memory_fixture()
+        fixture[3]["scenarios"][0]["samples"][-1]["elapsedSeconds"] = 3599
+        with self.assertRaisesRegex(ValueError, "at least one hour"):
+            self.check_memory(*fixture)
+        fixture[3]["scope"] = "main-process-only"
+        with self.assertRaisesRegex(ValueError, "process scope"):
+            self.check_memory(*fixture)
+
+    def test_memory_gate_checks_predeclared_peak_and_final_growth_limits(self):
+        fixture = self.memory_fixture()
+        fixture[2]["absoluteRssLimitBytes"] = 120000000
+        for summary in fixture[1]["scenarios"]:
+            summary["limitBytes"] = 120000000
+        with self.assertRaisesRegex(ValueError, "predeclared RSS"):
+            self.check_memory(*fixture)
+        fixture = self.memory_fixture()
+        fixture[2]["finalGrowthLimitBytes"] = 5000000
+        with self.assertRaisesRegex(ValueError, "final-growth"):
+            self.check_memory(*fixture)
 
     def test_final_handoff_and_synthetic_fixtures_keep_honest_provenance(self):
         validation.check_final_contract(CONTRACT, FIXTURE)

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "requiredScenarios": ["navigation-svg", "long-playback"],
+  "minimumDurationSeconds": 3600,
+  "warmupSeconds": 120,
+  "sampleIntervalSeconds": 5,
+  "absoluteRssLimitBytes": 2147483648,
+  "finalGrowthLimitBytes": 134217728,
+  "scope": "windows-owned-process-tree-rss",
+  "workloads": {
+    "navigation-svg": "Isolated full Desktop/WebEngine process tree. One persistent main page issues local HTTP XMLHttpRequest every 100ms replacing DOM containing an original synthetic SVG for the entire run; a separate iframe navigates every 60 seconds. No forced collection, main-page reload or GC workaround.",
+    "long-playback": "Separate isolated full Desktop/WebEngine process tree. Actual native mpv plays generated silent PCM with null audio output; replace file every 60 seconds and verify advancing millisecond positions and native readiness. Local UI receives position updates. No visible window; video rendering is qualified separately."
+  },
+  "limitations": [
+    "Hidden native application windows do not provide an integrated video render pass or hardware-driver qualification.",
+    "This synthetic stress does not establish mixed-client synchronization, installed upgrades or user acceptance.",
+    "Passing memory measurements do not establish that a prepared Qt package is officially released."
+  ]
+}

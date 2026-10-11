@@ -29,6 +29,7 @@
 #include "Globals.h"
 #include "ui/ErrorMessage.h"
 #include "UniqueApplication.h"
+#include "shared/ApplicationScope.h"
 #include "utils/Log.h"
 
 #ifdef Q_OS_MAC
@@ -140,9 +141,11 @@ int main(int argc, char *argv[])
     platformOption.setValueName("platform");
     platformOption.setDefaultValue("default");
 
-    auto devOption = QCommandLineOption("webengine-devtools", "Enable WebEngine DevTools on localhost:9222 for this launch.");
+    auto devOption = QCommandLineOption("webengine-devtools", "Enable WebEngine DevTools on localhost for this launch (default port 9222).");
+    auto devPortOption = QCommandLineOption("webengine-devtools-port", "Localhost DevTools port (1024..65535); requires --webengine-devtools.", "port", "9222");
     parser.addOption(scaleOption);
     parser.addOption(devOption);
+    parser.addOption(devPortOption);
     parser.addOption(platformOption);
 
     char **newArgv = appendCommandLineArguments(argc, argv, g_qtFlags);
@@ -182,6 +185,18 @@ int main(int argc, char *argv[])
       parser.process(arguments);
     }
 
+    if (parser.isSet(devPortOption) && !parser.isSet(devOption))
+    {
+      qCritical("--webengine-devtools-port requires --webengine-devtools.");
+      return EXIT_FAILURE;
+    }
+    const auto devPort = ApplicationScope::devToolsPort(parser.value(devPortOption));
+    if (!devPort)
+    {
+      qCritical("--webengine-devtools-port must be an ASCII integer from 1024 to 65535.");
+      return EXIT_FAILURE;
+    }
+
     if (parser.isSet("licenses"))
     {
       ShowLicenseInfo();
@@ -201,12 +216,11 @@ int main(int argc, char *argv[])
 
     // An inherited Chromium flag must not override the explicit localhost-only
     // diagnostic launch or silently open a debugger on an ordinary launch.
-    QString chromiumFlags = QString::fromUtf8(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS"));
-    chromiumFlags.remove(QRegularExpression(
-      R"((?:^|\s)--remote-debugging-(?:port|address|pipe)(?:=(?:"[^"]*"|'[^']*'|\S+)|\s+(?:"[^"]*"|'[^']*'|[^-\s]\S*))?)"));
+    const QString chromiumFlags = ApplicationScope::withoutRemoteDebugging(
+      QString::fromUtf8(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS")));
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromiumFlags.toUtf8());
     if (parser.isSet(devOption))
-      qputenv("QTWEBENGINE_REMOTE_DEBUGGING", "127.0.0.1:9222");
+      qputenv("QTWEBENGINE_REMOTE_DEBUGGING", QString("127.0.0.1:%1").arg(*devPort).toUtf8());
     else
       qunsetenv("QTWEBENGINE_REMOTE_DEBUGGING");
 

@@ -43,15 +43,40 @@ and SHA256SUMS. RCs are prereleases and never GitHub Latest. Stable tags must be
 on `master` and require committed final user acceptance. Published packages are
 immutable; the monotonic package-version check rejects replacing a release.
 
-Release qualification is intentionally incomplete for the development Qt
-6.11.2 lock. A tag is rejected until the manifest records a released Qt version
+Release qualification is intentionally incomplete for the internally prepared Qt
+6.11.3 lock. A tag is rejected until the manifest records a released Qt version
 with official release/fix evidence for QTBUG-141377 and a committed memory report
-for the same app version, manifest SHA256 and tested source commit. The report
-requires at least two scenarios (navigation and playback), each at least 3600
-seconds, with finite positive `rssBaselineBytes`, `rssPeakBytes`, `rssFinalBytes`
-and `limitBytes`; observed peak/final RSS must stay within the agreed limit.
-The tested commit must be an ancestor of the release commit, with subsequent
-changes restricted to `docs/` and `quality/` evidence. Release tags also require
+for the same app version and original tested manifest SHA256/source commit.
+Before building and measuring, commit the reviewed Qt archives, `fixRelease`,
+official evidence URLs, `memoryReportPath`, `memoryProtocolPath` and
+`releaseProofPath`, while
+`qualified` remains false. The protocol predeclares distinct `navigation-svg`
+and `long-playback` scenarios, at least 3600 seconds each, 120 seconds of warmup,
+five-second process-tree RSS samples, a 2 GiB peak ceiling and 128 MiB final-growth
+ceiling. Keep the main SVG/XHR context alive for the entire scenario and navigate
+only its script-free child frame each minute; music alternates two generated WAV
+paths. The measured report includes `processTreeIncluded: true`,
+`protocolSha256`, `rawSamplesPath` and `rawSamplesSha256`. Validation verifies
+committed raw bytes and derives duration, baseline, peak and final RSS from their
+ordered observations; `limitBytes` must equal the precommitted protocol limit.
+The protocol must match its bytes in the tested commit.
+
+After actual passing observation, the manifest may change only
+`qt.qualification.qualified` from false to true. The report keeps the checksum
+of the manifest used by that tested build. The gate compares every other lock
+field and requires actual passing samples, so setting the flag alone cannot
+publish. The tested commit must be an ancestor of the release commit; later
+changes are restricted to `docs/` and `quality/` evidence plus that exact manifest
+flag transition (and stable version promotion below). Release tags also require
+reviewed official Jira version metadata at `releaseProofPath`: exact
+`releaseEvidenceUrl`, UTC `observedUtc`, and `metadata` with matching `name`,
+`released: true` and a non-future `releaseDate`. Add this proof only after the
+actual official release. Ordinary CI validates that snapshot offline; tag
+qualification re-fetches its exact official Jira endpoint with a ten-second
+timeout and fails closed on unreleased or unavailable metadata. A prepared
+package, manually toggled flag or previously unreleased snapshot cannot qualify
+publication. Official proof may be added under `quality/` after testing without
+changing the archive/manifest lock. Release tags also require
 `contracts/desktop-api-contract.json` with the final Server/Web source pins and
 explicit Desktop contract revision. Source-derived synthetic fixtures are
 accepted as protocol evidence when their revision, source commits and byte
@@ -75,9 +100,10 @@ matching the final contract. Its `syncPlay` object identifies
 the final contract requires all 1x/1.25x/1.5x combinations at 10/15/20 seconds,
 each strictly below 400 ms. A browser-only receipt or synthetic passing fixture
 does not satisfy this native acceptance gate. A tested and accepted RC
-can be promoted to the same stable core version with only `appVersion` and the
-monotonically increasing `packageVersion` changed. The gate verifies the tested
-commit's original manifest checksum and all other manifest fields, and rejects
+can be promoted to the same stable core version with only `appVersion`, the
+monotonically increasing `packageVersion` and the permitted false-to-true
+qualification flag changed. The gate verifies the tested commit's original
+manifest checksum and all remaining manifest fields, and rejects
 any intervening application, dependency or API-contract change. This preserves
 one final user acceptance while rebuilding the stable version resource. A code
 or contract change requires new qualification and acceptance evidence.

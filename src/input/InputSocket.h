@@ -7,6 +7,8 @@
 
 #include "LocalJsonServer.h"
 #include "InputComponent.h"
+#include "shared/ApplicationScope.h"
+#include "shared/Paths.h"
 
 class InputSocket : public InputBase
 {
@@ -14,7 +16,10 @@ class InputSocket : public InputBase
 public:
   explicit InputSocket(QObject* parent = nullptr) : InputBase(parent)
   {
-    m_server = new LocalJsonServer("inputSocket");
+    const QString socketName = Paths::isPortableMode()
+      ? ApplicationScope::socketName(QStringLiteral("inputSocket"), true, Paths::dataDir())
+      : QStringLiteral("inputSocket");
+    m_server = new LocalJsonServer(socketName, this);
     connect(m_server, &LocalJsonServer::clientConnected, this, &InputSocket::clientConnected);
     connect(m_server, &LocalJsonServer::messageReceived, this, &InputSocket::messageReceived);
   }

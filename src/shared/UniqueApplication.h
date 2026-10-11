@@ -7,6 +7,7 @@
 
 #include <QObject>
 #include "Paths.h"
+#include "ApplicationScope.h"
 #include "LocalJsonServer.h"
 #include "LocalJsonClient.h"
 #include "utils/Utils.h"
@@ -19,7 +20,8 @@ class UniqueApplication : public QObject
 public:
   explicit UniqueApplication(QObject* parent = nullptr, const QString& socketname = SOCKET_NAME) : QObject(parent)
   {
-    m_socketName = socketname;
+    m_socketName = socketname == QStringLiteral(SOCKET_NAME) && Paths::isPortableMode()
+      ? ApplicationScope::socketName(socketname, true, Paths::dataDir()) : socketname;
   }
 
   void listen()

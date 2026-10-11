@@ -81,46 +81,24 @@ def main():
     args = parser.parse_args()
     cache = pathlib.Path("build/dependency-archives")
     cache.mkdir(parents=True, exist_ok=True)
+    # Qt patch releases reuse archive filenames. Keep their reviewed bytes in
+    # separate directories so refreshing Qt cannot overwrite a baseline lock.
+    qt_cache = cache / ("qt-" + args.qt_version)
+    qt_cache.mkdir(parents=True, exist_ok=True)
     qt = qt_archives(args.qt_version)
-    cmake_url = "https://github.com/Kitware/CMake/releases/download/v3.31.6/cmake-3.31.6-windows-x86_64.zip"
-    cmake_hashes = request("https://github.com/Kitware/CMake/releases/download/v3.31.6/cmake-3.31.6-SHA-256.txt").read().decode("ascii")
-    cmake_sha = next(line.split()[0] for line in cmake_hashes.splitlines() if line.endswith("cmake-3.31.6-windows-x86_64.zip"))
     current = json.loads((ROOT / "build-manifest.json").read_text(encoding="utf-8-sig"))
     if not current["tools"].get("vulkanRuntime"):
         raise ValueError("Qt refresh requires the independently reviewed Vulkan runtime and payload lock")
-    tools = {
-        "node": {"version": "24.21.0", "name": "node-v24.21.0-win-x64.zip", "url": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip", "sha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541"},
-        "cmake": {"version": "3.31.6", "name": "cmake-3.31.6-windows-x86_64.zip", "url": cmake_url, "sha256": cmake_sha},
-        "ninja": {"version": "1.13.2", "name": "ninja-win.zip", "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip", "sha256": "07fc8261b42b20e71d1720b39068c2e14ffcee6396b76fb7a795fb460b78dc65"},
-        "wix": {"version": "7.0.0", "name": "wix-cli-x64.msi", "url": "https://github.com/wixtoolset/wix/releases/download/v7.0.0/wix-cli-x64.msi", "sha256": "16ff3857255e0ffa118d90e6d3a20e47499e55cda109853b5aac4700735f0293"},
-        "vcRedist": {"name": "VC_redist.x64.exe", "url": "https://download.visualstudio.microsoft.com/download/pr/bd1c8d9d-ba95-4eee-bc6e-df1fcc876373/CC0FF0EB1DC3F5188AE6300FAEF32BF5BEEBA4BDD6E8E445A9184072096B713B/VC_redist.x64.exe"},
-        # Preserve the reviewed runtime/source/DLL/license pins during a Qt
-        # refresh. lock_archive below still verifies the complete official ZIP.
-        "vulkanRuntime": copy.deepcopy(current["tools"]["vulkanRuntime"]),
-    }
-    mpv = {"version": "20261011-git-accb7b2821", "commit": "accb7b2821ecf0cb04cf3579ccd98bc8f751f61f", "architecture": "x86_64", "name": "mpv-dev-x86_64-20261011-git-accb7b2821.7z", "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261011/mpv-dev-x86_64-20261011-git-accb7b2821.7z", "sha256": "cf63b4ce66e03e5e70acf2648cbc3177656c77c5b9583e16d83efc58801182b7"}
-    tracy = {"version": "0.14.1", "tag": "v0.14.1", "commit": "30997d5ca6bb632cc10807a1da8a6d3de0aeeb3c", "name": "tracy-0.14.1.tar.gz", "url": "https://github.com/wolfpld/tracy/archive/refs/tags/v0.14.1.tar.gz"}
-    extensions = [{"id": name, "version": "7.0.0", "name": name.lower() + ".7.0.0.nupkg",
-                   "url": "https://api.nuget.org/v3-flatcontainer/" + name.lower() + "/7.0.0/" + name.lower() + ".7.0.0.nupkg"}
-                  for name in ("WixToolset.Util.wixext", "WixToolset.BootstrapperApplications.wixext")]
-    all_archives = qt + list(tools.values()) + [mpv, tracy] + extensions
+    # A Qt refresh does not also update tools, media libraries, product versions
+    # or payload locks. Verify all existing immutable archive locks unchanged.
+    manifest = copy.deepcopy(current)
+    non_qt = list(manifest["tools"].values()) + [manifest["mpv"], manifest["tracy"]] + manifest["wix"]["extensions"]
+    archive_jobs = [(archive, qt_cache) for archive in qt] + [(archive, cache) for archive in non_qt]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        list(pool.map(lambda item: lock_archive(item, cache), all_archives))
-    tools["vcRedist"]["version"] = "14.44.35211.0"
-    # These DLL hashes were independently verified against the minimum-amd64
-    # CAB extracted from the locked Microsoft redistributable. Keep that reviewed
-    # payload lock when refreshing Qt archives; a CRT update requires new proof.
-    if current["tools"]["vcRedist"]["sha256"] != tools["vcRedist"]["sha256"]:
-        raise ValueError("A new Microsoft CRT requires independently verified payload hashes")
-    tools["vcRedist"]["runtimeDlls"] = current["tools"]["vcRedist"]["runtimeDlls"]
-    manifest = {
-        "schemaVersion": 1, "appVersion": "2.0.0-rc.1", "packageVersion": "2.0.1",
-        "sources": {"forkBaseCommit": "955a60349cfb6837d635af19e8dd192d7218109f", "qtPortCommit": "2cb4a4456fd29b5b62d825ef0e5df93ed6913328"},
-        "releaseRepository": "DevLn737/jellyfin-desktop", "windows": {"architecture": "x64", "minimumBuild": 18362, "msvcToolset": "v143", "msvcToolsVersion": "14.44.35207", "windowsSdkVersion": "10.0.26100.0", "runner": "windows-2022"},
-        "qt": {"version": args.qt_version, "architecture": "win64_msvc2022_64", "archives": qt,
-               "qualification": {"issue": "QTBUG-141377", "qualified": False, "fixRelease": "", "releaseEvidenceUrl": "", "fixEvidenceUrl": "", "memoryReportPath": ""}},
-        "tools": tools, "mpv": mpv, "tracy": tracy,
-        "wix": {"eulaId": "wix7", "extensions": extensions},
+        list(pool.map(lambda job: lock_archive(*job), archive_jobs))
+    manifest["qt"] = {
+        "version": args.qt_version, "architecture": current["qt"]["architecture"], "archives": qt,
+        "qualification": {"issue": "QTBUG-141377", "qualified": False, "fixRelease": "", "releaseEvidenceUrl": "", "fixEvidenceUrl": "", "memoryReportPath": ""},
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

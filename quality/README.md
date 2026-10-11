@@ -33,13 +33,51 @@ Run diagnostics-off/on comparisons on identical workloads and account for the
 WebEngine process tree. Keep installer repair/downgrade/rollback checks within
 this final acceptance session. Report server defects to the server agent.
 
-Record appVersion, packageVersion, immutable buildCommit, Qt version, manifest
-SHA256, contract revision, Server/Web versions/commits, machine/Windows build,
-scenario results and any defects. Actual RSS observations (navigation and long
-playback, at least 3600 seconds each) are committed as the manifest's
-`memoryReportPath`, with appVersion, qtVersion, buildCommit,
-buildManifestSha256, issue=QTBUG-141377, passed and scenarios containing
-durationSeconds, rssBaselineBytes, rssPeakBytes, rssFinalBytes and agreed limitBytes.
+Before measuring, commit the exact reviewed Qt archives, reviewed
+release/fix evidence URLs, `fixRelease`, `memoryReportPath` and
+`memoryProtocolPath` and `releaseProofPath` in the manifest, with `qualified: false`.
+An internally prepared Qt candidate remains a development build until official
+release proof is available. Commit the memory
+protocol in the same tested source. Build that immutable commit and record its
+original manifest SHA256. The protocol fixes two scenarios, `navigation-svg`
+and `long-playback`, each at least 3600 seconds after a 120-second warmup, with
+five-second samples of the owned native/WebEngine process tree. The main SVG/XHR
+page stays alive throughout the test; only a separate script-free iframe
+navigates each minute. Native music alternates two generated WAV files each
+minute. It declares a
+2 GiB RSS ceiling and a 128 MiB final-growth ceiling before observation.
+
+Commit actual observations under `quality/`: the report at `memoryReportPath`
+and the raw sample JSON at its `rawSamplesPath`. The report records appVersion,
+qtVersion, buildCommit, buildManifestSha256, issue=QTBUG-141377, actual passed,
+processTreeIncluded=true, protocolSha256 and rawSamplesSha256. The raw JSON has
+schemaVersion=1, scope=windows-owned-process-tree-rss and both scenarios, each
+with ordered samples containing elapsedSeconds, rssBytes and processCount.
+Report scenarios contain durationSeconds, rssBaselineBytes, rssPeakBytes,
+rssFinalBytes and limitBytes. Validation recomputes these from raw samples,
+checks both protocol limits, and verifies that the protocol bytes were already
+present in the tested commit. Report-selected limits cannot replace that lock.
+
+After a real passing measurement, only `qt.qualification.qualified` may change
+from false to true in the manifest. Keep the report's original tested manifest
+SHA256. Validation allows that one flag transition while requiring all other
+manifest fields and application source to remain identical; subsequent changes
+may only add `docs/` or `quality/` evidence. The flag alone does not satisfy the
+release gate. A failing measurement leaves qualification false.
+
+Once Qt's official Jira version metadata actually marks this exact package
+version `released: true`, commit the reviewed snapshot at `releaseProofPath`,
+with `releaseEvidenceUrl` matching the locked Jira version endpoint,
+`observedUtc` in UTC, and `metadata` containing matching `name`, `released: true`
+and its real `releaseDate`. Do not create this proof from unreleased metadata.
+Ordinary CI checks the committed snapshot without network access; tag
+qualification also re-fetches that exact official endpoint with a ten-second
+timeout and fails on unreleased, inconsistent or unavailable metadata. Official
+proof may be added under `quality/` after the tested commit if all archive and
+manifest locks remain unchanged.
+
+Record packageVersion, contract revision, Server/Web versions/commits,
+machine/Windows build, scenario results and any defects as well.
 
 Only after actual user acceptance create `quality/desktop-acceptance.json`
 with accepted=true, acceptedBy=user and the exact version/source/manifest
@@ -51,5 +89,6 @@ and `absoluteDriftMilliseconds`, and completed `mixedClientCases`:
 `pause-seek`, `rejoin-reconnect`, `legacy-409`, `personal-speed-restoration`,
 `independent-audio-subtitles`, `direct-play` and `hls`. Include all nine
 rate/sample-time combinations. Never prefill acceptance or memory success.
-Promotion to stable must preserve the accepted code, with only the
-reviewed release version/evidence changes and a strictly higher packageVersion.
+Promotion to stable must preserve the accepted code and all dependency/evidence
+locks, with only appVersion, a strictly higher packageVersion and the allowed
+qualification flag transition differing from the original tested RC manifest.

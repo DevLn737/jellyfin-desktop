@@ -39,7 +39,7 @@ try {
         '-DWIX_ACCEPT_EULA=ON', "-DJMP_DIAGNOSTIC=$($Diagnostic.IsPresent)", "-DJMP_PORTABLE_PROFILE=$($IsolatedPortable.IsPresent)")
     Invoke-Checked $cmake $configure
     Invoke-Checked $cmake @('--build', $nativeBuildDirectory, '--parallel', '2')
-    foreach ($test in @('discord', 'diagnostics', 'playback')) {
+    foreach ($test in @('discord', 'diagnostics', 'playback', 'application')) {
         $testBuild = Join-Path $nativeBuildDirectory "tests/$test"
         Invoke-Checked $cmake @('-S', "tests/$test", '-B', $testBuild, '-G', 'Ninja',
             '-DCMAKE_BUILD_TYPE=RelWithDebInfo', "-DCMAKE_MAKE_PROGRAM=$($state.ninjaExe)", "-DCMAKE_PREFIX_PATH=$($state.qtRoot)")

@@ -1,5 +1,7 @@
 """Validate locked dependencies; release mode requires committed qualification evidence."""
 import argparse
+import copy
+import datetime
 import hashlib
 import json
 import math
@@ -7,6 +9,7 @@ import pathlib
 import re
 import subprocess
 import urllib.parse
+import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SEMVER = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-rc\.([1-9][0-9]*))?\Z")
@@ -21,11 +24,23 @@ def git(*args):
     return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
 
 
-def committed_json(relative):
+def evidence_path(relative):
+    require(isinstance(relative, str) and relative and "\\" not in relative and ":" not in relative,
+            "Evidence must be a repository-relative POSIX path")
     path = pathlib.PurePosixPath(relative)
-    require(not path.is_absolute() and ".." not in path.parts, "Evidence must be a repository-relative path")
+    require(not path.is_absolute() and path.parts and ".." not in path.parts,
+            "Evidence must be a repository-relative path")
+    return path
+
+
+def committed_bytes(relative):
+    evidence_path(relative)
     subprocess.run(["git", "ls-files", "--error-unmatch", relative], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
-    return json.loads((ROOT / relative).read_text(encoding="utf-8-sig"))
+    return (ROOT / relative).read_bytes()
+
+
+def committed_json(relative):
+    return json.loads(committed_bytes(relative).decode("utf-8-sig"))
 
 
 def check_vulkan_runtime(runtime):
@@ -74,6 +89,56 @@ def check_manifest(manifest):
         require(pathlib.PurePath(archive["name"]).name == archive["name"] and archive["name"] not in names, "Invalid or duplicate archive filename")
         require(isinstance(archive["bytes"], int) and archive["bytes"] > 0, "Archive size is missing")
         names.add(archive["name"])
+    if manifest["qt"]["qualification"]["qualified"] is True:
+        check_release_proof(manifest)
+
+
+def check_qualification_lock(manifest):
+    qualification = manifest["qt"]["qualification"]
+    require(qualification["fixRelease"] == manifest["qt"]["version"], "Qualified Qt release must match the locked archives")
+    for field in ("releaseEvidenceUrl", "fixEvidenceUrl"):
+        url = urllib.parse.urlsplit(qualification[field])
+        require(url.scheme == "https" and url.hostname in {"qt.io", "www.qt.io", "code.qt.io", "bugreports.qt.io", "qt-project.atlassian.net", "download.qt.io"},
+                "Official Qt release and fix evidence are required")
+    for field in ("memoryReportPath", "memoryProtocolPath", "releaseProofPath"):
+        evidence_path(qualification[field])
+
+
+def check_release_metadata(metadata, version, observed):
+    require(isinstance(metadata, dict) and metadata.get("name") == version and metadata.get("released") is True,
+            "Official Qt metadata must mark the locked version as released")
+    release_date = metadata.get("releaseDate")
+    require(isinstance(release_date, str) and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", release_date),
+            "Official Qt release date is required")
+    require(datetime.date.fromisoformat(release_date) <= observed.date(), "Official Qt release date is still in the future")
+
+
+def check_release_proof(manifest, verify_live=False):
+    qualification = manifest["qt"]["qualification"]
+    url = qualification["releaseEvidenceUrl"]
+    parts = urllib.parse.urlsplit(url)
+    require(parts.scheme == "https" and parts.hostname in {"qt-project.atlassian.net", "bugreports.qt.io"}
+            and re.fullmatch(r"/rest/api/2/version/[0-9]+", parts.path) and not parts.query and not parts.fragment
+            and parts.port in (None, 443) and not parts.username and not parts.password, "Qt release proof requires the exact official Jira version endpoint")
+    proof = committed_json(qualification["releaseProofPath"])
+    require(proof["releaseEvidenceUrl"] == url, "Qt release proof differs from its locked evidence URL")
+    observed = datetime.datetime.fromisoformat(proof["observedUtc"].replace("Z", "+00:00"))
+    require(observed.tzinfo is not None and observed.utcoffset() == datetime.timedelta(0), "Qt release proof requires a UTC observation time")
+    now = datetime.datetime.now(datetime.timezone.utc)
+    require(observed <= now, "Qt release proof observation time is in the future")
+    check_release_metadata(proof["metadata"], manifest["qt"]["version"], observed)
+    if verify_live:
+        request = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "JellyfinDesktopRelease/2"})
+        with urllib.request.urlopen(request, timeout=10) as response:
+            final = urllib.parse.urlsplit(response.geturl())
+            require(final.scheme == "https" and final.hostname in {"qt-project.atlassian.net", "bugreports.qt.io"}
+                    and final.path == parts.path and not final.query and not final.fragment,
+                    "Official Qt release endpoint redirected outside its version metadata")
+            payload = response.read(256 * 1024 + 1)
+        require(len(payload) <= 256 * 1024, "Official Qt release metadata response is too large")
+        metadata = json.loads(payload)
+        check_release_metadata(metadata, manifest["qt"]["version"], now)
+        require(metadata["releaseDate"] == proof["metadata"]["releaseDate"], "Committed Qt release proof differs from current official metadata")
 
 
 def check_source_evidence(report, manifest, manifest_sha):
@@ -84,23 +149,91 @@ def check_source_evidence(report, manifest, manifest_sha):
     tested_manifest = json.loads(tested_bytes)
     require(report["appVersion"] == tested_manifest["appVersion"] and report["qtVersion"] == tested_manifest["qt"]["version"], "Evidence does not match the tested app and Qt build")
     require(report["buildManifestSha256"] == hashlib.sha256(tested_bytes).hexdigest(), "Evidence does not match the tested manifest bytes")
-    promotion = "-rc." not in manifest["appVersion"] and re.fullmatch(re.escape(manifest["appVersion"]) + r"-rc\.[1-9][0-9]*", report["appVersion"])
+    promotion = bool("-rc." not in manifest["appVersion"] and re.fullmatch(re.escape(manifest["appVersion"]) + r"-rc\.[1-9][0-9]*", report["appVersion"]))
+    tested_qualification = tested_manifest["qt"]["qualification"]
+    current_qualification = manifest["qt"]["qualification"]
+    transition = tested_qualification["qualified"] is False and current_qualification["qualified"] is True
+    old = copy.deepcopy(tested_manifest)
+    new = copy.deepcopy(manifest)
+    if transition:
+        # Official fix evidence and the protocol/report paths must already have
+        # been locked before measuring. Only this result flag may change later.
+        check_qualification_lock(tested_manifest)
+        old["qt"]["qualification"]["qualified"] = True
     if promotion:
-        old = dict(tested_manifest)
-        new = dict(manifest)
         for key in ("appVersion", "packageVersion"):
             old.pop(key)
             new.pop(key)
-        require(old == new, "Stable promotion changed qualified dependencies or release evidence")
         require(tuple(map(int, manifest["packageVersion"].split("."))) > tuple(map(int, tested_manifest["packageVersion"].split("."))), "Stable promotion must increment MSI packageVersion")
-    else:
-        require(report["appVersion"] == manifest["appVersion"] and report["buildManifestSha256"] == manifest_sha, "Evidence does not match this release manifest")
+    require(old == new, "Stable promotion changed qualified dependencies or release evidence" if promotion
+            else "Qualification transition changed dependencies or release evidence")
+    if not promotion:
+        require(report["appVersion"] == manifest["appVersion"], "Evidence does not match this release app version")
+    if not promotion and not transition:
+        require(report["buildManifestSha256"] == manifest_sha, "Evidence does not match this release manifest")
     changed = git("diff", "--name-only", commit, "HEAD").splitlines()
-    require(all(path.startswith(("docs/", "quality/")) or (promotion and path == "build-manifest.json") for path in changed), "Source changed after the tested build")
+    require(all(path.startswith(("docs/", "quality/")) or ((promotion or transition) and path == "build-manifest.json") for path in changed),
+            "Source changed after the tested build")
 
 
 def finite_number(value, minimum=0):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value >= minimum
+
+
+def check_memory_evidence(memory, manifest):
+    require(memory["issue"] == "QTBUG-141377" and memory["passed"] is True, "A passing Qt memory qualification report is required")
+    require(memory.get("processTreeIncluded") is True, "Memory qualification must include the owned native/WebEngine process tree")
+    protocol_path = manifest["qt"]["qualification"]["memoryProtocolPath"]
+    protocol_bytes = committed_bytes(protocol_path)
+    tested_protocol = subprocess.check_output(["git", "show", memory["buildCommit"] + ":" + protocol_path], cwd=ROOT)
+    require(protocol_bytes == tested_protocol, "Memory protocol changed after the tested build")
+    protocol_sha = hashlib.sha256(protocol_bytes).hexdigest()
+    require(memory["protocolSha256"] == protocol_sha, "Memory report does not match the precommitted protocol bytes")
+    protocol = json.loads(protocol_bytes)
+    scope = "windows-owned-process-tree-rss"
+    require(protocol["schemaVersion"] == 1 and protocol["scope"] == scope, "Unsupported memory protocol or process scope")
+    expected = {"navigation-svg", "long-playback"}
+    required = protocol["requiredScenarios"]
+    require(isinstance(required, list) and len(required) == 2 and set(required) == expected,
+            "Memory protocol requires distinct navigation-svg and long-playback scenarios")
+    require(finite_number(protocol["minimumDurationSeconds"], 3600), "Memory protocol must require at least one hour per scenario")
+    require(finite_number(protocol["warmupSeconds"]) and finite_number(protocol["sampleIntervalSeconds"], 0.001), "Invalid memory sampling protocol")
+    for key in ("absoluteRssLimitBytes", "finalGrowthLimitBytes"):
+        require(finite_number(protocol[key], 1), "Memory limits must be predeclared finite positive bytes")
+    raw_bytes = committed_bytes(memory["rawSamplesPath"])
+    require(memory["rawSamplesSha256"] == hashlib.sha256(raw_bytes).hexdigest(), "Memory raw samples do not match their SHA256")
+    raw = json.loads(raw_bytes)
+    require(raw["schemaVersion"] == 1 and raw["scope"] == scope, "Memory raw samples have the wrong schema or process scope")
+
+    def by_scenario(items):
+        require(isinstance(items, list) and len(items) == 2, "Memory evidence requires exactly two distinct scenarios")
+        require(all(isinstance(item, dict) and item.get("name") in expected for item in items), "Memory evidence has an unknown scenario")
+        result = {item["name"]: item for item in items}
+        require(set(result) == expected, "Memory evidence requires both navigation-svg and long-playback")
+        return result
+
+    observations = by_scenario(raw["scenarios"])
+    summaries = by_scenario(memory["scenarios"])
+    for scenario_name in sorted(expected):
+        samples = observations[scenario_name]["samples"]
+        require(isinstance(samples, list) and len(samples) >= 2, "Memory qualification requires raw observation samples")
+        previous = -1
+        for sample in samples:
+            require(finite_number(sample["elapsedSeconds"]) and sample["elapsedSeconds"] > previous, "Memory samples must have strictly increasing finite elapsed times")
+            require(finite_number(sample["rssBytes"], 1), "Memory RSS observations must be finite positive bytes")
+            require(type(sample["processCount"]) is int and sample["processCount"] > 0, "Memory samples must count the owned process tree")
+            previous = sample["elapsedSeconds"]
+        require(samples[-1]["elapsedSeconds"] >= protocol["minimumDurationSeconds"], "Memory scenarios must run for at least one hour")
+        baseline = samples[0]["rssBytes"]
+        peak = max(sample["rssBytes"] for sample in samples)
+        final = samples[-1]["rssBytes"]
+        derived = {"durationSeconds": samples[-1]["elapsedSeconds"], "rssBaselineBytes": baseline,
+                   "rssPeakBytes": peak, "rssFinalBytes": final, "limitBytes": protocol["absoluteRssLimitBytes"]}
+        summary = summaries[scenario_name]
+        for key, value in derived.items():
+            require(finite_number(summary[key], 1) and summary[key] == value, "Memory summary differs from raw observations or predeclared limit: " + key)
+        require(peak <= protocol["absoluteRssLimitBytes"], "Memory scenario exceeds its predeclared RSS limit")
+        require(final - baseline <= protocol["finalGrowthLimitBytes"], "Memory scenario exceeds its predeclared final-growth limit")
 
 
 def check_final_contract(contract, fixture):
@@ -164,22 +297,12 @@ def check_release(manifest, tag):
     qualification = manifest["qt"]["qualification"]
     require(qualification["qualified"] is True, "Qt release qualification is still incomplete (QTBUG-141377)")
     require(not git("status", "--porcelain"), "Release validation requires a clean checkout")
-    require(qualification["fixRelease"] == manifest["qt"]["version"], "Qualified Qt release must match the locked archives")
-    for field in ("releaseEvidenceUrl", "fixEvidenceUrl"):
-        url = urllib.parse.urlsplit(qualification[field])
-        require(url.scheme == "https" and url.hostname in {"qt.io", "www.qt.io", "code.qt.io", "bugreports.qt.io", "qt-project.atlassian.net", "download.qt.io"}, "Official Qt release and fix evidence are required")
+    check_qualification_lock(manifest)
+    check_release_proof(manifest, verify_live=True)
     manifest_sha = hashlib.sha256((ROOT / "build-manifest.json").read_bytes()).hexdigest()
     memory = committed_json(qualification["memoryReportPath"])
     check_source_evidence(memory, manifest, manifest_sha)
-    require(memory["issue"] == "QTBUG-141377" and memory["passed"] is True, "A passing Qt memory qualification report is required")
-    require(len(memory["scenarios"]) >= 2, "Measure both navigation and long playback scenarios")
-    for scenario in memory["scenarios"]:
-        require(scenario["name"] and scenario["durationSeconds"] >= 3600, "Memory scenarios must run for at least one hour")
-        for key in ("durationSeconds", "rssBaselineBytes", "rssPeakBytes", "rssFinalBytes", "limitBytes"):
-            value = scenario[key]
-            require(isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and value > 0, "Memory observations must be finite and positive")
-        require(scenario["rssPeakBytes"] >= max(scenario["rssBaselineBytes"], scenario["rssFinalBytes"]), "Peak RSS is inconsistent")
-        require(max(scenario["rssPeakBytes"], scenario["rssFinalBytes"]) <= scenario["limitBytes"], "Memory scenario exceeds its agreed RSS limit")
+    check_memory_evidence(memory, manifest)
     contract = committed_json("contracts/desktop-api-contract.json")
     fixture_path = contract["fixturePath"]
     fixture = committed_json(fixture_path)
