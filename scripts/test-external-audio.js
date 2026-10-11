@@ -74,13 +74,13 @@ assert.equal(
   '#,https://example.test/jellyfin/Videos/item-1/Subtitles/0/Stream.ass?ApiKey=secret'
 );
 
-const selectExternalAudio = playerComponentSource.indexOf('args << "select";');
+const selectExternalAudio = playerComponentSource.indexOf('args << "auto";');
 const stopBeforeFallback = playerComponentSource.indexOf('return;', selectExternalAudio);
 const fallbackToFirstAudio = playerComponentSource.indexOf(
   'if ((target == MediaType::Audio || !streamID.isEmpty()) && selection == "no")'
 );
 
-assert.ok(selectExternalAudio >= 0, 'external audio must be selected after mpv loads it');
+assert.ok(selectExternalAudio >= 0, 'external audio must not auto-select an obsolete asynchronous request');
 assert.ok(
   stopBeforeFallback > selectExternalAudio && stopBeforeFallback < fallbackToFirstAudio,
   'new external audio must not immediately fall back to embedded aid=1'

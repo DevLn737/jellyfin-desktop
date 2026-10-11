@@ -8,7 +8,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 bool CachedRegexMatcher::addMatcher(const QString& pattern, const QVariant& result)
 {
-  QRegExp matcher(pattern);
+  QRegularExpression matcher(pattern);
   if (!matcher.isValid())
   {
     qWarning() << "Could not compile pattern:" << pattern;
@@ -26,6 +26,7 @@ bool CachedRegexMatcher::addMatcher(const QString& pattern, const QVariant& resu
   }
 
   m_matcherList.push_back(qMakePair(matcher, result));
+  m_matcherCache.clear();
   return true;
 }
 
@@ -41,22 +42,22 @@ QVariantList CachedRegexMatcher::match(const QString& input)
   // otherwise try to iterate our list and find a match
   for(const MatcherValuePair& matcher : m_matcherList)
   {
-    QRegExp re(matcher.first);
+    const auto re = matcher.first.match(input);
 
-    if (re.indexIn(input) != -1)
+    if (re.hasMatch())
     {
       // found match
       QVariant returnValue = matcher.second;
 
-      if (re.captureCount() > 0 && matcher.second.type() == QVariant::String)
+      if (matcher.first.captureCount() > 0 && matcher.second.typeId() == QMetaType::QString)
       {
         QString value(matcher.second.toString());
 
-        for (int i = 0; i < re.captureCount(); i ++)
+        for (int i = 0; i < matcher.first.captureCount(); i ++)
         {
           QString argFmt = QString("%%1").arg(i + 1);
           if (value.contains(argFmt))
-            value = value.arg(re.cap(i + 1));
+            value = value.arg(re.captured(i + 1));
         }
         returnValue = QVariant(value);
       }

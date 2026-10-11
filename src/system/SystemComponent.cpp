@@ -6,6 +6,8 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QNetworkRequest>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -325,9 +327,44 @@ QString SystemComponent::getNativeShellScript()
   qDebug() << QString("Using path for extension: %1").arg(path);
 
   QFile file {path + "nativeshell.js"};
-  file.open(QIODevice::ReadOnly);
+  if (!file.open(QIODevice::ReadOnly))
+  {
+    qCritical() << "Could not read NativeShell source:" << file.fileName();
+    return {};
+  }
   auto nativeshellString = QTextStream(&file).readAll();
+  // Profile injection is trusted app code and is independent of the server's
+  // CSP. Dynamic file/qrc script tags would be rejected by script-src 'self'.
+  // Scope each plugin separately so its declarations cannot collide with the
+  // web client or another plugin. The loaders return the exported constructors.
+  QFile channelSource(QStringLiteral(":/qtwebchannel/qwebchannel.js"));
+  if (!channelSource.open(QIODevice::ReadOnly))
+  {
+    qCritical() << "Could not read bundled QWebChannel source";
+    return {};
+  }
+  QString injectedSources = QStringLiteral(
+    "if (typeof window.QWebChannel !== 'function') { (function() {\n")
+    + QString::fromUtf8(channelSource.readAll())
+    + QStringLiteral("\nwindow.QWebChannel = QWebChannel;\n})(); }\n");
+  const QStringList plugins {
+    QStringLiteral("mpvVideoPlayer"), QStringLiteral("mpvAudioPlayer"),
+    QStringLiteral("jmpInputPlugin"), QStringLiteral("jmpDiagnosticsPlugin"),
+    QStringLiteral("jmpUpdatePlugin")
+  };
+  for (const QString& plugin : plugins)
+  {
+    QFile pluginSource(path + plugin + QStringLiteral(".js"));
+    if (!pluginSource.open(QIODevice::ReadOnly))
+    {
+      qCritical() << "Could not read bundled NativeShell plugin:" << pluginSource.fileName();
+      return {};
+    }
+    injectedSources += QStringLiteral(";(function() {\n")
+      + QString::fromUtf8(pluginSource.readAll()) + QStringLiteral("\n})();\n");
+  }
   QJsonObject clientData;
+  clientData.insert("appVersion", Version::GetVersionString());
   clientData.insert("deviceName", QJsonValue::fromVariant(SettingsComponent::Get().getClientName()));
   clientData.insert("scriptPath", QJsonValue::fromVariant("file:///" + path));
   QString defaultMode = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "layout").toString();
@@ -354,38 +391,59 @@ QString SystemComponent::getNativeShellScript()
   clientData.insert("settingsDescriptions", QJsonValue::fromVariant(settingsDescriptions));
   clientData.insert("settings", QJsonValue::fromVariant(SettingsComponent::Get().allValues()));
   nativeshellString.replace("@@data@@", QJsonDocument(clientData).toJson(QJsonDocument::Compact).toBase64());
-  return nativeshellString;
+  return injectedSources + nativeshellString;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 void SystemComponent::checkForUpdates()
 {
-  if (SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "checkForUpdates").toBool()) {
-#if !defined(Q_OS_WIN) && !defined(Q_OS_MAC)
-    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
-    QString checkUrl = "https://github.com/jellyfin/jellyfin-media-player/releases/latest";
-    QUrl qCheckUrl = QUrl(checkUrl);
-    qDebug() << QString("Checking URL for updates: %1").arg(checkUrl);
-    QNetworkRequest req(qCheckUrl);
+  if (m_updateCheckInProgress || !SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "checkForUpdates").toBool())
+    return;
 
-    connect(manager, &QNetworkAccessManager::finished, this, &SystemComponent::updateInfoHandler);
-    manager->get(req);
-#else
-    emit updateInfoEmitted("SSL_UNAVAILABLE");
-#endif
-  }
+  const bool prerelease = Version::GetVersionString().contains('-');
+  const QUrl url(prerelease
+      ? QStringLiteral("https://api.github.com/repos/DevLn737/jellyfin-desktop/releases?per_page=100")
+      : QStringLiteral("https://api.github.com/repos/DevLn737/jellyfin-desktop/releases/latest"));
+  auto* manager = new QNetworkAccessManager(this);
+  QNetworkRequest request(url);
+  request.setHeader(QNetworkRequest::UserAgentHeader, getUserAgent());
+  request.setRawHeader("Accept", "application/vnd.github+json");
+  request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
+  request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::SameOriginRedirectPolicy);
+  request.setTransferTimeout(10000);
+  m_updateCheckInProgress = true;
+  auto* reply = manager->get(request);
+  reply->setReadBufferSize(1024 * 1024 + 1);
+  connect(reply, &QNetworkReply::downloadProgress, reply, [reply](qint64 received, qint64 total) {
+    if (received > 1024 * 1024 || total > 1024 * 1024)
+      reply->abort();
+  });
+  auto* deadline = new QTimer(reply);
+  deadline->setSingleShot(true);
+  connect(deadline, &QTimer::timeout, reply, &QNetworkReply::abort);
+  deadline->start(15000);
+  connect(manager, &QNetworkAccessManager::finished, this, &SystemComponent::updateInfoHandler);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 void SystemComponent::updateInfoHandler(QNetworkReply* reply)
 {
-  if (reply->error() == QNetworkReply::NoError) {
-    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if(statusCode == 302) {
-      QUrl redirectUrl = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
-      emit updateInfoEmitted(redirectUrl.toString());
+  m_updateCheckInProgress = false;
+  if (reply->error() == QNetworkReply::NoError &&
+      reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 200 &&
+      reply->url().scheme() == QStringLiteral("https") && reply->url().host() == QStringLiteral("api.github.com"))
+  {
+    const QByteArray body = reply->read(1024 * 1024 + 1);
+    if (body.size() <= 1024 * 1024) {
+      QJsonParseError error;
+      const QJsonDocument metadata = QJsonDocument::fromJson(body, &error);
+      if (error.error == QJsonParseError::NoError && (metadata.isArray() || metadata.isObject()))
+        emit updateInfoEmitted(QString::fromUtf8(metadata.toJson(QJsonDocument::Compact)));
     }
   }
+  // The update request owns its manager; errors remain silent and never affect
+  // playback, and no auth credentials from Jellyfin enter this request.
+  reply->manager()->deleteLater();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

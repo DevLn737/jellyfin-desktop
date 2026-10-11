@@ -84,8 +84,9 @@
       {
         "value": "useOpenGL",
         "display_name": "Use OpenGL",
-        "help": "Controls display method.",
+        "help": "Retained for configuration compatibility; Qt6 uses OpenGL.",
         "default": false,
+        "hidden": true,
         "platforms": [ "windows" ]
       },
       {
@@ -446,13 +447,18 @@
         "display_name": "Default Playback Speed",
         "default": 1.0,
         "possible_values": [
+          [ 0.25, "0.25x" ],
           [ 0.5, "0.5x" ],
           [ 0.75, "0.75x" ],
           [ 1.0, "1x" ],
           [ 1.25, "1.25x" ],
           [ 1.5, "1.5x" ],
           [ 1.75, "1.75x" ],
-          [ 2.0, "2x" ]
+          [ 2.0, "2x" ],
+          [ 2.5, "2.5x" ],
+          [ 3.0, "3x" ],
+          [ 4.0, "4x" ],
+          [ 5.0, "5x" ]
         ]
       }
     ]

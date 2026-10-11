@@ -10,6 +10,7 @@
 #define _DISPLAYMANAGER_H_
 
 #include <QMap>
+#include <QObject>
 #include <QPoint>
 #include <QString>
 #include <QSharedPointer>

@@ -1,0 +1,4 @@
+build-manifest.json text eol=lf
+contracts/*.json text eol=lf
+quality/*.json text eol=lf
+contracts/**/*.json text eol=lf

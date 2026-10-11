@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "provenance": "source-derived-synthetic",
+  "capturedFromLiveServer": false,
+  "serverCommit": "494362e6b354385a00b7ae879814e2908c23f725",
+  "webCommit": "b2a97d40c6898726b030b0233a0c9dc89734d3e3",
+  "messages": [
+    {
+      "name": "pause with synchronized rate",
+      "payload": {
+        "MessageType": "SyncPlayCommand",
+        "Data": { "Command": "Pause", "PositionTicks": 120000000, "PlaybackRate": 1.25, "When": "2026-10-11T00:00:01.0000000Z" }
+      },
+      "expected": { "event": "pause", "metrics": { "status": 1, "positionMs": 12000, "playbackRate": 1.25, "whenUtcMs": 1791676801000 } }
+    },
+    {
+      "name": "resume with synchronized base rate",
+      "payload": {
+        "MessageType": "SyncPlayCommand",
+        "Data": { "Command": "Unpause", "PositionTicks": 120000000, "PlaybackRate": 0.25, "When": "2026-10-11T00:00:02.0000000Z" }
+      },
+      "expected": { "event": "resume", "metrics": { "status": 0, "positionMs": 12000, "playbackRate": 0.25, "whenUtcMs": 1791676802000 } }
+    },
+    {
+      "name": "seek",
+      "payload": {
+        "MessageType": "SyncPlayCommand",
+        "Data": { "Command": "Seek", "PositionTicks": 654321000, "PlaybackRate": 1.5, "When": "2026-10-11T00:00:03.0000000Z" }
+      },
+      "expected": { "event": "seek", "metrics": { "status": 3, "positionMs": 65432.1, "playbackRate": 1.5, "whenUtcMs": 1791676803000 } }
+    },
+    {
+      "name": "idle stop carrying rate",
+      "payload": { "MessageType": "SyncPlayCommand", "Data": { "Command": "Stop", "PlaybackRate": 2 } },
+      "expected": { "event": "command", "metrics": { "status": 2, "playbackRate": 2 } }
+    },
+    {
+      "name": "group join",
+      "payload": { "MessageType": "SyncPlayGroupUpdate", "Data": { "Type": "GroupJoined", "Data": {} } },
+      "expected": { "event": "join", "metrics": {} }
+    },
+    {
+      "name": "group leave",
+      "payload": { "MessageType": "SyncPlayGroupUpdate", "Data": { "Type": "GroupLeft", "Data": {} } },
+      "expected": { "event": "leave", "metrics": {} }
+    },
+    {
+      "name": "buffer waiting",
+      "payload": { "MessageType": "SyncPlayGroupUpdate", "Data": { "Type": "StateUpdate", "Data": { "Reason": "Buffer", "State": "Waiting" } } },
+      "expected": { "event": "buffering", "metrics": { "status": 1 } }
+    },
+    {
+      "name": "seek waiting is not buffering",
+      "payload": { "MessageType": "SyncPlayGroupUpdate", "Data": { "Type": "StateUpdate", "Data": { "Reason": "Seek", "State": "Waiting" } } },
+      "expected": null
+    }
+  ]
+}

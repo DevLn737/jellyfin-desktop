@@ -94,11 +94,10 @@ The feature is compiled and registered only on Windows.
 Discord sources use the same UTF-8 compiler settings in production and tests;
 MSVC character-conversion warning C4566 is an error for these sources.
 Existing SyncPlay external-track support remains included. The workflow
-`.github/workflows/windows-discord-presence.yml` runs the existing JavaScript
-regression test, builds/runs the Qt activity and named-pipe tests on Windows,
-and builds installer/portable artifacts. It does not replace the SyncPlay release.
+`.github/workflows/main.yml` runs JavaScript regressions and Qt6 activity and
+named-pipe tests, and builds the unified installer and portable artifacts.
 
-To run the standalone tests with Qt 5.15 and CMake:
+To run the standalone tests with the manifest's Qt6 and CMake:
 
 ```text
 cmake -S tests/discord -B build/discord-tests -DCMAKE_PREFIX_PATH=<Qt directory>

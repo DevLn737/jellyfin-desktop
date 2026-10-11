@@ -1,9 +1,9 @@
-import QtQuick 2.4
+import QtQuick
 import Konvergo 1.0
-import QtWebEngine 1.7
-import QtWebChannel 1.0
-import QtQuick.Window 2.2
-import QtQuick.Controls 1.4
+import QtWebEngine
+import QtWebChannel
+import QtQuick.Window
+import QtQuick.Controls
 
 KonvergoWindow
 {
@@ -139,6 +139,20 @@ KonvergoWindow
     visible: false
   }
 
+  WebChannel { id: nativeWebChannel }
+
+  WebEngineProfile
+  {
+    id: webProfile
+    storageName: "Default"
+    offTheRecord: false
+    persistentStoragePath: webEngineStoragePath
+    cachePath: webEngineCachePath
+    persistentCookiesPolicy: WebEngineProfile.AllowPersistentCookies
+    httpUserAgent: components.system.getUserAgent()
+    httpCacheType: WebEngineProfile.MemoryHttpCache
+  }
+
   WebEngineView
   {
     id: web
@@ -148,80 +162,82 @@ KonvergoWindow
     settings.localContentCanAccessFileUrls: true
     settings.allowRunningInsecureContent: true
     settings.playbackRequiresUserGesture: false
-    profile.httpUserAgent: components.system.getUserAgent()
-    profile.httpCacheType: WebEngineProfile.MemoryHttpCache
-    url: mainWindow.webUrl
+    profile: webProfile
+    webChannel: nativeWebChannel
+    backgroundColor: "black"
+    // Keep WebEngine's scenegraph output valid after minimize or suspend.
+    layer.enabled: true
     focus: true
     property string currentHoveredUrl: ""
-    onLinkHovered: web.currentHoveredUrl = hoveredUrl
+    onLinkHovered: function(hoveredUrl) { web.currentHoveredUrl = hoveredUrl }
     width: mainWindow.width
     height: mainWindow.height
-    userScripts: [
-      WebEngineScript
-      {
-        sourceCode: components.system.getNativeShellScript()
-        injectionPoint: WebEngineScript.DocumentCreation
-        worldId: WebEngineScript.MainWorld
-      }
-    ]
-
     Component.onCompleted:
     {
+      // Qt 6 injects scripts from the profile. Register before the first URL
+      // assignment so NativeShell exists even on a cold start.
+      webProfile.userScripts.collection = [{
+        name: "NativeShell",
+        sourceCode: components.system.getNativeShellScript(),
+        injectionPoint: WebEngineScript.DocumentCreation,
+        worldId: WebEngineScript.MainWorld,
+        runsOnSubFrames: false
+      }]
+      web.url = Qt.binding(function() { return mainWindow.webUrl })
       forceActiveFocus()
       mainWindow.reloadWebClient.connect(reload)
     }
 
-    onLoadingChanged:
+    onLoadingChanged: function(loadingInfo)
     {
       // we use a timer here to switch to the webview since
       // it take a few moments for the webview to render
       // after it has loaded.
       //
-      if (loadRequest.status == WebEngineView.LoadStartedStatus)
+      if (loadingInfo.status == WebEngineView.LoadStartedStatus)
       {
-        console.log("WebEngineLoadRequest starting: " + loadRequest.url);
+        console.log("WebEngineLoadRequest starting: " + loadingInfo.url);
       }
-      else if (loadRequest.status == WebEngineView.LoadSucceededStatus)
+      else if (loadingInfo.status == WebEngineView.LoadSucceededStatus)
       {
-        console.log("WebEngineLoadRequest success: " + loadRequest.url);
+        console.log("WebEngineLoadRequest success: " + loadingInfo.url);
       }
-      else if (loadRequest.status == WebEngineView.LoadFailedStatus)
+      else if (loadingInfo.status == WebEngineView.LoadFailedStatus)
       {
-        console.log("WebEngineLoadRequest failure: " + loadRequest.url + " error code: " + loadRequest.errorCode);
+        console.log("WebEngineLoadRequest failure: " + loadingInfo.url + " error code: " + loadingInfo.errorCode);
         errorLabel.visible = true
         errorLabel.text = "Error loading client, this is bad and should not happen<br>" +
                           "You can try to <a href='reload'>reload</a> or head to our <a href='http://jellyfin.org'>support page</a><br><br>Actual Error: <pre>" +
-                          loadRequest.errorString + " [" + loadRequest.errorCode + "]</pre><br><br>" +
+                          loadingInfo.errorString + " [" + loadingInfo.errorCode + "]</pre><br><br>" +
                           "Provide the <a target='_blank' href='file://"+ components.system.logFilePath + "'>logfile</a> as well."
       }
     }
 
-    onNewViewRequested:
+    onNewWindowRequested: function(request)
     {
       if (request.userInitiated)
       {
-        console.log("Opening external URL: " + web.currentHoveredUrl)
-        components.system.openExternalUrl(web.currentHoveredUrl)
+        components.system.openExternalUrl(request.requestedUrl)
       }
     }
 
-    onFullScreenRequested:
+    onFullScreenRequested: function(request)
     {
       console.log("Request fullscreen: " + request.toggleOn)
       mainWindow.setFullScreen(request.toggleOn)
       request.accept()
     }
 
-    onJavaScriptConsoleMessage:
+    onJavaScriptConsoleMessage: function(level, message, lineNumber, sourceID)
     {
       components.system.info(message)
     }
 
-    onCertificateError:
+    onCertificateError: function(error)
     {
-      console.log(error.url + " :" + error.description + error.error)
+      console.log(error.url + " :" + error.description + error.type)
       if (components.settings.ignoreSSLErrors()) {
-        error.ignoreCertificateError()
+        error.acceptCertificate()
       }
     }
   }
@@ -239,7 +255,7 @@ KonvergoWindow
     visible: false
     verticalAlignment: Text.AlignVCenter
     textFormat: Text.StyledText
-    onLinkActivated:
+    onLinkActivated: function(link)
     {
       if (link == "reload")
       {

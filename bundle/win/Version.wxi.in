@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Include>
-  <?define Version=@VERSION_STRING_SHORT@ ?>
+<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <?define Version=@PACKAGE_VERSION@ ?>
   <?define FullVersion=@VERSION_STRING@ ?>
-  <?define DeployPath=@CMAKE_INSTALL_PREFIX@ ?>
+  <?define MinimumWindowsBuild=@JMP_MIN_WINDOWS_BUILD@ ?>
+  <?define VCRedistVersion=@JMP_VCREDIST_VERSION@ ?>
 </Include>

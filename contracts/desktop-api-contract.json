@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "status": "final",
+  "serverVersion": "12.2.0",
+  "serverCommit": "494362e6b354385a00b7ae879814e2908c23f725",
+  "webVersion": "12.2.0",
+  "webCommit": "b2a97d40c6898726b030b0233a0c9dc89734d3e3",
+  "apiRevision": "desktop-source-pinned-12.2-syncplay.1-r1",
+  "releaseLabel": "12.2-syncplay.1",
+  "upstreamServerCommit": "ca0f16eb7c195f720a1493ed469a27c4657db0c6",
+  "upstreamWebCommit": "61b1f890365ad15138e943e694af723c1d47df2a",
+  "deployedImageId": "sha256:71efa2db10eb015f08583f10cdc1f0a4d21da9c2d338ad5a77606568e2679292",
+  "fixturePath": "contracts/fixtures/syncplay-source-derived.json",
+  "fixtureSha256": "03addb135fadc9f16022ffd2329af12289f14f5c80d9ba7a0edcbbe2b2febaa5",
+  "evidence": {
+    "kind": "read-only-live-inventory-and-source-derived-synthetic-fixtures",
+    "capturedFromLiveServer": false,
+    "finalServerAgentHandoffReceived": false,
+    "contractFinalizedBy": "Desktop read-only fallback against immutable deployed Server/Web sources",
+    "observationsAreFromMovingWorkInProgress": false,
+    "immutableDeploymentPinsVerified": true,
+    "deploymentManifestPath": "services/jellyfin/release-manifest.json",
+    "migrationReceiptPath": "inventory/2026-10-11-jellyfin-migration.md",
+    "versionObservation": "Read-only deployed inventory and live public API report Server/Web 12.2.0, release 12.2-syncplay.1. Container image and immutable source commits match the release manifest. No separate server-agent API handoff was found."
+  },
+  "clientBoundary": {
+    "platform": "Windows x64",
+    "ownedChanges": ["Desktop", "native-injected JavaScript", "client SyncPlay integration", "external audio"],
+    "serverAndServedWebChanges": false
+  },
+  "syncPlay": {
+    "messageTypes": ["SyncPlayCommand", "SyncPlayGroupUpdate"],
+    "subscriptionCallback": "Message contains Data; each subscription closure supplies its fixed message type.",
+    "command": {
+      "values": { "Unpause": 0, "Pause": 1, "Stop": 2, "Seek": 3 },
+      "positionField": "PositionTicks",
+      "ticksPerMillisecond": 10000,
+      "rateField": "PlaybackRate",
+      "rateIsOrdinaryCommandField": true,
+      "rateIsGroupBaseRate": true,
+      "baseRateMinimum": 0.25,
+      "baseRateMaximum": 5,
+      "separateRateCommand": false,
+      "whenField": "When",
+      "whenEncoding": "ISO timestamp with timezone; the Web manager may convert it to Date in the shared payload."
+    },
+    "groupUpdate": {
+      "typeField": "Type",
+      "joinType": "GroupJoined",
+      "leaveType": "GroupLeft",
+      "stateUpdateType": "StateUpdate",
+      "stateDataField": "Data",
+      "states": { "Idle": 0, "Waiting": 1, "Paused": 2, "Playing": 3 },
+      "observedReasons": { "Seek": 8, "Buffer": 9, "Ready": 10, "Rate": 17 },
+      "diagnosticBufferReason": "Buffer"
+    },
+    "groupRateCapability": {
+      "field": "SupportsSyncPlayPlaybackRate",
+      "advertisedByObservedCustomWeb": true,
+      "unsupportedGroupHttpStatus": 409,
+      "handledByWeb": true
+    },
+    "localWebCorrection": {
+      "temporaryEffectiveRateIsNotServerCommandBaseRate": true,
+      "sourceDefaults": {
+        "source": "PlaybackCore",
+        "speedMinMs": 60,
+        "speedMaxMs": 3000,
+        "speedDurationMs": 1000,
+        "skipMinMs": 400,
+        "correctionMaxMs": 5000,
+        "enableSyncCorrection": false
+      },
+      "defaultsAreQualityAcceptanceThresholds": false
+    },
+    "connectionLifecycleEvents": ["apiclientcreated", "localusersignedin", "localusersignedout"],
+    "legacyMessageAdapter": { "status": "compatibility-adapter", "event": "message", "payloadFields": ["MessageType", "Data"] },
+    "driftAcceptance": {
+      "status": "pending integrated qualification",
+      "protocolGuaranteesMaximumDrift": false,
+      "sourceDefaultsAreNotAcceptanceLimits": true,
+      "measurement": "Compare actual client positions on a common time scale; agree scenario tolerances during final qualification."
+    }
+  },
+  "nativePlayback": {
+    "positionAndDurationUnit": "milliseconds",
+    "nativeRateUnit": "per mille",
+    "nativeRateScale": 1000,
+    "clientRateRange": { "status": "source-verified", "baseMinimum": 0.25, "effectiveMinimum": 0.2, "maximum": 5 },
+    "nativeRateAcknowledgment": "boolean; rejected latest request restores the last acknowledged rate and shows a throttled fixed warning",
+    "externalAudio": "asynchronous addition, unique request generation, latest wanted selection, deduplication and stale demuxer removal"
+  },
+  "authentication": {
+    "standardHeader": "Authorization: MediaBrowser Client=..., Device=..., DeviceId=..., Version=..., Token=...; the served Web client owns authentication",
+    "legacyAuthorizationRequired": false,
+    "urlApiKey": "preserve Web-generated ApiKey query parameter",
+    "api_key": "do not generate the rejected query spelling",
+    "ownAuthorizationInjection": false,
+    "serverAuthenticationDictionaryChangedByDesktop": false,
+    "requiredSourceHeaders": {
+      "field": "MediaSourceInfo.RequiredHttpHeaders",
+      "type": "Dictionary<string,string>",
+      "clientForwardingStatus": "not-supported",
+      "reason": "The pinned source schema provides a dictionary but no origin/redirect guarantee. Existing Desktop does not forward it: mpv per-file http-header-fields also apply to external tracks and redirects. Header-dependent direct remote sources require a separately specified scoped-header implementation or a server-mediated URL."
+    }
+  },
+  "playbackInfo": {
+    "source": "Server Jellyfin.Api/Controllers/MediaInfoController.cs at serverCommit",
+    "routes": ["GET Items/{itemId}/PlaybackInfo", "POST Items/{itemId}/PlaybackInfo"],
+    "postBodyPreferred": true,
+    "queryCompatibility": "Obsolete query parameters still override corresponding body parameters in this pinned version",
+    "timeFields": {"StartTimeTicks": "100 ns ticks", "RunTimeTicks": "100 ns ticks"},
+    "responseFields": ["MediaSources", "PlaySessionId", "ErrorCode"],
+    "mediaSourceFields": ["Id", "Protocol", "Path", "Container", "SupportsDirectPlay", "SupportsDirectStream", "SupportsTranscoding", "TranscodingUrl", "TranscodingSubProtocol", "MediaStreams", "RequiredHttpHeaders", "DefaultAudioStreamIndex", "DefaultSubtitleStreamIndex"],
+    "streamFields": ["Index", "Type", "Codec", "IsExternal", "DeliveryMethod", "DeliveryUrl", "IsExternalUrl", "RealFrameRate", "AverageFrameRate"],
+    "indexMapping": "Index belongs to the Jellyfin MediaStreams list; native embedded track selection uses the relative stream index of the selected type, not Index directly",
+    "subtitleSelection": "-1 or null disables subtitles; Encode is handled by server transcoding, External uses the delivered URL",
+    "externalAudio": "Prefer DeliveryUrl; otherwise derive the authenticated progressive Audio/{itemId}/stream.{codec} URL from the existing video stream origin/subpath with matching MediaSourceId and AudioStreamIndex and EnableRedirection=false",
+    "urlPreparation": "Native video advertises useFullSubtitleUrls=true. The pinned Web client resolves leading-slash DeliveryUrl values through apiClient.getUrl before passing options to the native player",
+    "authUrlHandling": "Preserve supplied Web URLs and their ApiKey spelling; do not copy authorization headers to another origin or add legacy api_key",
+    "missingFields": "Unknown stream indexes fall back to the existing native selection; missing external audio URL generation does not create an invented endpoint",
+    "errors": {"http401": "Web authentication flow", "http403": "Web access policy flow", "http404": "Missing item", "ErrorCode": "Web playback error display", "nativeFailure": "Player error event"}
+  },
+  "syncPlayRateApi": {
+    "route": "POST SyncPlay/SetPlaybackRate",
+    "body": {"PlaybackRate": "finite float, 0.25..5"},
+    "successStatus": 204,
+    "invalidStatus": 400,
+    "invalidBody": "ValidationProblemDetails",
+    "unsupportedStatus": 409,
+    "unsupportedBody": "ProblemDetails with code=SyncPlayPlaybackRateNotSupported and numeric unsupportedParticipants",
+    "authorization": "SyncPlayIsInGroup policy",
+    "standardServerWithoutExtension": "Unsupported/missing route is an error in the served Web SyncPlay implementation; Desktop does not replace it with a local group-rate change",
+    "clientSupport": "Native acknowledges valid per-mille values; in a stock SyncPlay group without playbackManager._localSetPlaybackRate it advertises PlaybackRate=false and rejects non-1x local setters with a visible warning. The pinned custom Web wrapper preserves that function and advertises SupportsSyncPlayPlaybackRate=true",
+    "groupRateOwnership": "The served Web SyncPlay wrapper sends the group request; only an ordinary server command updates group base rate. Native local setters apply confirmed base rates and bounded local corrections"
+  },
+  "sourceEvidence": {
+    "server": ["Jellyfin.Server.Implementations/Security/AuthorizationContext.cs", "Jellyfin.Api/Controllers/MediaInfoController.cs", "MediaBrowser.Model/Dto/MediaSourceInfo.cs", "MediaBrowser.Model/Entities/MediaStream.cs", "Jellyfin.Api/Controllers/SyncPlayController.cs"],
+    "web": ["src/components/playback/playbackmanager.js", "src/utils/dashboard.js", "src/scripts/serverNotifications.js", "src/plugins/syncPlay/core/PlaybackRate.ts", "src/plugins/syncPlay/core/PlaybackCore.js", "src/plugins/syncPlay/ui/players/PlayerPosition.ts"],
+    "officialApiChangeNotes": "https://github.com/jellyfin/jellyfin/releases/tag/v12.0"
+  },
+  "diagnostics": {
+    "normalBuild": "local numeric metrics only while capture is active",
+    "tracy": "separate diagnostic build",
+    "syncPlayMetrics": ["positionMs", "playbackRate", "whenUtcMs", "status"],
+    "storedIdentifiersOrPayloadStrings": false,
+    "observerMutatesSharedPayload": false
+  },
+  "pendingReleaseGate": [
+    "If the server-agent handoff selects a different Server/Web pair, revise this source-pinned contract and repeat client compatibility checks before release.",
+    "RequiredHttpHeaders forwarding remains unsupported; do not enable it without an explicit origin, external-track and redirect contract.",
+    "Agree and measure SyncPlay drift tolerances during integrated qualification; protocol defaults alone are not passing evidence.",
+    "Qualify the final Windows build and record the user's single integrated application/feature acceptance."
+  ]
+}

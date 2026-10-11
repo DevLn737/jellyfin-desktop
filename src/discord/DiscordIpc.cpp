@@ -1,4 +1,5 @@
 #include "DiscordIpc.h"
+#include "profiling/Trace.h"
 
 #include <QCoreApplication>
 #include <QJsonDocument>
@@ -23,7 +24,7 @@ DiscordIpc::DiscordIpc(QObject* parent, const QString& pipePrefix)
   });
   connect(&m_socket, &QLocalSocket::readyRead, this, &DiscordIpc::readFrames);
   connect(&m_socket, &QLocalSocket::disconnected, this, [this]() { reconnect(15000); });
-  connect(&m_socket, QOverload<QLocalSocket::LocalSocketError>::of(&QLocalSocket::error), this,
+  connect(&m_socket, &QLocalSocket::errorOccurred, this,
           [this](QLocalSocket::LocalSocketError) { reconnect(m_pipeIndex == 0 ? 15000 : 100); });
 }
 
@@ -91,6 +92,7 @@ void DiscordIpc::reconnect(int delayMs)
 
 bool DiscordIpc::writeFrame(quint32 opcode, const QByteArray& payload)
 {
+  JMP_PROFILE_ZONE("Discord IPC write");
   QByteArray frame(8, '\0');
   qToLittleEndian<quint32>(opcode, reinterpret_cast<uchar*>(frame.data()));
   qToLittleEndian<quint32>(static_cast<quint32>(payload.size()), reinterpret_cast<uchar*>(frame.data() + 4));
@@ -135,6 +137,7 @@ void DiscordIpc::sendActivity()
 
 void DiscordIpc::readFrames()
 {
+  JMP_PROFILE_ZONE("Discord IPC read");
   m_input.append(m_socket.readAll());
   if (m_input.size() > static_cast<int>(2 * (MaxPayload + 8)))
   {

@@ -10,5 +10,6 @@ add_library(shared STATIC
 )
 
 std_target_properties(shared)
+target_link_libraries(shared PRIVATE Qt6::Core Qt6::Network Qt6::Gui)
 
 clang_tidy(shared)

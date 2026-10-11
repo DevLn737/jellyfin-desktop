@@ -21,7 +21,7 @@ public:
   virtual void setWindow(QQuickWindow* window);
 
 protected:
-  QQuickWindow* m_window;
+  QQuickWindow* m_window = nullptr;
 };
 
 #endif // TASKBARCOMPONENT_H

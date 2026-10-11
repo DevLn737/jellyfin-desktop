@@ -2,7 +2,6 @@
 // Created by Tobias Hieta on 01/09/15.
 //
 
-#include "settings/SettingsSection.h"
 #include "Paths.h"
 
 #include <QDir>
@@ -10,8 +9,32 @@
 #include <QGuiApplication>
 #include <QtGui/qguiapplication.h>
 #include <QDebug>
+#include <QFileInfo>
 #include "Names.h"
 #include "Version.h"
+
+static bool g_portableMode = false;
+static QString g_portableRoot;
+
+bool Paths::detectAndEnablePortableMode()
+{
+#ifdef Q_OS_WIN
+  const QString appDir = QCoreApplication::applicationDirPath();
+  if (QFileInfo::exists(appDir + "/portable") || QFileInfo::exists(appDir + "/portable.txt")) {
+    g_portableRoot = appDir;
+    g_portableMode = true;
+    // Do not fall back to shared AppData if the portable directory is read-only.
+    // Settings failures must remain visible instead of opening another profile.
+    return QDir().mkpath(appDir + "/data") && QDir().mkpath(appDir + "/cache");
+  }
+#endif
+  return false;
+}
+
+bool Paths::isPortableMode()
+{
+  return g_portableMode;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 static QDir writableLocation(QStandardPaths::StandardLocation loc)
@@ -59,6 +82,7 @@ QString Paths::resourceDir(const QString& file)
 /////////////////////////////////////////////////////////////////////////////////////////
 QString Paths::dataDir(const QString& file)
 {
+  if (g_portableMode) return QDir(g_portableRoot + "/data").filePath(file);
   QDir d = writableLocation(QStandardPaths::GenericDataLocation);
   if (file.isEmpty())
     return d.absolutePath();
@@ -68,6 +92,7 @@ QString Paths::dataDir(const QString& file)
 /////////////////////////////////////////////////////////////////////////////////////////
 QString Paths::cacheDir(const QString& file)
 {
+  if (g_portableMode) return QDir(g_portableRoot + "/cache").filePath(file);
   QDir d = writableLocation(QStandardPaths::GenericCacheLocation);
   if (file.isEmpty())
     return d.absolutePath();
@@ -77,6 +102,10 @@ QString Paths::cacheDir(const QString& file)
 /////////////////////////////////////////////////////////////////////////////////////////
 QString Paths::logDir(const QString& file)
 {
+  if (g_portableMode) {
+    QDir().mkpath(g_portableRoot + "/data/logs");
+    return QDir(g_portableRoot + "/data/logs").filePath(file);
+  }
 #ifdef Q_OS_MAC
   QDir ldir = QDir(QStandardPaths::locate(QStandardPaths::HomeLocation, "", QStandardPaths::LocateDirectory));
   ldir.mkpath(ldir.absolutePath() + "/Library/Logs/" + Names::MainName());

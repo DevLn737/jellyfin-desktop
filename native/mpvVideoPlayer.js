@@ -7,13 +7,15 @@
     }
 
     class mpvVideoPlayer {
-        constructor({ events, loading, appRouter, globalize, appHost, appSettings, confirm, dashboard }) {
+        constructor({ events, loading, appRouter, globalize, appHost, appSettings, confirm, toast, dashboard, playbackManager }) {
             this.events = events;
             this.loading = loading;
             this.appRouter = appRouter;
             this.globalize = globalize;
             this.appHost = appHost;
             this.appSettings = appSettings;
+            this._toast = toast;
+            this._playbackManager = playbackManager;
 
             this.setTransparency = dashboard.default.setBackdropTransparency.bind(dashboard);
 
@@ -634,6 +636,7 @@
     }
 
     supports(feature) {
+        if (feature === 'PlaybackRate' && !this.supportsSyncPlayPlaybackRate()) return false;
         if (!this._supportedFeatures) {
             this._supportedFeatures = mpvVideoPlayer.getSupportedFeatures();
         }
@@ -644,7 +647,11 @@
     // Save this for when playback stops, because querying the time at that point might return 0
     currentTime(val) {
         if (val != null) {
-            window.api.player.seekTo(val);
+            const position = typeof val === 'number' || (typeof val === 'string' && val.trim())
+                ? Number(val) : NaN;
+            if (Number.isFinite(position) && position >= 0 && position <= Number.MAX_SAFE_INTEGER) {
+                window.api.player.seekTo(Math.round(position));
+            }
             return;
         }
 
@@ -716,47 +723,75 @@
     }
 
     setPlaybackRate(value) {
-        let playSpeed = +value; //this comes as a string from player force int for now
-        this._playRate = playSpeed;
-        window.api.player.setPlaybackRate(playSpeed * 1000);
+        const perMille = mpvVideoPlayer.normalizePlaybackRate(value);
+        if (perMille === null) {
+            this.notifyPlaybackRateFailure();
+            return false;
+        }
+        if (perMille !== 1000 && !this.supportsSyncPlayPlaybackRate()) {
+            this.notifyPlaybackRateFailure('This SyncPlay group does not support changing playback rate.');
+            return false;
+        }
+        const previousRate = this.getPlaybackRate();
+        this._playRate = perMille / 1000;
+        const generation = this._rateRequestGeneration = (this._rateRequestGeneration || 0) + 1;
+        window.api.player.setPlaybackRate(perMille, (accepted) => {
+            if (accepted === true && generation >= (this._acceptedRateGeneration || 0)) {
+                this._acceptedRateGeneration = generation;
+                this._acceptedPlayRate = perMille / 1000;
+                if (this._rejectedRateGeneration === this._rateRequestGeneration) this._playRate = this._acceptedPlayRate;
+            } else if (accepted === false && generation === this._rateRequestGeneration) {
+                this._rejectedRateGeneration = generation;
+                this._playRate = this._acceptedPlayRate ?? previousRate;
+                console.warn('Native player rejected playback rate');
+                this.notifyPlaybackRateFailure();
+            }
+        });
+        return true;
+    }
+
+    supportsSyncPlayPlaybackRate() {
+        const manager = this._playbackManager;
+        // The deployed group-rate wrapper saves the local setter under this
+        // marker. Stock Web leaves its local setter exposed during SyncPlay.
+        return !manager?.syncPlayEnabled || typeof manager._localSetPlaybackRate === 'function';
+    }
+
+    notifyPlaybackRateFailure(message = 'Requested playback rate is not supported by the native player.') {
+        const now = Date.now();
+        if (this._lastRateFailureAt !== undefined && now - this._lastRateFailureAt < 5000) return;
+        this._lastRateFailureAt = now;
+        try { this._toast?.(message); } catch (_) { }
     }
 
     getPlaybackRate() {
-        if(!this._playRate) //On startup grab default
-        {
-            let playRate = window.jmpInfo.settings.video.default_playback_speed;
-
-            if(!playRate) //fallback if default missing
-                playRate = 1;
-
-            this._playRate = playRate;
+        if (!this._playRate) {
+            const settings = window.jmpInfo && window.jmpInfo.settings;
+            const defaultRate = settings && settings.video && settings.video.default_playback_speed;
+            const perMille = mpvVideoPlayer.normalizePlaybackRate(defaultRate, 0.25);
+            this._playRate = perMille === null ? 1 : perMille / 1000;
         }
         return this._playRate;
     }
 
+    static normalizePlaybackRate(value, minimum = 0.2) {
+        if (typeof value !== 'number' && typeof value !== 'string') {
+            return null;
+        }
+        if (typeof value === 'string' && !value.trim()) {
+            return null;
+        }
+        const rate = Number(value);
+        if (!Number.isFinite(rate) || rate < minimum || rate > 5) {
+            return null;
+        }
+        return Math.round(rate * 1000);
+    }
+
     getSupportedPlaybackRates() {
-        return [{
-            name: '0.5x',
-            id: 0.5
-        }, {
-            name: '0.75x',
-            id: 0.75
-        }, {
-            name: '1x',
-            id: 1.0
-        }, {
-            name: '1.25x',
-            id: 1.25
-        }, {
-            name: '1.5x',
-            id: 1.5
-        }, {
-            name: '1.75x',
-            id: 1.75
-        }, {
-            name: '2x',
-            id: 2.0
-        }];
+        if (!this.supportsSyncPlayPlaybackRate()) return [{ name: '1x', id: 1 }];
+        return [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5]
+            .map((rate) => ({ name: rate + 'x', id: rate }));
     }
 
     saveVolume(value) {

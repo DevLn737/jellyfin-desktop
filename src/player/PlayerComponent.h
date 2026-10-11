@@ -15,6 +15,8 @@
 #include "ComponentManager.h"
 #include "CodecsComponent.h"
 #include "QtHelper.h"
+#include "ExternalAudioRequest.h"
+#include "VideoTrackRestore.h"
 
 #include <mpv/client.h>
 
@@ -118,7 +120,8 @@ public:
   // automatically use the whole window. (Same if the rectangle is 0-sized.)
   Q_INVOKABLE void setVideoRectangle(int x, int y, int w, int h);
 
-  Q_INVOKABLE void setPlaybackRate(int rate);
+  // Speed in per-mille units: 1000 = 1x. Returns false if mpv rejects it.
+  Q_INVOKABLE bool setPlaybackRate(double rate);
 
   Q_INVOKABLE qint64 getPosition();
   Q_INVOKABLE qint64 getDuration();
@@ -130,6 +133,8 @@ public:
   virtual void setWindow(QQuickWindow* window);
 
   QString videoInformation() const;
+  QVariantMap diagnosticMetrics() const { return m_diagnosticMetrics; }
+  void setDiagnosticObservation(bool enabled);
 
   static QStringList AudioCodecsAll() { return { "ac3", "dts", "eac3", "dts-hd", "truehd" }; };
   static QStringList AudioCodecsSPDIF() { return { "ac3", "dts" }; };
@@ -165,6 +170,7 @@ private Q_SLOTS:
   void onRefreshRateChange();
   void onCodecsLoadingDone(CodecsFetcher* sender);
   void updateAudioDevice();
+  void onRenderContextRecreated();
 
 Q_SIGNALS:
   // The following signals correspond to the State enum above.
@@ -254,12 +260,20 @@ private:
   QString m_currentSubtitleStream;
   QString m_currentAudioStream;
   QString m_pendingExternalAudioStream;
+  ExternalAudioRequest m_externalAudioRequest;
+  VideoTrackRestore m_videoTrackRestore;
+  QVariantMap m_diagnosticMetrics;
+  bool m_diagnosticObservationEnabled = false;
   struct PresenceMedia
   {
     QVariantMap item;
     QUrl url;
     qint64 startMs;
     qint64 playlistId;
+    QString audioStream;
+    QString subtitleStream;
+    float frameRate;
+    QVariantMap serverMediaInfo;
   };
   QQueue<PresenceMedia> m_presenceQueue;
   QRect m_videoRectangle;

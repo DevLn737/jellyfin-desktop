@@ -69,8 +69,13 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
     - subtitleStream: "#" + index from mkv, or pass external url
 - void setAudioDelay(int ms)
 - void setSubtitleDelay(int ms)
-- void setPlaybackRate(int rate) - 1000 = normal speed
-- int getPosition()
+- bool setPlaybackRate(double rate) - integer thousandths, 1000 = normal speed;
+  finite values 200..5000 are accepted, otherwise false. JavaScript player base
+  rates are 0.25..5 and SyncPlay corrections are 0.2..5. Callers must process the
+  asynchronous native acknowledgement.
+- qint64 getPosition() - milliseconds, including fractional mpv seconds rounded
+  to the nearest millisecond; invalid/negative values return zero
+- qint64 getDuration() - milliseconds; invalid/negative values return zero
 - void setVideoOnlyMode(bool enable) - hides webview
 - bool checkCodecSupport(str codec) - can check for vc1 and mpeg2video
 - list[codecdriver] installedCodecDrivers()
@@ -95,6 +100,26 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
 ## types:
 - codecdriver: see src/player/CodecsComponent.h > struct CodecDriver
 - state: enum { finished, canceled, error, paused, playing, buffering }
+
+# diagnostics
+
+`window.api.diagnostics` is available after `window.apiPromise`. Calls use the
+same asynchronous WebChannel convention as the other components.
+
+- `startCapture()` starts a new local capture and clears the previous session.
+- `stopCapture()` stops collection and preserves the retained report.
+- `saveReport()` opens the system file dialog and exports JSON on a worker.
+- `clearCapture()` stops capture and discards the retained session.
+- `capturing` is a read-only property; `captureChanged(bool)` reports changes.
+- `reportSaved(bool)` reports write completion without exposing the file path.
+- `ping()` and `recordWebChannelLatency(double durationMs)` measure a round trip
+  while capturing; they do not persist arbitrary messages.
+- `recordSyncPlayEvent(string event, map metrics)` accepts only fixed event names
+  and finite numeric allowlisted fields. Unknown fields and text are discarded.
+
+Collection is off at every launch, retains the last ten minutes in at most
+16 MiB, and ends automatically after fifteen minutes. Details and the numeric
+event mapping are in [DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 # power
 power/PowerComponent - [header](https://github.com/plexinc/plex-media-player/blob/master/src/power/PowerComponent.h), [implementation](https://github.com/plexinc/plex-media-player/blob/master/src/power/PowerComponent.cpp)
 ## funcs:

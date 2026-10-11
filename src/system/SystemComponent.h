@@ -56,7 +56,9 @@ public:
   Q_SIGNAL void capabilitiesChanged(const QString& capabilities);
   Q_SIGNAL void userInfoChanged();
 
-  Q_SIGNAL void updateInfoEmitted(QString url);
+  // JSON release metadata from this fork's GitHub API; the web plugin performs
+  // SemVer/channel selection and only opens a validated release page.
+  Q_SIGNAL void updateInfoEmitted(QString releaseMetadata);
 
   // possible os types type enum
   enum PlatformType
@@ -117,6 +119,7 @@ private:
   QString m_webClientVersion;
   bool m_cursorVisible;
   qreal m_scale;
+  bool m_updateCheckInProgress = false;
 
 };
 

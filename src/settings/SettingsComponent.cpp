@@ -56,7 +56,7 @@ void SettingsComponent::cycleSettingCommand(const QString& args)
   // Otherwise log an error message, that it's not possible to cycle through the value.
   if (values.size() == 0)
   {
-    if (section->defaultValue(valueName).type() == QVariant::Bool)
+    if (section->defaultValue(valueName).typeId() == QMetaType::Bool)
     {
       QVariant currentValue = section->value(valueName);
       auto nextValue = currentValue.toBool() ? false : true;
@@ -390,7 +390,7 @@ void SettingsComponent::setValues(const QVariantMap& options)
   QString key = options["key"].toString();
   QVariant values = options["value"];
 
-  if (values.type() == QVariant::Map || values.isNull())
+  if (values.typeId() == QMetaType::QVariantMap || values.isNull())
   {
     SettingsSection* section = getSection(key);
     if (!section)
@@ -409,7 +409,7 @@ void SettingsComponent::setValues(const QVariantMap& options)
 
     saveSection(section);
   }
-  else if (values.type() == QVariant::String)
+  else if (values.typeId() == QMetaType::QString)
   {
     setValue(SETTINGS_SECTION_WEBCLIENT, key, values);
   }
