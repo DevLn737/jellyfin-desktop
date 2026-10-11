@@ -1,0 +1,233 @@
+{
+  "appVersion": "2.0.0-rc.1",
+  "packageVersion": "2.0.1",
+  "buildCommit": "289859f75ade45a3bd3cd8f53ba8c5b429062626",
+  "qtVersion": "6.11.3",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "contractRevision": "desktop-handoff-12.2-syncplay.1-r1",
+  "serverCommit": "494362e6b354385a00b7ae879814e2908c23f725",
+  "webCommit": "b2a97d40c6898726b030b0233a0c9dc89734d3e3",
+  "releaseQualified": false,
+  "userAcceptanceCompleted": false,
+  "readyForReleaseCandidate": false,
+  "checksPassed": false,
+  "memoryChecksPassed": false,
+  "memoryEvidenceStatus": "not-run-current-commit",
+  "classification": "Development packages; unqualified Qt; current-source memory not-run; no ready RC or release tag",
+  "verifiedChecks": [
+    "normal-build-pipeline",
+    "normal-renderer",
+    "normal-runtime-imports",
+    "diagnostic-build-pipeline",
+    "diagnostic-runtime-imports",
+    "diagnostic-symbols",
+    "normal-native-shell",
+    "diagnostic-tracy",
+    "installer-binding"
+  ],
+  "currentBuildReceiptSha256": "dc571f00030b570585ede1743f71a32ac370c23613dbaf64e44982fba33b64a3",
+  "auditedOperations": {
+    "normal-build-pipeline": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "05e3d94cf23c73bc69de0315c68011d7f6b4722d28d0d5d666b6721490e36068",
+      "logSha256": "4c26ec2613bd54f2423a0379620df5d9eecf7977482d0110bf83f71612348826"
+    },
+    "normal-renderer": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "e0d00ff6234a569a8cad132c7c5dea7738b4750a93195493ea5e38101549568c",
+      "logSha256": "4c26ec2613bd54f2423a0379620df5d9eecf7977482d0110bf83f71612348826"
+    },
+    "normal-runtime-imports": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "f69fb746c0ed8925f9d7ffe53bd9a578e58b868281375e5bd2196717ea431eec",
+      "logSha256": "4c26ec2613bd54f2423a0379620df5d9eecf7977482d0110bf83f71612348826"
+    },
+    "diagnostic-build-pipeline": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "05e3d94cf23c73bc69de0315c68011d7f6b4722d28d0d5d666b6721490e36068",
+      "logSha256": "2385a20a0ee2d88caf868b14dec75dbbd4a48a7ea791596564b8f5ba92d982ce"
+    },
+    "diagnostic-runtime-imports": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "f69fb746c0ed8925f9d7ffe53bd9a578e58b868281375e5bd2196717ea431eec",
+      "logSha256": "2385a20a0ee2d88caf868b14dec75dbbd4a48a7ea791596564b8f5ba92d982ce"
+    },
+    "diagnostic-symbols": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "28716e9e5859684396e1cc07a2883d0a8dde2067735cd3cd00a781b3191dc517",
+      "logSha256": "2385a20a0ee2d88caf868b14dec75dbbd4a48a7ea791596564b8f5ba92d982ce"
+    },
+    "normal-native-shell": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "dd35464311829dc4e93df909b03c58b4acf07e4f442b8a85ec2feab115b68121",
+      "logSha256": "7c52f5a67d28421a9238daa01b72e4aecca003825f4f84421af4ba979753f81f"
+    },
+    "diagnostic-tracy": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "f11e8bcd456b1c9ab3c14b1861b824f48a2bed262e7f6a998ccd378e479c1a86",
+      "logSha256": "cc5f4c8aa7a6b1c7cb7f8f73c8d5768936aa8e4ce616fcc1f5dd670e17c56463"
+    },
+    "installer-binding": {
+      "passed": true,
+      "exitCode": 0,
+      "driverSha256": "b1f659623a6250c92f344a691333958f099cf4d3b6c326db53c872a23e23fcea",
+      "logSha256": "bc01d9fb615a57e7ca8eea337fb89b13b372ff30cd961cc055d4996c216984e8"
+    }
+  },
+  "artifactIdentity": {
+    "normalExe": "27074e3d3c93f99c9897c54014915a50f392b6ee96aa256e90c92a11d7c22c30",
+    "diagnosticExe": "499692d67da037def9413bf0f5526d9bb155ff7a7aaebf4372c92f9babb6164e",
+    "diagnosticPdb": "736cd83c17a8d96dda14415240f858f2bf18ca3806ce0655b88241a6a96f8cf5",
+    "normalMsi": "d3dd289fd639c2083051757fa9ff594f2bed012aadfbe3f239e1c997fd410772",
+    "installer": "16a70905d2723b70ba8a5a49a3c3dd57bf9fc822391bd318d07dd3bfe922a5c9",
+    "normalPortable": "328cd013903923e9972ea5a963f2be7175180955971f54fdbdbb6e2ac8fe79da",
+    "diagnosticPortable": "e80123b8b4e856881680139a5cc2be93a1c8559c4ccef1bd766c6b3db210e24a",
+    "diagnosticSymbols": "cd8e2e1773e5096bc17c626e3f16be98fa7b994f45ac4cfc964e27f732d01ada",
+    "rendererExe": "0f9a5edce745e9d866a0d2d475024a9926a8a729ed0de7a669223bb98866abce"
+  },
+  "runtimeEvidence": {
+    "nativePausedReadiness": {
+      "cold": {
+        "id": 101,
+        "positionMs": 0,
+        "paused": true
+      },
+      "seek": {
+        "id": 102,
+        "positionMs": 2750,
+        "paused": true
+      },
+      "latest": {
+        "id": 104,
+        "positionMs": 2000,
+        "paused": true
+      },
+      "hls": {
+        "id": 105,
+        "positionMs": 30000,
+        "paused": true
+      },
+      "hlsSeek": {
+        "id": 106,
+        "positionMs": 32000,
+        "paused": true
+      },
+      "directTs": {
+        "id": 107,
+        "positionMs": 0,
+        "paused": true
+      },
+      "hlsDurationMs": 36016,
+      "positionMs": 2750,
+      "seeks": [
+        102,
+        104,
+        105,
+        106
+      ],
+      "stoppedWithoutLateReady": true
+    },
+    "diagnosticsControls": {
+      "initiallyOff": true,
+      "ping": true,
+      "changes": [
+        true,
+        false
+      ],
+      "finallyOff": true
+    },
+    "reportSha256": {
+      "nativeShell": "58790021b5843ae89b9ace232b07db03f61a6b3a6082434f31dad9d142f5cbd0",
+      "devtools": "6b8f7ef9bbcb63acc32cf951078e74b34b175e6139cba608fd86d771009c058f",
+      "renderer": "55c4db3b1391fb4f20298188b17de4f0642b17913a76e404a67cabe5363322bc",
+      "rendererImports": "3167e83f78cf0b3792375349dff4f0ce3f135944428d9c484f32ca1f1aeebe08",
+      "tracy": "988b5a71d0a6fac19086e63c9fb1f4de9b5ef8b0d84dd5e2d928d213e6d3ab4c",
+      "normalImports": "016d04b7de3ca68903fb5ff7653f7e7aca6af380718139ef3606ee51629a90ba",
+      "diagnosticImports": "016d04b7de3ca68903fb5ff7653f7e7aca6af380718139ef3606ee51629a90ba"
+    },
+    "devtools": {
+      "passed": true,
+      "explicitAddress": "127.0.0.1",
+      "normalListenerCount": 0
+    },
+    "renderer": {
+      "passed": true,
+      "qtVersion": "6.11.3",
+      "windowShown": false,
+      "applicationLaunched": false,
+      "checkCount": 6
+    },
+    "tracy": {
+      "passed": true,
+      "address": "127.0.0.1",
+      "port": 8086,
+      "listenerCount": 1,
+      "commit": "289859f75ade45a3bd3cd8f53ba8c5b429062626"
+    },
+    "diagnosticSymbols": {
+      "pe": {
+        "guid": "578470b0-b2ce-472c-a73a-42fdb59f778c",
+        "age": 5
+      },
+      "pdb": {
+        "guid": "578470b0-b2ce-472c-a73a-42fdb59f778c",
+        "age": 5
+      },
+      "match": true
+    },
+    "windowsRuntimeImports": [
+      {
+        "variant": "normalImports",
+        "passed": true,
+        "imageCount": 117,
+        "reportSha256": "016d04b7de3ca68903fb5ff7653f7e7aca6af380718139ef3606ee51629a90ba"
+      },
+      {
+        "variant": "diagnosticImports",
+        "passed": true,
+        "imageCount": 117,
+        "reportSha256": "016d04b7de3ca68903fb5ff7653f7e7aca6af380718139ef3606ee51629a90ba"
+      },
+      {
+        "variant": "rendererImports",
+        "passed": true,
+        "imageCount": 88,
+        "reportSha256": "3167e83f78cf0b3792375349dff4f0ce3f135944428d9c484f32ca1f1aeebe08"
+      }
+    ],
+    "memory": {
+      "performed": false,
+      "passed": false,
+      "qualificationEligible": false,
+      "completionStatus": "not-run-current-commit",
+      "memoryChecksPassed": false,
+      "buildCommit": "289859f75ade45a3bd3cd8f53ba8c5b429062626",
+      "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+      "failure": "No long-running memory qualification was performed on this exact source commit.",
+      "historicalFailedObservation": {
+        "buildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+        "passed": false,
+        "memoryReportSha256": "5d058b21263ab9fa8afbe4b2d3edcc20eb96d7daaff5977fde03de5737b8173c",
+        "navigationSvgGrowthBytes": 291966976,
+        "nativeMusicGrowthBytes": -32047104,
+        "limitsChanged": false,
+        "appliesToCurrentBuild": false
+      }
+    }
+  },
+  "notQualified": [
+    "current-source memory qualification has not run; historical 6eeebfa SVG growth failed",
+    "official released Qt/WebEngine package with verified QTBUG-141377 fix",
+    "diagnostics production overhead: previous source observations retain failed threshold pairs",
+    "hardware and installed upgrade scenarios",
+    "mixed Desktop/Web group timing and final user acceptance"
+  ]
+}

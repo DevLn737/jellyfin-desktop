@@ -55,29 +55,38 @@ for internal verification and the Windows toolchain. The release qualification
 remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
-The retained local development packages at the last completed checkpoint were
-built from clean commit
-`ebd33bb096f72fdd05912ab576f92747446b3743`, with manifest SHA256
+The current retained local development packages were built from clean commit
+`289859f75ade45a3bd3cd8f53ba8c5b429062626`, with manifest SHA256
 `af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc`.
 Both full normal and diagnostic pipelines, their native regression tests,
 production offscreen renderer, staged PE import checks, actual NativeShell/CSP
-probe and localhost Tracy probe completed successfully. Nine process-sampler
-tests also cover blocked collection, queued delivery, stop/restart, destruction,
-counter identity and failures. Read-only Burn/MSI extraction binds the installer
+probe and localhost Tracy probe completed successfully. Fourteen process-sampler
+tests cover blocked collection, queued delivery, stop/restart, destruction,
+counter identity, failures and the five added parent-ancestry cases.
+Read-only Burn/MSI extraction binds the installer
 to the tested EXE and manifest; both portable ZIPs match their complete staging
-inventories. The diagnostic EXE/PDB GUID and age match. Sanitized package and
+inventories. The diagnostic EXE/PDB GUID and age 5 match. Sanitized package and
 operation identities are retained in
-[the development-build record](../quality/observations/desktop-development-ebd33bb.json).
-[Push CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38170112494)
-and [PR CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38170115815)
+[the current development-build record](../quality/observations/desktop-development-289859f.json).
+[Push CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38173155985)
+and [PR CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38173159437)
 also passed for that exact commit; publication was skipped.
 
-These packages remain unqualified. No full-hour memory qualification was
-performed on that source. The earlier failed observation belongs to
-`6eeebfa` and cannot qualify a later production change. The retained package
+These packages remain unqualified. Full-hour memory and diagnostics-performance
+qualification have not run on `289859f`. The earlier failed memory observation
+belongs to `6eeebfa`; the post-worker diagnostics measurement belongs to `ebd33bb`.
+Neither establishes qualification for this later production change. The retained package
 record has `checksPassed`, `readyForReleaseCandidate`, `releaseQualified` and
 `userAcceptanceCompleted` all false. Later documentation/evidence commits do
 not change the source identity embedded in these local packages.
+The [earlier development-build record](../quality/observations/desktop-development-ebd33bb.json)
+and its packages remain separate, with their original `ebd33bb` source identities.
+
+The official Qt version endpoint was checked again at `2026-10-11T20:54:43Z`:
+it still reports `6.11.3` with `released: false` and a planned date of October 13.
+The [official Qt schedule](https://wiki.qt.io/Qt_6.11_Release) has the same planned
+date; the [released-package directory](https://download.qt.io/official_releases/qt/6.11/)
+currently stops at 6.11.2. This is a status observation, not release proof.
 
 The completed internal memory observation at commit
 `6eeebfa3298e68f452b58b47b14bbf0e7f69e97f` failed its SVG final-growth limit
@@ -106,6 +115,7 @@ The sampler now validates each branch through accepted direct parents before
 flattening it; five added tests cover the rejected ancestry, missing counters,
 reused parents, valid branches and cycles. This correctness change is outside
 the measured `ebd33bb` source and has no established relation to its p95 result.
+The `289859f` build/runtime checks above do not supply a new performance measurement.
 The separate pinned Web clearQueue defect
 is described in [the Server/Web finding](server-web-clearqueue-finding.md).
 

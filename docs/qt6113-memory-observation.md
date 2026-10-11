@@ -160,11 +160,11 @@ and exact implementation references are retained in
 
 ## Separate diagnostics performance evidence
 
-The final sanitized export `performance-evidence-6eeebfa-v4` is recorded in
+The retained three-observation export `performance-evidence-6eeebfa-v4` is recorded in
 [the diagnostics performance index](../quality/diagnostics-performance/prior-three-evidence-index.json),
 SHA256 `33e8cafbe80ed2efc5f562a95ae7463889101ebf325a9c891774792990aaabe7`.
 It preserves three completed synthetic observations and 126000 verified replies;
-all three have a threshold-failing pair. The latest high-resolution observation
+all three have a threshold-failing pair. The high-resolution pre-worker observation
 used frozen source `6eeebfa3298e68f452b58b47b14bbf0e7f69e97f` and approximately 5 microsecond clock steps in
 its isolated local context. Its third pair had p95 +6.190470216495991%, exceeding
 the unchanged 5% limit. See
@@ -179,3 +179,11 @@ but no per-operation trace links it to the p95 increase. These historical hidden
 idle observations do not qualify playback/rendering, mixed clients, production
 or Tracy overhead. Later worker/source changes require their own measurements
 and do not change the recorded failures or qualify a new source version.
+
+The later [post-worker observation](../quality/diagnostics-performance/post-worker-derived.json)
+measured clean `ebd33bb` once with 60000 verified replies and about 5-microsecond
+clock steps. Its second p95 pair increased 13.26531%, exceeding the unchanged
+5% limit, although all CPU differences stayed below two percentage points.
+This fourth completed result remains separate from the three earlier failures.
+The subsequent parent-ancestry correction is outside that measured source;
+memory and diagnostics-performance qualification have not run on `289859f`.

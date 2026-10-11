@@ -126,14 +126,19 @@ point limit. P95 differences are +1.28205%, **+13.26531%** and +1.53062%; pair2
 fails the unchanged 5% limit. Overall synthetic thresholds remain false and
 the observation is ineligible for release qualification or user acceptance.
 
-The [retained development package record](observations/desktop-development-ebd33bb.json)
-binds the normal and diagnostic packages to their actual tested source, manifest,
+The [current development package record](observations/desktop-development-289859f.json)
+binds the normal and diagnostic packages to clean `289859f`, its tested manifest,
 operation outputs, complete stage inventories, installer contents and PDB.
-Those selected build/runtime checks passed, while current-source full-hour memory
-is explicitly not run. Aggregate checks, ready RC, release qualification and
-user acceptance remain false. The source ID of these retained local packages
-stays `ebd33bb` after later commits. The subsequent process-ancestry correction
-is outside that source and its measurements.
+Both local build pipelines passed, including fourteen process-sampler tests;
+NativeShell, renderer and localhost Tracy probes passed. Full-hour memory and
+diagnostics-performance qualification have not run on `289859f`. Aggregate checks,
+ready RC, release qualification and user acceptance remain false. Later docs-only
+commits do not change the `289859f` source embedded in these packages.
+
+The [earlier development package record](observations/desktop-development-ebd33bb.json)
+and its retained packages keep their original `ebd33bb` identity. The later
+process-ancestry correction is outside that source and its failed p95 measurement;
+the passing regression tests establish correctness for those cases, not overhead.
 
 The [pinned Web clearQueue finding](../docs/server-web-clearqueue-finding.md)
 is a separately reproduced Server/Web lifecycle defect. It is recorded without
