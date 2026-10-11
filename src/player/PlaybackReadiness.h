@@ -65,6 +65,9 @@ public:
     // Never relabel its old position as readiness for the latest request.
     if (paused && m_seekTargetMs && std::fabs(double(positionMs) - double(*m_seekTargetMs)) > 500.0) return {};
     m_ready = false;
+    // The target guards this seek's first completion only. Later restarts
+    // (buffer recovery or track changes) report the current file position.
+    m_seekTargetMs.reset();
     if (!m_request) return {};
     return m_request;
   }

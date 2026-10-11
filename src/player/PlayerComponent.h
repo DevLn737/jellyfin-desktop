@@ -18,6 +18,7 @@
 #include "ExternalAudioRequest.h"
 #include "VideoTrackRestore.h"
 #include "PlaybackReadiness.h"
+#include "PlaybackTimeline.h"
 
 #include <mpv/client.h>
 
@@ -241,6 +242,7 @@ private:
   QVariantList findStreamsForURL(const QString &url);
   void reselectStream(const QString &streamSelection, MediaType target);
   bool currentPosition(qint64& positionMs);
+  bool preparePlaybackTimeline();
 
   mpv::qt::Handle m_mpv;
 
@@ -272,6 +274,7 @@ private:
   ExternalAudioRequest m_externalAudioRequest;
   VideoTrackRestore m_videoTrackRestore;
   PlaybackReadiness m_readiness;
+  PlaybackTimeline m_playbackTimeline;
   QVariantMap m_diagnosticMetrics;
   bool m_diagnosticObservationEnabled = false;
   struct PresenceMedia
@@ -285,6 +288,8 @@ private:
     float frameRate;
     QVariantMap serverMediaInfo;
     quint64 nativeRequestId;
+    bool preserveTimestamps;
+    bool music;
   };
   QQueue<PresenceMedia> m_presenceQueue;
   QRect m_videoRectangle;

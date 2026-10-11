@@ -373,9 +373,16 @@ bool PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
   const qint64 startMilliseconds = qMax<qint64>(0, options["startMilliseconds"].toLongLong());
   const auto preserveOption = options.value("preserveTimestamps");
   const bool preserveTimestamps = preserveOption.typeId() == QMetaType::Bool && preserveOption.toBool();
+  const bool music = metadata["type"] == "music";
   if (preserveTimestamps)
-    extraArgs.insert("rebase-start-time", "no");
-  if (startMilliseconds != 0)
+  {
+    extraArgs.insert("rebase-start-time", music ? "yes" : "no");
+    if (music)
+      // Back up the per-file option now; the preloaded hook maps the original
+      // start once the real demuxer start PTS is known.
+      extraArgs.insert("start", "0");
+  }
+  if (startMilliseconds != 0 && !(preserveTimestamps && music))
     // With preserved timestamps '+' adds the demuxer start offset again.
     // Bare time is absolute media PTS; ordinary files keep the relative syntax.
     extraArgs.insert("start", (preserveTimestamps ? "" : "+") +
@@ -385,7 +392,7 @@ bool PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
   extraArgs.insert("aid", "no");
   extraArgs.insert("sid", "no");
 
-  if (metadata["type"] == "music")
+  if (music)
     extraArgs.insert("vid", "no");
 
   extraArgs.insert("pause", options["autoplay"].toBool() ? "no" : "yes");
@@ -408,7 +415,8 @@ bool PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
     m_presenceQueue.enqueue({metadata["metadata"].toMap(),
       qurl.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment),
       startMilliseconds, playlistId, audioStream, subtitleStream,
-      metadata["frameRate"].toFloat(), metadata["media"].toMap(), nativeRequestId});
+      metadata["frameRate"].toFloat(), metadata["media"].toMap(), nativeRequestId,
+      preserveTimestamps, music});
     return true;
   }
   return false;
@@ -565,6 +573,8 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
     case MPV_EVENT_START_FILE:
     {
       m_inPlayback = true;
+      m_playbackTimeline.reset();
+      m_lastPositionUpdate = -1;
       m_videoTrackRestore.nextFile();
       m_diagnosticMetrics.clear();
       const auto pendingAudio = m_externalAudioRequest.nextFile();
@@ -590,6 +600,7 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       {
         const auto media = m_presenceQueue.takeAt(presenceIndex);
         m_readiness.startFile(true, media.nativeRequestId);
+        m_playbackTimeline.startFile(media.preserveTimestamps, media.music, media.startMs);
         // Queueing the next episode must not replace the active file's track
         // selection or codec/refresh-rate metadata before its START_FILE.
         m_currentAudioStream = media.audioStream;
@@ -612,6 +623,7 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
 
       m_inPlayback = false;
       m_readiness.invalidate();
+      m_playbackTimeline.reset();
       m_videoTrackRestore.nextFile();
       m_playbackCanceled = false;
       m_playbackError = "";
@@ -667,13 +679,14 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       }
       else if (strcmp(prop->name, "playback-time") == 0 && prop->format == MPV_FORMAT_DOUBLE)
       {
-        double pos = *(double*)prop->data;
-        if (std::isfinite(pos) && fabs(pos - m_lastPositionUpdate) > 0.015)
+        std::int64_t mappedMs = 0;
+        if (m_playbackTimeline.positionMilliseconds(*(double*)prop->data, mappedMs) &&
+            fabs(mappedMs / 1000.0 - m_lastPositionUpdate) > 0.015)
         {
-          const quint64 ms = static_cast<quint64>(PlaybackValues::millisecondsFromSeconds(pos));
+          const quint64 ms = static_cast<quint64>(mappedMs);
           m_diagnosticMetrics.insert("positionMs", QVariant::fromValue(ms));
           emit positionUpdate(ms);
-          m_lastPositionUpdate = pos;
+          m_lastPositionUpdate = mappedMs / 1000.0;
         }
       }
       else if (strcmp(prop->name, "vo-configured") == 0)
@@ -686,9 +699,12 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       {
         if (prop->format == MPV_FORMAT_DOUBLE)
         {
-          const qint64 durationMs = PlaybackValues::millisecondsFromSeconds(*(double *)prop->data);
-          m_diagnosticMetrics.insert("durationMs", durationMs);
-          emit updateDuration(durationMs);
+          std::int64_t durationMs = 0;
+          if (m_playbackTimeline.durationMilliseconds(*(double *)prop->data, durationMs))
+          {
+            m_diagnosticMetrics.insert("durationMs", QVariant::fromValue(qint64(durationMs)));
+            emit updateDuration(durationMs);
+          }
         }
       }
       else if (strcmp(prop->name, "audio-device-list") == 0)
@@ -791,6 +807,11 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       // Used initialize stream selections and to probe codecs.
       if (!strcmp(msg->args[1], "2"))
       {
+        if (!preparePlaybackTimeline())
+        {
+          mpv::qt::command(m_mpv, QStringList() << "hook-ack" << resumeId);
+          break;
+        }
         reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
         reselectStream(m_currentAudioStream, MediaType::Audio);
         startCodecsLoading([=] {
@@ -834,6 +855,11 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       }
       if (!strcmp(hook->name, "on_preloaded"))
       {
+        if (!preparePlaybackTimeline())
+        {
+          mpv_hook_continue(m_mpv, id);
+          break;
+        }
         reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
         reselectStream(m_currentAudioStream, MediaType::Audio);
         startCodecsLoading([=] {
@@ -906,6 +932,7 @@ void PlayerComponent::stop()
   JMP_PROFILE_ZONE("Player stop");
   m_presenceQueue.clear();
   m_readiness.invalidate();
+  m_playbackTimeline.reset();
   m_videoTrackRestore.nextFile();
   m_diagnosticMetrics.clear();
   const auto pendingAudio = m_externalAudioRequest.nextFile();
@@ -955,9 +982,10 @@ void PlayerComponent::seekTo(qint64 ms)
   JMP_PROFILE_ZONE("Player seek");
   if (ms < 0)
     return;
+  const auto timeSecs = m_playbackTimeline.seekSeconds(ms);
+  if (!timeSecs) return;
   m_readiness.beginSeek(0, ms);
-  double timeSecs = ms / 1000.0;
-  QVariantList args = (QVariantList() << "seek" << timeSecs << "absolute+exact");
+  QVariantList args = (QVariantList() << "seek" << *timeSecs << "absolute+exact");
   mpv::qt::command(m_mpv, args);
 }
 
@@ -966,10 +994,12 @@ bool PlayerComponent::seekToForReady(qint64 ms, double nativeRequestId)
   DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Seek);
   JMP_PROFILE_ZONE("Player seek with readiness");
   if (ms < 0 || !PlaybackValues::isNativeRequestId(nativeRequestId)) return false;
+  const auto seconds = m_playbackTimeline.seekSeconds(ms);
+  if (!seconds) return false;
   const auto request = static_cast<quint64>(nativeRequestId);
   if (!m_readiness.beginSeek(request, ms)) return false;
   const auto result = mpv::qt::command(m_mpv,
-    QVariantList() << "seek" << ms / 1000.0 << "absolute+exact");
+    QVariantList() << "seek" << *seconds << "absolute+exact");
   if (mpv::qt::get_error(result) < 0)
   {
     m_readiness.failedRequest(request);
@@ -1309,7 +1339,7 @@ bool PlayerComponent::currentPosition(qint64& positionMs)
   bool valid = false;
   const double seconds = time.toDouble(&valid);
   std::int64_t converted = 0;
-  if (!valid || !PlaybackValues::tryMillisecondsFromSeconds(seconds, converted)) return false;
+  if (!valid || !m_playbackTimeline.positionMilliseconds(seconds, converted)) return false;
   positionMs = converted;
   return true;
 }
@@ -1320,7 +1350,38 @@ qint64 PlayerComponent::getDuration()
   QVariant time = mpv::qt::get_property(m_mpv, "duration");
   bool valid = false;
   const double seconds = time.toDouble(&valid);
-  return valid ? PlaybackValues::millisecondsFromSeconds(seconds) : 0;
+  std::int64_t converted = 0;
+  return valid && m_playbackTimeline.durationMilliseconds(seconds, converted) ? converted : 0;
+}
+
+bool PlayerComponent::preparePlaybackTimeline()
+{
+  if (!m_playbackTimeline.preservesTimestamps()) return true;
+  const auto generation = m_playbackTimeline.generation();
+  bool valid = false;
+  const double sourceStart = mpv::qt::get_property(m_mpv, "demuxer-start-time").toDouble(&valid);
+  bool prepared = valid && m_playbackTimeline.configure(generation, sourceStart);
+  if (prepared && m_playbackTimeline.mapsMusic())
+  {
+    const auto seconds = m_playbackTimeline.initialSeekSeconds();
+    prepared = seconds && mpv::qt::set_property(m_mpv, "file-local-options/start", QString::number(*seconds, 'f', 6)) >= 0;
+  }
+  if (!prepared)
+  {
+    m_readiness.invalidate();
+    emit error(QStringLiteral("Native stream timestamp is unavailable."));
+    stop();
+    return false;
+  }
+  // Duration may have been observed before the preloaded hook established the
+  // timeline. Publish the current public endpoint once mapping is ready.
+  const qint64 durationMs = getDuration();
+  if (durationMs > 0)
+  {
+    m_diagnosticMetrics.insert("durationMs", durationMs);
+    emit updateDuration(durationMs);
+  }
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

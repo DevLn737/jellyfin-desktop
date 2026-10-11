@@ -2,6 +2,7 @@
 #include "ExternalAudioRequest.h"
 #include "VideoTrackRestore.h"
 #include "PlaybackReadiness.h"
+#include "PlaybackTimeline.h"
 #include "profiling/TracyPrivacy.h"
 
 #include <cstdlib>
@@ -108,6 +109,9 @@ int main()
   readiness.restartEvent();
   check(!readiness.takeReady(true, 30501, true), "post-seek readiness outside server's 500ms barrier must wait");
   check(readiness.takeReady(true, 30500, true) == 40, "fresh completed seek within barrier tolerance resolves its own request");
+  readiness.restartEvent(); // Playback advanced, then a track change restarted decoding while paused.
+  check(readiness.takeReady(true, 45000, true, true) == 40,
+        "later paused restart must use current position rather than a completed seek's old target");
   readiness.startFile(true, 41); // Load has no assumed native seek-start event.
   readiness.restartEvent();
   check(!readiness.takeReady(true, 0, false), "coldload readiness also requires native seeking completion");
@@ -117,6 +121,91 @@ int main()
   check(!readiness.takeReady(true, 13000, false, false), "unpaused readiness still waits for native seeking=false");
   check(readiness.takeReady(true, 13000, true, false) == 42,
         "unpaused high-rate seek must not hang when media advances over 500ms before GUI delivery");
+  readiness.restartEvent();
+  check(readiness.takeReady(true, 20000, true, true) == 42,
+        "completion while playing also clears the seek target before later paused recovery");
+
+  PlaybackTimeline timeline;
+  std::int64_t publicMs = 123;
+  check(!timeline.positionMilliseconds(0, publicMs) && publicMs == 123 && !timeline.seekSeconds(0),
+        "no active file must not expose fake positions or accept seeks");
+  timeline.startFile(true, true, 30000);
+  const auto musicGeneration = timeline.generation();
+  check(!timeline.positionMilliseconds(6.037329, publicMs) && publicMs == 123 &&
+        !timeline.durationMilliseconds(6.037329, publicMs) && !timeline.initialSeekSeconds(),
+        "preserved audio cannot publish its relative clock before the source origin is known");
+  check(timeline.configure(musicGeneration, 29.978667), "real demuxer start establishes the music timeline");
+  check(std::fabs(*timeline.initialSeekSeconds() - 0.021333) < 0.000001 &&
+        std::fabs(*timeline.seekSeconds(32000) - 2.021333) < 0.000001,
+        "initial and later audio seeks must subtract actual PTS origin including codec priming");
+  check(timeline.positionMilliseconds(0.021333, publicMs) && publicMs == 30000,
+        "paused rebased music start must report original media time");
+  check(timeline.positionMilliseconds(2.021333, publicMs) && publicMs == 32000,
+        "paused rebased music seek must report original media time");
+  check(timeline.durationMilliseconds(6.037329, publicMs) && publicMs == 36016,
+        "preserved stream duration is a public endpoint on the original timeline");
+  readiness.startFile(true, 50);
+  readiness.beginSeek(51, 32000);
+  readiness.restartEvent();
+  check(timeline.positionMilliseconds(6.037329, publicMs) &&
+        !readiness.takeReady(true, publicMs, true, true),
+        "an EOF clock cannot falsely acknowledge a paused 32-second media seek");
+  check(timeline.positionMilliseconds(2.021333, publicMs) &&
+        readiness.takeReady(true, publicMs, true, true) == 51,
+        "readiness must compare mapped original media position with the public seek target");
+
+  timeline.startFile(true, false, 30000);
+  const auto videoGeneration = timeline.generation();
+  check(!timeline.configure(musicGeneration, 99), "old music preparation cannot configure a newly active video file");
+  check(timeline.configure(videoGeneration, 29.978667) && !timeline.mapsMusic(),
+        "video preservation retains its original decoder timeline for independent tracks");
+  check(*timeline.initialSeekSeconds() == 30 && *timeline.seekSeconds(32000) == 32 &&
+        timeline.positionMilliseconds(32, publicMs) && publicMs == 32000,
+        "video start, seek and clock must not add or subtract the source origin");
+  check(timeline.durationMilliseconds(6.037329, publicMs) && publicMs == 36016,
+        "video duration must share the original-position endpoint");
+  timeline.startFile(false, true, 32000);
+  check(!timeline.configure(videoGeneration, 29.978667) && *timeline.seekSeconds(32000) == 32 &&
+        timeline.positionMilliseconds(2.5, publicMs) && publicMs == 2500 &&
+        timeline.durationMilliseconds(6, publicMs) && publicMs == 6000,
+        "ordinary or progressive transcode clocks must remain relative for Web's own offset");
+  timeline.startFile(true, true, 0);
+  const auto liveGeneration = timeline.generation();
+  check(timeline.configure(liveGeneration, 29.978667) && *timeline.initialSeekSeconds() == 0 &&
+        timeline.positionMilliseconds(0, publicMs) && publicMs == 29979,
+        "zero-start timestamp streams begin at the first packet and retain its original clock");
+  timeline.startFile(true, true, 0);
+  check(timeline.configure(timeline.generation(), -0.021333) && *timeline.initialSeekSeconds() == 0 &&
+        timeline.positionMilliseconds(0, publicMs) && publicMs == 0,
+        "negative encoder priming must not skip the first packet or expose negative public time");
+  check(std::fabs(*timeline.seekSeconds(1000) - 1.021333) < 0.000001,
+        "later seeks still account for a negative demuxer origin");
+  for (double invalid : {std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity(),
+       std::numeric_limits<double>::max()})
+  {
+    timeline.startFile(true, true, 30000);
+    publicMs = 123;
+    check(!timeline.configure(timeline.generation(), invalid) &&
+          !timeline.positionMilliseconds(0, publicMs) && publicMs == 123,
+          "invalid or overflowing PTS origins cannot create a ready mapped file");
+  }
+  timeline.startFile(true, true, 30000);
+  check(timeline.configure(timeline.generation(), 29.978667), "valid origin is accepted after an invalid prior file");
+  for (double invalid : {-1.0, std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::infinity(), std::numeric_limits<double>::max()})
+  {
+    publicMs = 123;
+    check(!timeline.positionMilliseconds(invalid, publicMs) && publicMs == 123 &&
+          !timeline.durationMilliseconds(invalid, publicMs) && publicMs == 123,
+          "unavailable and overflowing native samples retain the unavailable state rather than fake zero");
+  }
+  check(!timeline.seekSeconds(-1), "negative public seek targets cannot be mapped");
+  const auto stoppedGeneration = timeline.generation();
+  timeline.reset();
+  check(!timeline.configure(stoppedGeneration, 29.978667) && !timeline.seekSeconds(32000) &&
+        !timeline.positionMilliseconds(2.021333, publicMs),
+        "stop or END_FILE invalidates the current origin and any late preparation");
 
   ExternalAudioRequest request;
   const auto first = request.begin();

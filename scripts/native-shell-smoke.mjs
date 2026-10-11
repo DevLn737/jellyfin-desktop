@@ -16,6 +16,8 @@ const events = [];
 const report = { expectedDevice, expectedRoot, phases: {} };
 const fixtureRoot = path.join(expectedRoot, 'data', 'hls-silent-30');
 const fixtureNames = new Set(['index.m3u8', 'segment-000.ts', 'segment-001.ts', 'segment-002.ts', 'segment-003.ts']);
+const videoRoot = path.join(expectedRoot, 'data', 'hls-video-30');
+const videoNames = new Set(['index.m3u8', 'segment-000.ts', 'segment-001.ts', 'segment-002.ts']);
 let socket;
 const server = http.createServer((_request, response) => {
     const requested = new URL(_request.url, 'http://127.0.0.1').pathname;
@@ -25,16 +27,24 @@ const server = http.createServer((_request, response) => {
         response.end(fs.readFileSync(path.join(fixtureRoot, fixtureName)));
         return;
     }
+    const videoName = requested.startsWith('/fixture-video/') ? requested.slice('/fixture-video/'.length) : null;
+    if (videoNames.has(videoName)) {
+        response.setHeader('Content-Type', videoName.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp2t');
+        response.end(fs.readFileSync(path.join(videoRoot, videoName)));
+        return;
+    }
     response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'");
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.end('<!doctype html><html><head><meta charset="utf-8"><title>NativeShell CSP smoke</title></head><body>Local NativeShell smoke</body></html>');
 });
 const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 try {
-    const fixtureInfo = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'fixture-info.json'), 'utf8'));
-    for (const [name, sha256] of Object.entries(fixtureInfo.sha256)) {
-        assert.ok(fixtureNames.has(name), 'Fixture contains an unexpected filename');
-        assert.equal(createHash('sha256').update(fs.readFileSync(path.join(fixtureRoot, name))).digest('hex'), sha256);
+    for (const [directory, names] of [[fixtureRoot, fixtureNames], [videoRoot, videoNames]]) {
+        const fixtureInfo = JSON.parse(fs.readFileSync(path.join(directory, 'fixture-info.json'), 'utf8'));
+        for (const [name, sha256] of Object.entries(fixtureInfo.sha256)) {
+            assert.ok(names.has(name), 'Fixture contains an unexpected filename');
+            assert.equal(createHash('sha256').update(fs.readFileSync(path.join(directory, name))).digest('hex'), sha256);
+        }
     }
     await new Promise((resolve, reject) => {
         server.once('error', reject);
@@ -157,6 +167,7 @@ try {
     fs.writeFileSync(fixturePath, wav);
     const mediaUrl = pathToFileURL(fixturePath).href;
     const hlsUrl = new URL('fixture-hls/index.m3u8', report.syntheticUrl).href;
+    const videoUrl = new URL('fixture-video/index.m3u8', report.syntheticUrl).href;
     const directTsUrl = pathToFileURL(path.join(fixtureRoot, 'segment-000.ts')).href;
     const readinessExpression = `(async () => {
         const player = (await window.apiPromise).player;
@@ -196,6 +207,7 @@ try {
                 { startMilliseconds: 30000, preserveTimestamps: true, autoplay: false, nativeRequestId: 105 },
                 { type: 'music', metadata: {}, media: {} }, '#1', '') !== true) throw Error('Native HLS load rejected');
             const hls = await hlsPromise;
+            const hlsDurationMs = await call('getDuration');
             const hlsSeekPromise = waitFor(106);
             if (await call('seekToForReady', 32000, 106) !== true) throw Error('Native HLS seek rejected');
             const hlsSeek = await hlsSeekPromise;
@@ -204,11 +216,24 @@ try {
                 { startMilliseconds: 0, autoplay: false, nativeRequestId: 107 },
                 { type: 'music', metadata: {}, media: {} }, '#1', '') !== true) throw Error('Native direct TS load rejected');
             const directTs = await directPromise;
+            const videoPromise = waitFor(108);
+            if (await call('load', ${JSON.stringify(videoUrl)},
+                { startMilliseconds: 30000, preserveTimestamps: true, autoplay: false, nativeRequestId: 108 },
+                { type: 'video', metadata: {}, media: {} }, '#1', '') !== true) throw Error('Native video HLS load rejected');
+            const video = await videoPromise;
+            const videoDurationMs = await call('getDuration');
+            const videoSeekPromise = waitFor(109);
+            if (await call('seekToForReady', 32000, 109) !== true) throw Error('Native video HLS seek rejected');
+            const videoSeek = await videoSeekPromise;
             await call('stop');
             const countAfterStop = samples.length;
             await new Promise(resolve => setTimeout(resolve, 200));
-            return { cold, seek, latest, hls, hlsSeek, directTs, positionMs, seeks,
+            return { cold, seek, latest, hls, hlsSeek, directTs, video, videoSeek,
+                hlsDurationMs, videoDurationMs, positionMs, seeks,
                 stoppedWithoutLateReady: samples.length === countAfterStop };
+        } catch (error) {
+            return { failure: String(error.stack || error), samples, seeks,
+                positionMs: await call('getPosition') };
         } finally {
             player.playbackReady.disconnect(ready);
             player.seekStarted.disconnect(seeking);
@@ -222,6 +247,8 @@ try {
     }, 30000);
     assert.ok(!readiness.exceptionDetails, JSON.stringify(readiness.exceptionDetails));
     const native = readiness.result.value;
+    report.phases.nativePausedReadiness = native;
+    assert.ok(!native.failure, JSON.stringify(native));
     assert.equal(native.cold.id, 101);
     assert.equal(native.cold.paused, true);
     assert.ok(Number.isFinite(native.cold.positionMs) && native.cold.positionMs <= 20);
@@ -237,8 +264,14 @@ try {
     assert.ok(Math.abs(native.hls.positionMs - 30000) <= 50, JSON.stringify(native));
     assert.equal(native.hlsSeek.paused, true);
     assert.ok(Math.abs(native.hlsSeek.positionMs - 32000) <= 50, JSON.stringify(native));
+    assert.ok(Math.abs(native.hlsDurationMs - 36000) <= 100, JSON.stringify(native));
     assert.equal(native.directTs.paused, true);
     assert.ok(native.directTs.positionMs >= 0 && native.directTs.positionMs <= 50, JSON.stringify(native));
+    assert.equal(native.video.paused, true);
+    assert.ok(Math.abs(native.video.positionMs - 30000) <= 50, JSON.stringify(native));
+    assert.equal(native.videoSeek.paused, true);
+    assert.ok(Math.abs(native.videoSeek.positionMs - 32000) <= 50, JSON.stringify(native));
+    assert.ok(Math.abs(native.videoDurationMs - 36000) <= 100, JSON.stringify(native));
     assert.equal(native.stoppedWithoutLateReady, true);
     report.phases.nativePausedReadiness = native;
     report.passed = true;

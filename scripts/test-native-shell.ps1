@@ -55,6 +55,7 @@ $configuration | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path 
 # Synthetic audio exercises actual libmpv readiness without an audio device.
 Set-Content -LiteralPath (Join-Path $isolatedRoot 'data/mpv.conf') -Value 'ao=null' -Encoding ascii
 Copy-Item -LiteralPath (Join-Path $sourceRoot 'tests/playback/fixtures/hls-silent-30') -Destination (Join-Path $isolatedRoot 'data/hls-silent-30') -Recurse
+Copy-Item -LiteralPath (Join-Path $sourceRoot 'tests/playback/fixtures/hls-video-30') -Destination (Join-Path $isolatedRoot 'data/hls-video-30') -Recurse
 $application = $null
 $probe = $null
 $launchPhase = 'native-shell'

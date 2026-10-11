@@ -153,13 +153,15 @@ class mpvPlaybackLifecycle {
 
     async _notifyReady() {
         const serial = this._serial;
-        try { await this._bounded(this._rateWait, 'Native playback rate acknowledgement timed out.'); }
-        catch (_) { return; }
-        if (serial !== this._serial) return;
-        if (this.ready && this.webStarted && !this._failure) {
-            this.adaptSyncPlayWrapper();
-            this.owner.events.trigger(this.owner, 'playing');
-        }
+        try {
+            await this._afterLatestRate(() => {
+                if (serial !== this._serial) return;
+                if (this.ready && this.webStarted && !this._failure) {
+                    this.adaptSyncPlayWrapper();
+                    this.owner.events.trigger(this.owner, 'playing');
+                }
+            });
+        } catch (_) { }
     }
 
     pause() {
@@ -185,17 +187,40 @@ class mpvPlaybackLifecycle {
         return settle;
     }
 
+    _afterLatestRate(action) {
+        let active = true;
+        const pending = (async () => {
+            while (active) {
+                const wait = this._rateWait;
+                try { await wait; }
+                catch (error) { if (wait === this._rateWait) throw error; }
+                if (!active) return;
+                // A newer rate can arrive while an older acknowledgement is
+                // pending. Only the latest wait releases Ready or a sample.
+                if (wait === this._rateWait) return action();
+            }
+        })();
+        // Replacements share one deadline. A late acknowledgement must not run
+        // the action after this barrier has already failed.
+        return this._bounded(pending, 'Native playback rate acknowledgement timed out.')
+            .finally(() => { active = false; });
+    }
+
     async position() {
         const serial = this._serial;
         if (this._request) await this._request.promise;
-        await this._rateWait;
         if (this._pauseWait) await this._bounded(this._pauseWait, 'Native pause acknowledgement timed out.');
-        if (serial !== this._serial || this._failure) throw this._failure || new Error('Native position belongs to an old playback.');
-        return this._bounded(new Promise((resolve, reject) => window.api.player.getPosition(position => {
-            if (serial !== this._serial || !Number.isFinite(position) || position < 0) {
-                reject(new Error('Native position is unavailable.'));
-            } else resolve(position);
-        })), 'Native position request timed out.');
+        const sample = await this._afterLatestRate(() => {
+            if (serial !== this._serial || this._failure) throw this._failure || new Error('Native position belongs to an old playback.');
+            // Dispatch in the same turn as the latest-rate check. The sample
+            // keeps its own timeout after the rate barrier has completed.
+            return { promise: this._bounded(new Promise((resolve, reject) => window.api.player.getPosition(position => {
+                if (serial !== this._serial || !Number.isFinite(position) || position < 0) {
+                    reject(new Error('Native position is unavailable.'));
+                } else resolve(position);
+            })), 'Native position request timed out.') };
+        });
+        return sample.promise;
     }
 
     _bounded(promise, message) {

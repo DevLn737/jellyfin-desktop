@@ -282,10 +282,64 @@ async function missingOffsetHook() {
   } finally { f.close(); }
 }
 
+async function latestRateBarrier(name) {
+  const f = fixture(name);
+  try {
+    const initial = f.player.play(f.streamInfo); await flush();
+    f.finish(f.loads.at(-1).options.nativeRequestId, 30000, true); await initial;
+    f.context.Events.trigger(f.player, 'playbackstart'); await flush();
+    let playing = 0, positionQueries = 0;
+    f.context.Events.on(f.player, 'playing', () => { ++playing; });
+    const getPosition = f.native.getPosition;
+    f.native.getPosition = callback => { ++positionQueries; getPosition(callback); };
+    const acknowledgements = [];
+    f.native.setPlaybackRate = (_, callback) => { acknowledgements.push(callback); };
+
+    f.player.setPlaybackRate(1.5);
+    const ready = f.player._lifecycle._notifyReady();
+    const sample = f.player.currentTimeAsync(); await flush();
+    f.player.setPlaybackRate(1.25);
+    acknowledgements[0](true); await flush();
+    assert.equal(playing, 0, 'rate A acknowledgement cannot release Ready while newer rate B is pending');
+    assert.equal(positionQueries, 0, 'rate A acknowledgement cannot dispatch a sample before rate B acknowledgement');
+    acknowledgements[1](true); await ready;
+    assert.equal(await sample, 30000);
+    assert.equal(playing, 1);
+    assert.equal(positionQueries, 1);
+
+    f.player.setPlaybackRate(1.5);
+    const readyAfterRejection = f.player._lifecycle._notifyReady();
+    const sampleAfterRejection = f.player.currentTimeAsync(); await flush();
+    f.player.setPlaybackRate(1.25);
+    acknowledgements[2](false); await flush();
+    assert.equal(playing, 1, 'superseded rate rejection does not release Ready');
+    assert.equal(positionQueries, 1);
+    acknowledgements[3](true); await readyAfterRejection;
+    assert.equal(await sampleAfterRejection, 30000, 'only latest rate rejection can fail the current barrier');
+    assert.equal(playing, 2);
+    assert.equal(positionQueries, 2);
+
+    f.player.setPlaybackRate(1.75);
+    const timedReady = f.player._lifecycle._notifyReady();
+    const timedSample = f.player.currentTimeAsync();
+    const rejected = assert.rejects(timedSample, /rate acknowledgement timed out/);
+    await flush(); await f.advance(3000);
+    f.player.setPlaybackRate(2);
+    acknowledgements[4](true); await flush();
+    await f.advance(2000); await timedReady; await rejected;
+    assert.equal(playing, 2, 'rate replacements cannot extend the overall Ready deadline');
+    assert.equal(positionQueries, 2, 'rate replacements cannot extend the overall sample deadline');
+    acknowledgements[5](true); await flush();
+    assert.equal(playing, 2, 'late rate acknowledgement cannot release a timed-out Ready barrier');
+    assert.equal(positionQueries, 2, 'late rate acknowledgement cannot dispatch a timed-out sample');
+  } finally { f.close(); }
+}
+
 (async () => {
   for (const name of ['mpvVideoPlayer', 'mpvAudioPlayer']) {
     await groupPlayback(name, 0); // Direct Play/HLS absolute timestamps.
     await groupPlayback(name, 200000000); // Progressive transcode starts at logical 20s, native 0s.
+    await latestRateBarrier(name);
   }
   await lifecycleEdges();
   await missingOffsetHook();

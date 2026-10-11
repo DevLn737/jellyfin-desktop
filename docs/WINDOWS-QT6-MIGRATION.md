@@ -30,8 +30,12 @@ the earlier tree reset in place. The target integration branch is `master`.
   reject replies belonging to a previous file or superseded seek.
 - Logical SyncPlay positions include progressive-transcode offsets exactly once
   through an adapter on the owned native Web wrapper. Server HLS/copytimestamps
-  streams preserve media timestamps through per-file mpv options and absolute
-  start times. Ordinary direct transport streams keep their default rebasing.
+  streams expose original media timestamps through per-file mpv options. Video
+  keeps original decoder timestamps and external-track alignment. Music uses
+  mpv's rebased clock internally and restores the probed demuxer start exactly
+  once at the native boundary; otherwise mpv clamps paused audio-only HLS PTS
+  to the shorter playlist duration. Preserved-stream durations expose their
+  original timeline end. Ordinary direct transport streams keep default rebasing.
   The version-sensitive wrapper hook is recorded in the pinned API contract;
   an unavailable hook rejects an offset-dependent group load visibly.
 - Existing Windows Discord IPC, Unicode, posters, progress and reconnect behavior.
@@ -91,8 +95,9 @@ Desktop workflow. Do not manufacture passing quality reports to bypass a gate.
 The isolated `scripts/test-native-shell.ps1` probe verifies first navigation,
 strict CSP, page reload, Unicode configuration and explicit localhost-only
 DevTools. A generated silent WAV with null audio output exercises real mpv paused
-load/seek readiness and rapid replacement. A compact synthetic HLS fixture checks
-30-second original timestamps, paused seek and ordinary direct-TS rebasing.
+load/seek readiness and rapid replacement. Compact synthetic audio and video
+HLS fixtures check 30-second original timestamps, paused seek, timeline duration
+and ordinary direct-TS rebasing.
 These probes use no server media or account.
 The probe copies the deployment into its own temporary profile and refuses
 to interfere with an already running application. It does not replace hardware

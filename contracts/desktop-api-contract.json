@@ -153,7 +153,7 @@
   },
   "nativePlayback": {
     "positionAndDurationUnit": "milliseconds",
-    "streamTimeline": "The pinned Web uses zero offset for HLS/copytimestamps streams and a nonzero transcodingOffsetTicks only for non-HLS transcodes without copied timestamps. Native JS supplies preserveTimestamps for HLS/copytimestamps; C++ sets rebase-start-time=no only for that file and uses bare absolute start PTS. Ordinary files retain existing rebased/relative behavior; Web applies its non-HLS offset exactly once.",
+    "streamTimeline": "The pinned Web uses zero offset for HLS/copytimestamps streams and a nonzero transcodingOffsetTicks only for non-HLS transcodes without copied timestamps. Native JS supplies preserveTimestamps for those transcodes. Video retains rebase-start-time=no and original decoder PTS to preserve independent track alignment. Music uses per-file rebase-start-time=yes to avoid libmpv's paused audio clock clamping original PTS to stream duration; the existing preloaded hook reads the actual demuxer-start-time, maps incoming original start/seek to relative mpv time, and maps all native position getters/events/readiness back to original milliseconds. A missing/nonfinite origin fails visibly; START_FILE, END_FILE and stop reset mapping, and queued files carry their own mode/start. Both preserved modes expose duration as source origin plus stream duration. Ordinary/progressive files retain existing relative clocks; Web applies its non-HLS offset exactly once.",
     "nativeRateUnit": "per mille",
     "nativeRateScale": 1000,
     "clientRateRange": { "status": "source-verified", "baseMinimum": 0.25, "effectiveMinimum": 0.2, "maximum": 5 },
