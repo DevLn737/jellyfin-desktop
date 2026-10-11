@@ -34,6 +34,22 @@ a strict-CSP root document without CORS headers, then verifies its real document
 origin, injected plugins and native settings. These checks use synthetic data;
 no server implementation or user account is changed.
 
+Actual regression evidence is retained in
+[the connection record](../quality/observations/desktop-connection-33a3722.json).
+The old installed-source chooser failed after one successful public-info
+request with `MissingAllowOriginHeader` on the root document. Source
+`33a3722` passed the real Qt synthetic chooser/CSP/reload checks and a separate
+fresh-profile probe of the affected server's login page. NativeShell, the
+native API, five plugin constructors and both views of the saved setting were
+ready. All 121 observed requests were GET; no authentication, media or group
+action occurred. The owned application and debugging listener were stopped.
+
+Both local package pipelines and source-matched CI passed. The cached build
+directory also exposed a packaging-script defect: wildcard selection picked
+an older RC1 symbol archive. Validators and asset collection now select exact
+current-version filenames; fixtures verify missing current outputs fail even
+when old archives are present. Historical packages are preserved.
+
 The application version is `2.0.0-rc.2`, with MSI/Burn package version `2.0.2`
 so the corrected installer can upgrade the earlier `2.0.1` package. Dependency
 versions are unchanged and Qt release qualification remains false. This fix

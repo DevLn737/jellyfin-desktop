@@ -126,7 +126,17 @@ point limit. P95 differences are +1.28205%, **+13.26531%** and +1.53062%; pair2
 fails the unchanged 5% limit. Overall synthetic thresholds remain false and
 the observation is ineligible for release qualification or user acceptance.
 
-The [current development package record](observations/desktop-development-289859f.json)
+The [current rc.2 development package record](observations/desktop-development-33a3722.json)
+binds the packages to clean `33a3722` and manifest `c02f654a...ff9a3d74`.
+Both build pipelines, actual Qt chooser/NativeShell/CSP/reload, renderer, imports,
+Tracy and package/PDB checks passed. The
+[connection record](observations/desktop-connection-33a3722.json) binds the old
+CORS failure and new synthetic and real-server prelogin checks. The real-server
+probe performed 121 GET requests and no authentication/media/group actions.
+Memory and diagnostics-performance qualification have not run on `33a3722`;
+aggregate checks, ready RC, release qualification and user acceptance remain false.
+
+The [retained rc.1 development package record](observations/desktop-development-289859f.json)
 binds the normal and diagnostic packages to clean `289859f`, its tested manifest,
 operation outputs, complete stage inventories, installer contents and PDB.
 Both local build pipelines passed, including fourteen process-sampler tests;

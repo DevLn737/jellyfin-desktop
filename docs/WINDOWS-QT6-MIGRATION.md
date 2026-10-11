@@ -60,6 +60,35 @@ for internal verification and the Windows toolchain. The release qualification
 remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
+The current rc.2 development packages were built from clean source
+`33a3722039541cfd510999a4c55cb1600c4f8d52`, manifest SHA256
+`c02f654aafa032db7baa698531dc5cce04399c6538bbdeec1b133660ff9a3d74`.
+Both complete local pipelines, native/Node/Python regressions, production
+offscreen renderer, PE imports, actual chooser/NativeShell/CSP/reload probes
+and localhost Tracy passed. The installer was extracted read-only and bound
+to the tested EXE/manifest; both portable ZIPs match their complete stage
+inventories and the diagnostic EXE/PDB GUID and age 7 match. Current-version
+artifact selection is tested with older cached archives present. The
+[rc.2 package record](../quality/observations/desktop-development-33a3722.json)
+retains exact identities and selected check outputs.
+[Push CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38183341537)
+and [PR CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38183344732)
+also passed for this exact source; publication was skipped.
+
+The [connection regression record](../quality/observations/desktop-connection-33a3722.json)
+retains the old chooser's actual CORS failure and the passing rc.2 API-only
+navigation, strict-CSP injection and native/JS saved-setting checks. A fresh
+owned Qt profile also reached the affected real server's login page with
+NativeShell/API/plugins working: 121 GET requests, zero other methods, no
+authentication, media or group actions. This establishes prelogin connection,
+not authenticated playback or installed upgrade continuity.
+
+Current-source memory and diagnostics-performance qualification have not run
+on `33a3722`. Aggregate checks, ready RC, release qualification and user
+acceptance remain false. The earlier package and measurement records below
+retain their original source/version/manifest identities. Later docs-only
+commits do not change the source embedded in these rc.2 packages.
+
 The retained rc.1 development-package checkpoint was built from clean commit
 `289859f75ade45a3bd3cd8f53ba8c5b429062626`, with manifest SHA256
 `af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc`.
