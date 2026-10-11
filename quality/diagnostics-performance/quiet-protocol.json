@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "protocolId": "quiet-repeat-10000-fixed-v1",
+  "commandsPerPhase": 10000,
+  "pacingMilliseconds": 10,
+  "rounds": 3,
+  "phaseOrder": [
+    "off",
+    "on",
+    "on",
+    "off",
+    "off",
+    "on"
+  ],
+  "attempts": 1,
+  "adaptiveRetries": false,
+  "cpuIncreasePercentagePointsLimit": 2,
+  "p95IncreasePercentLimit": 5,
+  "cpuScope": "owned-packaged-process-tree",
+  "cpuNormalization": "logical-processor-count",
+  "p95Method": "nearest-rank",
+  "qualificationEligible": false,
+  "maxPhaseDurationSeconds": 185,
+  "priorSummarySha256": "b8e4df7c94f0a3a5d3f88c0cd368a5215ff1c607a448971a331cd2c821befc36",
+  "ownerSha256": "57ba2fa026a008e6f3735a8c9d94e8e042d06d3be7c0571653be64b87e2d1204",
+  "driverSha256": "6996bc275a5fee323855eacb62dd1b5c3ef02bf874591dd8f41fbb183167045a",
+  "sourceSha256": "65e837ae7d0f86e63c32cca073022f3e9249cfedd4e2341642152879b835b80f"
+}

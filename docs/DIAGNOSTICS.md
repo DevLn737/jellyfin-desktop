@@ -36,6 +36,12 @@ process numbers include the WebEngine process tree, without identifying it in
 the report. Playback metrics are cached from the existing mpv event consumer;
 collection adds no synchronous mpv property queries to the GUI timer.
 
+Windows process enumeration and memory/CPU queries run in a worker, with at
+most one pending sample. A busy worker skips the next one-second timer tick.
+Capture generations discard late results after stop/restart. CPU intervals use
+the worker's monotonic observation times and process creation identity; process
+IDs, names and creation timestamps remain internal and are never exported.
+
 Tokens, cookies, headers, complete URLs, file paths, media titles, user data,
 raw API responses and IPC payloads are not admitted. The normal log and debug
 overlay are not attached. No report has a network upload action. Before sharing

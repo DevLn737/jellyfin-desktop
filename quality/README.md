@@ -101,3 +101,23 @@ rate/sample-time combinations. Never prefill acceptance or memory success.
 Promotion to stable must preserve the accepted code and all dependency/evidence
 locks, with only appVersion, a strictly higher packageVersion and the allowed
 qualification flag transition differing from the original tested RC manifest.
+
+## Historical failed internal observation
+
+The [Qt 6.11.3 full-hour evidence](../docs/qt6113-memory-observation.md) records
+a failed SVG final-growth rule at Desktop commit `6eeebfa3298e68f452b58b47b14bbf0e7f69e97f`.
+The separately named failed gate report, derived observation and raw samples
+preserve actual results: SVG +278.44 MiB and native music
+-30.56 MiB. The tested manifest and qualification=false
+remain unchanged. Additional SBOM and numeric diagnostics cannot turn this
+failed result into passing release evidence; no user acceptance is recorded.
+
+The final v4 [diagnostics performance index](diagnostics-performance/evidence-index.json)
+retains three completed synthetic observations with failed overall criteria.
+The high-resolution observation's third pair was +6.190470216495991% against
+the unchanged 5% p95 limit. The later process sampler worker is outside the measured
+source; these historical results cannot qualify it or establish causality.
+
+The [pinned Web clearQueue finding](../docs/server-web-clearqueue-finding.md)
+is a separately reproduced Server/Web lifecycle defect. It is recorded without
+patching served Web, changing contract pins or adding a Desktop workaround.

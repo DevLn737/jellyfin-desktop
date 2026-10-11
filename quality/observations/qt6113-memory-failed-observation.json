@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "2.0.0-rc.1",
+  "qtVersion": "6.11.3",
+  "buildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "issue": "QTBUG-141377",
+  "passed": false,
+  "qualificationEligible": true,
+  "processTreeIncluded": true,
+  "protocolSha256": "cb2ee39ab817a667e279e1bde9eeee4a69857e7db9d9cbeae6ccf5ad9bb238d7",
+  "rawSamplesPath": "quality/observations/qt6113-memory-failed-samples.json",
+  "rawSamplesSha256": "c640a42bd9158a8ac3a399bdd262743a4802358661a58ad71ee9dfc74e04cee3",
+  "scenarios": [
+    {
+      "name": "long-playback",
+      "durationSeconds": 3601.896,
+      "sampleCount": 691,
+      "rssBaselineBytes": 252243968,
+      "rssPeakBytes": 264118272,
+      "rssFinalBytes": 220196864,
+      "rssGrowthBytes": -32047104,
+      "limitBytes": 2147483648,
+      "growthLimitBytes": 134217728
+    },
+    {
+      "name": "navigation-svg",
+      "durationSeconds": 3601.896,
+      "sampleCount": 691,
+      "rssBaselineBytes": 1031032832,
+      "rssPeakBytes": 1527844864,
+      "rssFinalBytes": 1322999808,
+      "rssGrowthBytes": 291966976,
+      "limitBytes": 2147483648,
+      "growthLimitBytes": 134217728
+    }
+  ],
+  "scope": "windows-owned-process-tree-rss",
+  "workload": "hidden full Desktop, local SVG/XHR and native silent music",
+  "forcedGarbageCollection": false,
+  "startedUtc": "2026-10-11T17:12:23.4581119Z",
+  "windowsBuild": 26100,
+  "limitations": [
+    "Hidden native application windows do not provide an integrated video render pass or hardware-driver qualification.",
+    "This synthetic stress does not establish mixed-client synchronization, installed upgrades or user acceptance.",
+    "Passing memory measurements do not establish that a prepared Qt package is officially released."
+  ],
+  "failure": "Final memory growth exceeded the predeclared ceiling.",
+  "finishedUtc": "2026-10-11T18:15:07.5207066Z",
+  "observationOnly": true,
+  "workloads": [
+    {
+      "schemaVersion": 1,
+      "scenario": "long-playback",
+      "passed": true,
+      "initialized": true,
+      "operationCount": 3705,
+      "fileChanges": 62,
+      "positionChecks": 3705,
+      "navigationCount": 0,
+      "scope": "hidden-full-desktop-webengine-and-native-music",
+      "forcedGarbageCollection": false,
+      "chromiumProduct": "Jellyfin Media Player/2.0.0-rc.1",
+      "elapsedSeconds": 3750.4923185,
+      "svgRequests": 0,
+      "dataRequests": 0
+    },
+    {
+      "schemaVersion": 1,
+      "scenario": "navigation-svg",
+      "passed": true,
+      "initialized": true,
+      "operationCount": 3688,
+      "fileChanges": 0,
+      "positionChecks": 0,
+      "navigationCount": 61,
+      "scope": "hidden-full-desktop-webengine-svg",
+      "forcedGarbageCollection": false,
+      "chromiumProduct": "Jellyfin Media Player/2.0.0-rc.1",
+      "elapsedSeconds": 3750.2107429999996,
+      "svgRequests": 37488,
+      "dataRequests": 37491
+    }
+  ],
+  "protocolFailures": [
+    {
+      "scenario": "navigation-svg",
+      "rule": "final-growth-limit",
+      "observedBytes": 291966976,
+      "limitBytes": 134217728
+    }
+  ],
+  "qualificationStatus": "unqualified-failed-run",
+  "sourceReportPath": "quality/observations/qt6113-memory-failed-gate-report.json",
+  "sourceReportSha256": "fec8f6fcfd8b9e08e9c2b9743e0c48b08e8630634d0eb00d7cf2e12651deddc8",
+  "derivationToolSha256": "82deec99ffa9dea9a5d41d0f3ec5f565f3f157302567d3beceec6e891f729979",
+  "sourceWorkloads": {
+    "build/windows/qt6113/memory-final-6eeebfa/long-playback/workload.json": "37b0f38172a5bdcc6711788663b89b307fa077f4987f42cc4e3371886b72f1e9",
+    "build/windows/qt6113/memory-final-6eeebfa/navigation-svg/workload.json": "b4ab92f344ee0849a10a28c1a8fcbd73fb98da0ca658462e3decf03ff75080b9"
+  },
+  "originalObservationSha256": "9c0ea522d352b055ecf88f6a4f71f86573c113eb222e6419186d1565124d6d91",
+  "originalRawSamplesPath": "build/windows/qt6113/memory-final-6eeebfa/memory-samples.json",
+  "originalSourceReportPath": "build/windows/qt6113/memory-final-6eeebfa/memory-report.json",
+  "qualificationEligibleMeaning": "This was a full protocol run; passed=false and qualification remains false.",
+  "finalGrowthMiB": {
+    "navigationSvg": 278.44,
+    "nativeMusic": -30.56
+  },
+  "additionalObservationLimitations": [
+    "A separate single primitive read observed document visible and focused, innerWidth=innerHeight=0 and devicePixelRatio=1. It does not prove this tuple for the entire hour.",
+    "Qt inherited QQuickWindow parenting is present; zero Chromium viewport does not establish a windowless WebEngineView.",
+    "Separate numeric CDP and late OS probes are diagnostic observations only and do not change the frozen RSS limits or failed result."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "completedObservations": 2,
+  "totalVerifiedSamples": 66000,
+  "qualificationEligible": false,
+  "withinSyntheticThresholds": false,
+  "sourceSha256ByRole": {
+    "concurrentSummary": "b8e4df7c94f0a3a5d3f88c0cd368a5215ff1c607a448971a331cd2c821befc36",
+    "concurrentRaw": "78373d27edf60e3b34e0022da8aa7d57d2dcda7190b752501be7138c2f55c5a5",
+    "quietSummary": "e51358a84d092ce9a2b0ca5e1b88b2f6675f2db758a9188f3ab66d1fbafe708e",
+    "quietRaw": "b144bd0cd65d6d493cdb1d96fcc27db4d199f904f729998e65afdd2f3125dda9",
+    "quietProtocol": "65e837ae7d0f86e63c32cca073022f3e9249cfedd4e2341642152879b835b80f"
+  },
+  "exportSha256ByRole": {
+    "concurrentDerived": "5529fc91cc248168f445e3c1ebe990eaccf1e160bbc4fa41d1bc31e2489ef479",
+    "concurrentNumericRaw": "00d402f4dd9f0580633cd1ad83e4a1cd584739f47879c9e04ad8b6550807ac9b",
+    "quietDerived": "fe9be1630aca074f605c832cd49df66a712bc3cdbc92c0309407d1a74cecb563",
+    "quietNumericRaw": "28afe67976f21990670887e3f62b685f5a231e28748160fe7b1bceb9018bc2e1",
+    "quietSanitizedProtocol": "6d64f2cdae448088d547752920b01699706fe02420f7f54d957e05e128543e60"
+  },
+  "limitations": [
+    "Both completed observations preserve a p95 threshold-failing pair; pooled or median values do not change that decision.",
+    "CPU pair increases stayed below two percentage points in this synthetic owned-process-tree scope.",
+    "The concurrent observation lacks retained raw CPU before-after counters; its CPU percentages cannot be independently reconstructed.",
+    "All RTT values align with a tenth-millisecond grid, coarser than five percent of the observed baseline p95 values.",
+    "Quantization and scheduling variation prevent causal attribution of the p95 change to diagnostics from these observations.",
+    "These idle hidden WebChannel observations do not qualify playback, rendering, mixed clients, or separate Tracy build overhead."
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "scope": "separate-numeric-diagnostics-not-memory-qualification",
+  "qualificationEligible": false,
+  "forcedGarbageCollection": false,
+  "roleCodes": {
+    "native": 0,
+    "renderer": 1,
+    "gpu": 2,
+    "utility": 3,
+    "otherOwned": 4
+  },
+  "heapAndDomObserver": {
+    "calledMethods": [
+      "Memory.getDOMCounters",
+      "Runtime.getHeapUsage"
+    ],
+    "domainEnableCalled": false,
+    "pageJavaScriptEvaluated": false,
+    "cdpSamples": [
+      {
+        "observedUtcMs": 1791740308973,
+        "dom": {
+          "documents": 155,
+          "nodes": 247978,
+          "jsEventListeners": 52
+        },
+        "heap": {
+          "usedSize": 877476,
+          "totalSize": 1835008,
+          "embedderHeapUsedSize": 494415584,
+          "backingStorageSize": 267784
+        }
+      },
+      {
+        "observedUtcMs": 1791740363508,
+        "dom": {
+          "documents": 122,
+          "nodes": 206988,
+          "jsEventListeners": 37
+        },
+        "heap": {
+          "usedSize": 875604,
+          "totalSize": 2097152,
+          "embedderHeapUsedSize": 417903072,
+          "backingStorageSize": 267826
+        }
+      },
+      {
+        "observedUtcMs": 1791740379007,
+        "dom": {
+          "documents": 120,
+          "nodes": 206968,
+          "jsEventListeners": 35
+        },
+        "heap": {
+          "usedSize": 874664,
+          "totalSize": 2097152,
+          "embedderHeapUsedSize": 419198864,
+          "backingStorageSize": 267784
+        }
+      },
+      {
+        "observedUtcMs": 1791740394506,
+        "dom": {
+          "documents": 120,
+          "nodes": 204576,
+          "jsEventListeners": 36
+        },
+        "heap": {
+          "usedSize": 873496,
+          "totalSize": 2097152,
+          "embedderHeapUsedSize": 414033160,
+          "backingStorageSize": 267784
+        }
+      }
+    ],
+    "pairedOsSamples": [
+      {
+        "observedUtcMs": 1791740363387,
+        "processes": [
+          {
+            "roleCode": 0,
+            "rssBytes": 171708416,
+            "privateBytes": 230027264,
+            "handleCount": 2187,
+            "threadCount": 58
+          },
+          {
+            "roleCode": 1,
+            "rssBytes": 1294340096,
+            "privateBytes": 1250459648,
+            "handleCount": 2254,
+            "threadCount": 19
+          }
+        ]
+      },
+      {
+        "observedUtcMs": 1791740378903,
+        "processes": [
+          {
+            "roleCode": 0,
+            "rssBytes": 171565056,
+            "privateBytes": 230391808,
+            "handleCount": 2187,
+            "threadCount": 58
+          },
+          {
+            "roleCode": 1,
+            "rssBytes": 1294872576,
+            "privateBytes": 1250983936,
+            "handleCount": 2520,
+            "threadCount": 19
+          }
+        ]
+      },
+      {
+        "observedUtcMs": 1791740394405,
+        "processes": [
+          {
+            "roleCode": 0,
+            "rssBytes": 171597824,
+            "privateBytes": 230420480,
+            "handleCount": 2188,
+            "threadCount": 59
+          },
+          {
+            "roleCode": 1,
+            "rssBytes": 1294503936,
+            "privateBytes": 1250754560,
+            "handleCount": 2786,
+            "threadCount": 19
+          }
+        ]
+      }
+    ],
+    "originalCdpSha256": "08f232a45d63b8379f9fd2f0b9195938fb32c85533d88f8a83efe6d55c689d8c",
+    "originalPairedOsSha256": "acead3b18b241bdda141f53179b05e923eddc15d4350cf11c7119a9673e2cd02"
+  },
+  "supplementalOsObserver": {
+    "calledCdpMethods": [],
+    "samples": [
+      {
+        "observedUtcMs": 1791742130355,
+        "processes": [
+          {
+            "roleCode": 0,
+            "rssBytes": 126189568,
+            "privateBytes": 232222720,
+            "handleCount": 2188,
+            "threadCount": 59
+          },
+          {
+            "roleCode": 1,
+            "rssBytes": 1264046080,
+            "privateBytes": 1246380032,
+            "handleCount": 1078,
+            "threadCount": 19
+          }
+        ]
+      },
+      {
+        "observedUtcMs": 1791742319304,
+        "processes": [
+          {
+            "roleCode": 0,
+            "rssBytes": 125927424,
+            "privateBytes": 232345600,
+            "handleCount": 2184,
+            "threadCount": 58
+          },
+          {
+            "roleCode": 1,
+            "rssBytes": 1226035200,
+            "privateBytes": 1273704448,
+            "handleCount": 4172,
+            "threadCount": 19
+          }
+        ]
+      },
+      {
+        "observedUtcMs": 1791742503891,
+        "processes": [
+          {
+            "roleCode": 0,
+            "rssBytes": 125755392,
+            "privateBytes": 232607744,
+            "handleCount": 2188,
+            "threadCount": 59
+          },
+          {
+            "roleCode": 1,
+            "rssBytes": 1180344320,
+            "privateBytes": 1241231360,
+            "handleCount": 1054,
+            "threadCount": 19
+          }
+        ]
+      }
+    ],
+    "originalJsonlSha256": "1cbf4a1e58141046ceaa08bbf40c4f62cf60690752c2cc5129c0899383931d87"
+  },
+  "primitiveVisibilityObserver": {
+    "schemaVersion": 1,
+    "observedUtcMs": 1791741759360,
+    "scope": "separate-one-time-owned-desktop-primitive-visibility-read",
+    "method": "Runtime.evaluate",
+    "commandCount": 1,
+    "forcedGarbageCollection": false,
+    "workloadChanged": false,
+    "attemptNumber": 2,
+    "priorAttemptLimitation": "One prior read was rejected by an incorrect positive-viewport assertion before its fields were persisted; its exact values are unavailable.",
+    "observation": {
+      "visibilityState": "visible",
+      "hasFocus": true,
+      "innerWidth": 0,
+      "innerHeight": 0,
+      "devicePixelRatio": 1
+    },
+    "validated": true,
+    "originalSnapshotSha256": "e0a24099fbf98d5f24c0efd2ae6a36fd8659298e98740c5d45c525f99798bb7a"
+  },
+  "limits": [
+    "No forced collection request was sent. Heap statistics can still have observation effects such as releasing unused linear allocation buffers.",
+    "Runtime.evaluate was used only by the separate primitive visibility observer, including an earlier validation failure whose values were not retained.",
+    "Short counters and one visibility tuple neither establish the full-hour memory behavior nor identify the cause of the failed growth gate.",
+    "Original OS process numbers were omitted; only numeric roles, time and counters remain."
+  ]
+}

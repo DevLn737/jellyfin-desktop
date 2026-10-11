@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "2.0.0-rc.1",
+  "qtVersion": "6.11.3",
+  "buildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "issue": "QTBUG-141377",
+  "passed": false,
+  "qualificationEligible": true,
+  "processTreeIncluded": true,
+  "protocolSha256": "cb2ee39ab817a667e279e1bde9eeee4a69857e7db9d9cbeae6ccf5ad9bb238d7",
+  "rawSamplesPath": "quality/qt6113-memory-samples.json",
+  "rawSamplesSha256": "",
+  "scenarios": [],
+  "scope": "windows-owned-process-tree-rss",
+  "workload": "hidden full Desktop, local SVG/XHR and native silent music",
+  "forcedGarbageCollection": false,
+  "startedUtc": "2026-10-11T17:12:23.4581119Z",
+  "windowsBuild": 26100,
+  "limitations": [
+    "Hidden native application windows do not provide an integrated video render pass or hardware-driver qualification.",
+    "This synthetic stress does not establish mixed-client synchronization, installed upgrades or user acceptance.",
+    "Passing memory measurements do not establish that a prepared Qt package is officially released."
+  ],
+  "failure": "Final memory growth exceeded the predeclared ceiling.",
+  "finishedUtc": "2026-10-11T18:15:07.5207066Z"
+}

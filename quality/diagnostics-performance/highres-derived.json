@@ -1,0 +1,375 @@
+{
+  "schemaVersion": 1,
+  "observation": "highres",
+  "appVersion": "2.0.0-rc.1",
+  "qtVersion": "6.11.3",
+  "buildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "logicalCpuCount": 12,
+  "completed": true,
+  "qualificationEligible": false,
+  "withinSyntheticThresholds": false,
+  "scope": "synthetic-idle-hidden-isolated-localhost-webchannel-ordinary-build-owned-process-tree",
+  "commandsPerPhase": 10000,
+  "totalVerifiedReplies": 60000,
+  "rounds": 3,
+  "requestedPacingMilliseconds": 10,
+  "actualPhaseOrder": [
+    "off",
+    "on",
+    "on",
+    "off",
+    "off",
+    "on"
+  ],
+  "attempts": 1,
+  "adaptiveRetries": false,
+  "thresholds": {
+    "cpuIncreasePercentagePoints": 2,
+    "p95IncreasePercent": 5
+  },
+  "thresholdDecision": "all-three-pairs-must-pass",
+  "sourceSummarySha256": "eddcc510780015758185a7b5bf8a85e5fae87335a331564b6c0ce4085d9ad0ff",
+  "sourceRawSha256": "cc4617e23cd8c191a36db39e424351d92a2887cf8134da5dd4890ad3eaf095ce",
+  "protocolSha256": "9412e00b5ecb5717384071dd5bb832784e5fcdf4d02406da7d8091b935d96284",
+  "protocolSources": {
+    "ownerSha256": "086b4390c9adb50069eb0310a4d67dec741298e4ed4cac59afa0726eb3d3b9d6",
+    "driverSha256": "5e1937e39245c91aa28782160f698512a18d8743b01cf15f60d366539cb9a2a5"
+  },
+  "cpuCounterVerificationAvailable": true,
+  "cpuDerivation": {
+    "scope": "owned-packaged-process-tree",
+    "counterUnitNanoseconds": 100,
+    "formula": "100 * cpuDeltaTicks / (cpuWindowSeconds * 10000000 * logicalCpuCount)",
+    "allSixWindowsRecomputed": true
+  },
+  "nativeProfileInjectionVerified": {
+    "nativeShell": true,
+    "qWebChannel": true,
+    "diagnostics": true,
+    "initiallyOff": true,
+    "crossOriginIsolated": true,
+    "isSecureContext": true,
+    "position": 0
+  },
+  "initialClockProbe": {
+    "crossOriginIsolated": true,
+    "isSecureContext": true,
+    "readCount": 40000,
+    "positiveStepCount": 2370,
+    "zeroStepCount": 37630,
+    "minimumPositiveStepMilliseconds": 0.004999995231628418,
+    "medianPositiveStepMilliseconds": 0.004999995231628418
+  },
+  "phases": [
+    {
+      "phaseId": 1,
+      "round": 1,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 1.073039233312466,
+      "cpuBeforeTicks": 21406250,
+      "cpuAfterTicks": 171562500,
+      "cpuDeltaTicks": 150156250,
+      "cpuWindowSeconds": 116.6128921,
+      "processCount": 2,
+      "p95Milliseconds": 1.0099999904632568,
+      "commandWindowMilliseconds": 116352.57500004768,
+      "cpuPercentRecomputed": 1.073039233312466,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.7920234998226166,
+      "sumRoundTripMilliseconds": 7920.234998226166,
+      "meanIterationMilliseconds": 11.635257500004768,
+      "residualOutsideRoundTripMillisecondsPerIteration": 10.84323400018215,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2591,
+        "zeroStepCount": 37409,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2017,
+        "zeroStepCount": 37983,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 2,
+      "round": 1,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 1.1142699874415936,
+      "cpuBeforeTicks": 172031250,
+      "cpuAfterTicks": 328750000,
+      "cpuDeltaTicks": 156718750,
+      "cpuWindowSeconds": 117.2058476,
+      "processCount": 2,
+      "p95Milliseconds": 0.9950000047683716,
+      "commandWindowMilliseconds": 116980.5,
+      "cpuPercentRecomputed": 1.1142699874415936,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.8351905000686646,
+      "sumRoundTripMilliseconds": 8351.905000686646,
+      "meanIterationMilliseconds": 11.69805,
+      "residualOutsideRoundTripMillisecondsPerIteration": 10.862859499931336,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2204,
+        "zeroStepCount": 37796,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2460,
+        "zeroStepCount": 37540,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 3,
+      "round": 2,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 1.2354723728738088,
+      "cpuBeforeTicks": 329375000,
+      "cpuAfterTicks": 502812500,
+      "cpuDeltaTicks": 173437500,
+      "cpuWindowSeconds": 116.984607,
+      "processCount": 2,
+      "p95Milliseconds": 0.9800000190734863,
+      "commandWindowMilliseconds": 116711.38000005484,
+      "cpuPercentRecomputed": 1.2354723728738088,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.8125040002346039,
+      "sumRoundTripMilliseconds": 8125.040002346039,
+      "meanIterationMilliseconds": 11.671138000005485,
+      "residualOutsideRoundTripMillisecondsPerIteration": 10.85863399977088,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 1993,
+        "zeroStepCount": 38007,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2581,
+        "zeroStepCount": 37419,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 4,
+      "round": 2,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 0.983772713990115,
+      "cpuBeforeTicks": 503125000,
+      "cpuAfterTicks": 640781250,
+      "cpuDeltaTicks": 137656250,
+      "cpuWindowSeconds": 116.6057363,
+      "processCount": 2,
+      "p95Milliseconds": 0.9950000047683716,
+      "commandWindowMilliseconds": 116326.9849999547,
+      "cpuPercentRecomputed": 0.983772713990115,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.782169999909401,
+      "sumRoundTripMilliseconds": 7821.699999094009,
+      "meanIterationMilliseconds": 11.63269849999547,
+      "residualOutsideRoundTripMillisecondsPerIteration": 10.85052850008607,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2183,
+        "zeroStepCount": 37817,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2630,
+        "zeroStepCount": 37370,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 5,
+      "round": 3,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 1.0262577677149176,
+      "cpuBeforeTicks": 641250000,
+      "cpuAfterTicks": 791562500,
+      "cpuDeltaTicks": 150312500,
+      "cpuWindowSeconds": 122.0555114,
+      "processCount": 2,
+      "p95Milliseconds": 1.050000011920929,
+      "commandWindowMilliseconds": 121849.905000031,
+      "cpuPercentRecomputed": 1.0262577677149176,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.8008324999570846,
+      "sumRoundTripMilliseconds": 8008.324999570847,
+      "meanIterationMilliseconds": 12.1849905000031,
+      "residualOutsideRoundTripMillisecondsPerIteration": 11.384158000046014,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2207,
+        "zeroStepCount": 37793,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2337,
+        "zeroStepCount": 37663,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 6,
+      "round": 3,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 0.9918630477358616,
+      "cpuBeforeTicks": 792343750,
+      "cpuAfterTicks": 979375000,
+      "cpuDeltaTicks": 187031250,
+      "cpuWindowSeconds": 157.1379994,
+      "processCount": 2,
+      "p95Milliseconds": 1.1149999499320984,
+      "commandWindowMilliseconds": 156847.50999999046,
+      "cpuPercentRecomputed": 0.9918630477358614,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.8932489996492863,
+      "sumRoundTripMilliseconds": 8932.489996492863,
+      "meanIterationMilliseconds": 15.684750999999046,
+      "residualOutsideRoundTripMillisecondsPerIteration": 14.79150200034976,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 1854,
+        "zeroStepCount": 38146,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2519,
+        "zeroStepCount": 37481,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "round": 1,
+      "cpuIncreasePercentagePoints": 0.04123075412912747,
+      "p95IncreasePercent": -1.4851471125267302,
+      "withinSyntheticThresholds": true
+    },
+    {
+      "round": 2,
+      "cpuIncreasePercentagePoints": 0.25169965888369383,
+      "p95IncreasePercent": -1.5075362435176154,
+      "withinSyntheticThresholds": true
+    },
+    {
+      "round": 3,
+      "cpuIncreasePercentagePoints": -0.034394719979055965,
+      "p95IncreasePercent": 6.190470216495991,
+      "withinSyntheticThresholds": false
+    }
+  ],
+  "resolutionObservation": {
+    "actualProbeCount": 13,
+    "readsPerProbe": 40000,
+    "minimumObservedPositiveStepMilliseconds": 0.004999995231628418,
+    "maximumOfProbeMinimumPositiveStepsMilliseconds": 0.004999995231628418,
+    "approximatelyMicroseconds": 5,
+    "crossOriginIsolatedEveryProbe": true,
+    "secureContextEveryProbe": true,
+    "clockProbesOutsideCpuWindows": true,
+    "causalAttributionEstablished": false
+  },
+  "descriptiveOnlyPhaseFiveSix": {
+    "offCommandWindowSeconds": 121.849905000031,
+    "onCommandWindowSeconds": 156.84750999999045,
+    "commandWindowIncreaseSeconds": 34.99760499995947,
+    "sumMeasuredRoundTripIncreaseSeconds": 0.9241649969220161,
+    "remainingWindowIncreaseSeconds": 34.073440003037454,
+    "remainingWindowIncludes": [
+      "requested setTimeout pacing",
+      "event-loop scheduling",
+      "loop bookkeeping"
+    ],
+    "changesOverallFailure": false,
+    "causeEstablished": false
+  },
+  "limitations": [
+    "The higher resolution fixed clock quantization for this local context; pair three still failed the unchanged five-percent limit.",
+    "Phase duration residuals are descriptions, not proof of a scheduling mechanism or attribution to diagnostics.",
+    "This isolated page differs from the prior bundled-page context; it does not replace either prior observation.",
+    "This synthetic hidden idle test does not establish playback, render, mixed-client, production or Tracy-build overhead."
+  ]
+}

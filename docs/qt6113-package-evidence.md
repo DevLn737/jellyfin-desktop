@@ -89,11 +89,56 @@ For comparison, the previous 6.11.2 common package advertised Qt5
 [V8 settings](https://code.qt.io/cgit/qt/qtwebengine-chromium.git/plain/chromium/v8/BUILD.gn?id=5170777d28bee1ce92cc693a0dbf2ad01492e5cf)
 set `v8_disable_write_barriers=true`.
 
+## Binary SBOM source linkage
+
+The locked MSVC x64 WebEngine archive also contains producer build metadata,
+`sbom/qtwebengine-6.11.3.spdx.json`. Its 519,828 bytes have SHA256
+`ffd8df951bdbd57a1dfcd775995029ba36fe2afb7e2cc28e65fe8315f828b4b8`.
+Selected extraction from the already downloaded, checksum-verified archive
+matches the installed SDK SBOM byte for byte. No source or symbol archive was
+downloaded for this check.
+
+The SBOM's `WebEngineCore` package identifies its source as
+`git://code.qt.io/qt/qtwebengine.git@8c73295524f3ce6a2e10ad2f71141c695376c876`.
+A `CONTAINS` relationship links that package to `./bin/Qt6WebEngineCore.dll`.
+The producer emits the same relationship twice; both entries identify the same
+package and file. This adds a binary-package source statement to the common
+main-package source closure described above.
+
+The SBOM records SHA1 `ae4c51d6dd08702947ed8a66a4912801ff3c8238` for the DLL.
+The signed, deployed DLL has SHA1
+`0f14b1b588b7507ceafab512bc3e042b198409c0` and the previously locked SHA256
+`7461c85b35347e86ad563f32bec83b503f5fefdc91898dab25a2db4504ca3b0b`.
+The difference is accounted for exactly by signing-related PE bytes. A read-only
+hash comparison zeroed the PE checksum and security-directory entry, then
+excluded the appended 12,088-byte certificate table at offset 203,750,912 from
+the 203,763,000-byte signed file. Every other byte was retained; no alignment
+padding was removed. The resulting SHA1 exactly matches the SBOM's DLL entry.
+The original signed file was never rewritten. This comparison reconstructs a
+checksum identity; it is not an Authenticode trust-chain verification.
+
+Thus the actual deployed binary, its producer SBOM, and the source commit form
+one checksum-backed chain. That source commit pins the Chromium revision
+containing the write-barrier fixes already traced above. The check does not
+disassemble compiled V8 write barriers or independently inspect generated GN
+overrides, and it does not establish memory behavior or official release status.
+
+The reviewed additional source/checksum facts are retained in
+[quality/observations/qt6113-additional-package-evidence.json](../quality/observations/qt6113-additional-package-evidence.json).
+They are historical evidence alongside the unchanged tested manifest, rather
+than a dependency-lock change after measurement.
+
 ## Verification limits
 
-Official package metadata, exact Git ancestry, archive checksums, and DLL
-versions identify a candidate with the advertised fixing source. They do not
-independently inspect compiled V8 code or establish the application's memory
-behavior. A passing native/WebEngine runtime memory report and an officially
-released package remain necessary before qualifying a release. No Qt 6.12
-upgrade or forced-GC workaround is involved.
+Official package metadata, exact Git ancestry, archive checksums, DLL versions
+and the producer SBOM comparison identify the candidate and its declared source.
+They do not independently audit compiled V8 code, generated GN overrides,
+Authenticode trust or the application's memory behavior.
+
+The actual full-hour Desktop run at commit `6eeebfa3298e68f452b58b47b14bbf0e7f69e97f` failed its declared SVG
+growth ceiling: +278.44 MiB against 128 MiB; the native-music
+scenario changed by -30.56 MiB. See
+[the failed-run evidence](qt6113-memory-observation.md). The Qt qualification
+flag stays false. This result is separate from official release status and
+does not by itself identify the retained allocations or establish a Qt
+regression. No Qt 6.12 upgrade or forced-GC workaround is involved.

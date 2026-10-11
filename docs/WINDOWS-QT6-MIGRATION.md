@@ -55,6 +55,22 @@ for internal verification and the Windows toolchain. The release qualification
 remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
+The completed internal memory observation at commit
+`6eeebfa3298e68f452b58b47b14bbf0e7f69e97f` failed its SVG final-growth limit
+by retaining 278.44 MiB above its baseline (limit 128 MiB). The native music
+scenario completed with a 30.56 MiB reduction. A separate minimal QtQuick/WebEngine
+comparison completed within its declared limits, with a higher initial baseline
+and additional DOM polling; it cannot establish a Desktop-specific cause or
+qualify the application. The complete evidence and limitations are in
+[the memory observation](qt6113-memory-observation.md).
+
+Three historical diagnostics observations also retain threshold-failing p95
+pairs. Confirmed synchronous Windows process queries have now been moved off
+the GUI thread, with one pending worker and stale-capture rejection. That
+source change requires its own measurements; historical results do not apply
+as qualification of the new source. The separate pinned Web clearQueue defect
+is described in [the Server/Web finding](server-web-clearqueue-finding.md).
+
 The pinned libmpv directly imports `vulkan-1.dll`, including when playback uses
 OpenGL. MSI and both portable variants therefore include the official LunarG
 1.4.363.0 x64 loader and its unmodified license notice, with archive and payload

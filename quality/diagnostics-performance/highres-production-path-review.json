@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "observationOnly": true,
+  "qualificationEligible": false,
+  "sourceCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "sourceFiles": [
+    {
+      "repositoryFile": "src/main.cpp",
+      "gitSourceSha256": "d70f8d7b59956672c32e6dbde35b48925c1ac9b3ef829f78d3323033b2b9012f"
+    },
+    {
+      "repositoryFile": "src/core/ComponentManager.cpp",
+      "gitSourceSha256": "761a768017b1acf44b7fdb7c5a93ce282d046cc24f1bb3aa0c38f77d00e01da7"
+    },
+    {
+      "repositoryFile": "src/diagnostics/DiagnosticsComponent.cpp",
+      "gitSourceSha256": "df50614a11cfbbb45084c81b9daf629dae20d6a401b3588c12c6ff718bb510ad"
+    },
+    {
+      "repositoryFile": "native/nativeshell.js",
+      "gitSourceSha256": "d85ce7f5f2bc3a41398fe6db12fcbae53037ac1c351207559645aab1915ebf3b"
+    }
+  ],
+  "confirmedCodePaths": [
+    {
+      "file": "src/main.cpp",
+      "line": 268,
+      "fact": "Component initialization runs on the application main thread."
+    },
+    {
+      "file": "src/core/ComponentManager.cpp",
+      "line": 62,
+      "fact": "Diagnostics is registered during main-thread component initialization."
+    },
+    {
+      "file": "src/diagnostics/DiagnosticsComponent.cpp",
+      "line": 38,
+      "fact": "Capture starts a 100 ms precise GUI heartbeat, performing elapsed-time calculation and JSON ring-buffer append."
+    },
+    {
+      "file": "src/diagnostics/DiagnosticsComponent.cpp",
+      "line": 159,
+      "fact": "The 1000 ms sampler synchronously queries the current process and enumerates the Windows process table and descendants on this same thread."
+    },
+    {
+      "file": "src/diagnostics/DiagnosticsComponent.cpp",
+      "line": 180,
+      "fact": "Windows snapshot and process-stat queries can instead be performed by one bounded background job; no current worker is used."
+    },
+    {
+      "file": "native/nativeshell.js",
+      "line": 278,
+      "fact": "Capture adds one latency ping each second, with at most one outstanding reply; capture-off performs no native ping."
+    }
+  ],
+  "productionPathReview": "Synchronous process-stat enumeration is a confirmed avoidable GUI workload. The heartbeat records and native latency probes are additional measured capture work.",
+  "causalAttributionEstablished": false,
+  "sourceModified": false,
+  "runtimeOptimizationPerformed": false,
+  "limitations": [
+    "No retained per-operation timing or trace links any code path to the pair-three p95 change.",
+    "The benchmark duration residual cannot identify Windows timer resolution, scheduling, process enumeration or heartbeat as its cause."
+  ]
+}

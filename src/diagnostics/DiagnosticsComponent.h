@@ -1,11 +1,11 @@
 #pragma once
 #include "ComponentManager.h"
 #include "DiagnosticsBuffer.h"
+#include "ProcessSampler.h"
 #include <QElapsedTimer>
 #include <QFutureWatcher>
 #include <QMutex>
 #include <QTimer>
-#include <QHash>
 #include <atomic>
 
 class DiagnosticsComponent : public ComponentBase {
@@ -42,9 +42,7 @@ private:
   QTimer m_sample;
   qint64 m_lastBeat = 0;
   qint64 m_stoppedMs = 0;
-  qint64 m_lastSample = 0;
-  quint64 m_cpuPrevious = 0;
-  QHash<quint32, quint64> m_childCpuPrevious;
+  DesktopDiagnostics::ProcessSampler m_processSampler;
   QJsonObject m_metadata;
   QFutureWatcher<bool> m_export;
   bool m_saveDialogOpen = false;

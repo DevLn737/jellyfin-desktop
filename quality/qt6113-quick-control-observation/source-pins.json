@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "qualificationEligible": false,
+  "desktopBuildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "qtVersion": "6.11.3",
+  "msvcToolsVersion": "14.44.35207",
+  "windowsSdkVersion": "10.0.26100.0",
+  "peSubsystem": 2,
+  "nodeExeSha256": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32",
+  "officiallyReleasedAtLock": false,
+  "sourcePinScope": "The common WebEngine main package advertises the Qt5 source SHA; x64 binary metadata does not advertise a separate source SHA.",
+  "qtSourceCommits": {
+    "qt5": "7886592e2e3ea2fd9a9b126b6a99b9e8d99f02ca",
+    "qtWebEngine": "8c73295524f3ce6a2e10ad2f71141c695376c876",
+    "chromium": "7927ce61b5a302a3da8172eefbe260ec17484bcd"
+  },
+  "fixCommits": [
+    "62f90830c0750182d2b40be60e2e5f9c2f31c4c9",
+    "9b162a9269cb8913c792dd6c22d222330a6fdb03"
+  ],
+  "runtimePayloads": [
+    {
+      "name": "Qt6Core.dll",
+      "archive": "qtbase-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+      "fileVersion": "6.11.3.0",
+      "productVersion": "6.11.3.0",
+      "bytes": 10370872,
+      "sha256": "b20757be279b4e074c89be1f183a40975bf867b9a2a4e0ca4ea34a95fe2bb39e",
+      "archiveSha256": "3ddf0017b4b67cb56018ed5a6af6a54865a40bdc735111a50e5e169e893558e5"
+    },
+    {
+      "name": "Qt6WebEngineCore.dll",
+      "archive": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+      "fileVersion": "6.11.3.0",
+      "productVersion": "6.11.3.0",
+      "bytes": 203763000,
+      "sha256": "7461c85b35347e86ad563f32bec83b503f5fefdc91898dab25a2db4504ca3b0b",
+      "archiveSha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c"
+    },
+    {
+      "name": "Qt6WebEngineQuick.dll",
+      "archive": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+      "fileVersion": "6.11.3.0",
+      "productVersion": "6.11.3.0",
+      "bytes": 686904,
+      "sha256": "ff3c4e088c9e8d4a953b550224d185c85e9d6c745f342560c14f9430fe66b0ac",
+      "archiveSha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c"
+    },
+    {
+      "name": "QtWebEngineProcess.exe",
+      "archive": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+      "fileVersion": "6.11.3.0",
+      "productVersion": "6.11.3.0",
+      "bytes": 802104,
+      "sha256": "e6590c760fd9792081b627df71704c15acda4b19d581eb3efce921cda93b608f",
+      "archiveSha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c"
+    }
+  ],
+  "controlSources": [
+    {
+      "name": "CMakeLists.txt",
+      "sha256": "e6ac25285512963bcc661406cb539470362d63522da710dce5d3fb0414f18c41"
+    },
+    {
+      "name": "main.cpp",
+      "sha256": "b9636dc6ac16b848e5122fb04d353b9aae11a7722075b40ae417da0eb766e856"
+    },
+    {
+      "name": "control.qml",
+      "sha256": "45b0d19e789de54161f499dd073e596f66d8d4267070b5f262ebd9e8b9b76f27"
+    },
+    {
+      "name": "control.qrc",
+      "sha256": "d9cd92e56151b5d7e06013e83411b5d6dead14195cfe50abb1d9d75e800ea86a"
+    },
+    {
+      "name": "prior-investigations.json",
+      "sha256": "0dc1a95cc9112e1344f0ddf8d12910c74f21102ee9c026551cd79e8c84725c52"
+    },
+    {
+      "name": "build-control.ps1",
+      "sha256": "aa7478835c73cfeb859fbeed5b840993ec1750f41343b891574581f3688301c3"
+    },
+    {
+      "name": "control-driver.mjs",
+      "sha256": "6d977b4d99b4f88feb54bc02f4659c7f49ddfb5e1f960f21ed8fe9d66bde7896"
+    },
+    {
+      "name": "run-control.ps1",
+      "sha256": "161612df1e727b9615b9ba09172f73d65e2c6e3646abcd246f0c8757d783ed04"
+    },
+    {
+      "name": "verify-workload.mjs",
+      "sha256": "2cca17ba23c0352df2ef4f8954023686ca35a42be456e6f5be2bb07622e955a6"
+    },
+    {
+      "name": "verify-argv.ps1",
+      "sha256": "bd3e8a6871c73b6c94ad95c60695257a0988aecc2311f6e72d086f6721769a86"
+    },
+    {
+      "name": "protocol.json",
+      "sha256": "d0a7e8eb6ec862f10b1c496a0b27d4f2a81b06d70bb31798f3ed74559a1633cf"
+    },
+    {
+      "name": "workload-digest.json",
+      "sha256": "4ecb938a7046b665917d64d1b0fd09662c4947cc35803591bcede3f34512160d"
+    }
+  ],
+  "desktopDriverSha256": "b199348db6991d726288a6a35c75ad4c58e610d647dda7f6f8f0d044ef0c829a",
+  "desktopProtocolSha256": "cb2ee39ab817a667e279e1bde9eeee4a69857e7db9d9cbeae6ccf5ad9bb238d7",
+  "desktopVisibilityObservationSha256": "e0a24099fbf98d5f24c0efd2ae6a36fd8659298e98740c5d45c525f99798bb7a",
+  "verificationLimit": "Official metadata and exact source ancestry identify both fixes; DLL versions and archive hashes identify downloaded binaries. This is not an independent compiled-code audit, an official release assertion, or a passing runtime memory report."
+}
