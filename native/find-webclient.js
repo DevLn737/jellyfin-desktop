@@ -1,65 +1,35 @@
 async function tryConnect(server) {
     document.getElementById('connect-button').disabled = true;
 
-    AbortSignal.timeout = function timeout(ms) {
-        const ctrl = new AbortController()
-        setTimeout(() => ctrl.abort(), ms)
-        return ctrl.signal
-    }
-
     try {
-        if (!server.startsWith("http")) {
-            server = "http://" + server;
+        const address = server.trim();
+        if (!address) {
+            throw new Error("Server address is empty");
         }
-        serverBaseURL = server.replace(/\/+$/, "");
+        const parsed = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(address) ? address : "http://" + address);
+        if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password ||
+            parsed.search || parsed.hash) {
+            throw new Error("Invalid server address");
+        }
+        const serverBaseURL = parsed.href.replace(/\/+$/, "");
         const url = serverBaseURL + "/System/Info/Public";
         const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(5000) });
-        if (response.ok && (await response.json()).Id) {
-            const htmlResponse = await fetch(server, { cache: 'no-cache' });
-            if (!htmlResponse.ok) {
-                throw new Error("Status not ok");
-            }
-
-            if (response.headers.get("content-security-policy")) {
-                // Sigh... If we just navigate to the URL, the server's CSP will block us loading other resources.
-                // So we have to parse the HTML, set a new base href, and then write it back to the page.
-                // We also have to override the history functions to make sure they use the correct URL.
-                console.log("Using CSP workaround");
-                const webUrl = htmlResponse.url.replace(/\/[^\/]*$/, "/");
-                const realUrl = window.location.href;
-
-                const html = await htmlResponse.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, "text/html");
-                const base = doc.createElement("base");
-                base.href = webUrl
-                doc.head.insertBefore(base, doc.head.firstChild);
-
-                const oldPushState = window.history.pushState;
-                window.history.pushState = function(state, title, url) {
-                    url = url ? (new URL(url, realUrl)).toString() : realUrl;
-                    return oldPushState.call(window.history, state, title, url);
-                };
-
-                const oldReplaceState = window.history.replaceState;
-                window.history.replaceState = function(state, title, url) {
-                    url = url ? (new URL(url, realUrl)).toString() : realUrl;
-                    return oldReplaceState.call(window.history, state, title, url);
-                };
-
-                document.open();
-                document.write((new XMLSerializer()).serializeToString(doc));
-                document.close();
-            } else {
-                console.log("Using normal navigation");
-                window.location = server;
-            }
-
-            await window.initCompleted;
-            window.jmpInfo.settings.main.userWebClient = server;
-
-            return true;
+        if (!response.ok) {
+            throw new Error("Server public information request failed");
         }
+        const info = await response.json();
+        if (typeof info?.Id !== 'string' || !info.Id.trim()) {
+            throw new Error("Server did not provide a Jellyfin ID");
+        }
+
+        // Reading the Web HTML with fetch requires CORS even though opening
+        // it as a document does not. NativeShell and its plugins are injected
+        // by the persistent profile, including on pages with a strict CSP.
+        // Persist before navigation destroys this page's WebChannel context.
+        await window.initCompleted;
+        await new Promise(resolve => window.api.settings.setValue('main', 'userWebClient', serverBaseURL, resolve));
+        window.location.assign(serverBaseURL);
+        return true;
     } catch (e) {
         console.error(e);
         document.getElementById('connect-button').disabled = false;

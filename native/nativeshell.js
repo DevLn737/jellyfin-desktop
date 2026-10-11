@@ -271,6 +271,11 @@ jmpInfo.settingsUpdate = [];
 window.apiPromise = createApi();
 window.initCompleted = new Promise(async (resolve) => {
     window.api = await window.apiPromise;
+    // The profile script contains startup settings. A new document/origin must
+    // see changes made by the chooser or a previous page before exposing its
+    // settings proxies; another origin's sessionStorage cannot supply them.
+    const currentSettings = await new Promise(done => window.api.settings.allValues('', done));
+    Object.assign(rawSettings, currentSettings);
     if (window.api.diagnostics) {
         const diagnostics = window.api.diagnostics;
         let roundTripPending = false;

@@ -22,6 +22,10 @@ FIXTURE = json.loads((ROOT / CONTRACT["fixturePath"]).read_text(encoding="utf-8-
 
 
 class ReleaseValidationTest(unittest.TestCase):
+    def next_package_version(self, manifest):
+        major, minor, build = map(int, manifest["packageVersion"].split("."))
+        return f"{major}.{minor}.{build + 1}"
+
     def prepared_manifest(self):
         # Test-only source metadata, never a real qualification report or lock.
         manifest = copy.deepcopy(MANIFEST)
@@ -151,7 +155,7 @@ class ReleaseValidationTest(unittest.TestCase):
                   "buildCommit": "2" * 40, "buildManifestSha256": hashlib.sha256(tested_bytes).hexdigest()}
         stable = copy.deepcopy(tested)
         stable["appVersion"] = "2.0.0"
-        stable["packageVersion"] = "2.0.2"
+        stable["packageVersion"] = self.next_package_version(tested)
         with patch.object(validation.subprocess, "check_output", return_value=tested_bytes), \
              patch.object(validation.subprocess, "run"), patch.object(validation, "git", return_value="src/player/PlayerComponent.cpp"):
             with self.assertRaisesRegex(ValueError, "Source changed after"):
@@ -200,9 +204,14 @@ class ReleaseValidationTest(unittest.TestCase):
     def test_version_promotion_and_result_transition_preserve_all_other_fields(self):
         tested = self.prepared_manifest()
         stable = copy.deepcopy(tested)
-        stable.update(appVersion="2.0.0", packageVersion="2.0.2")
+        stable.update(appVersion="2.0.0", packageVersion=self.next_package_version(tested))
         stable["qt"]["qualification"]["qualified"] = True
         self.check_source(tested, stable)
+        for package_version in (tested["packageVersion"], "0.0.0"):
+            not_incremented = copy.deepcopy(stable)
+            not_incremented["packageVersion"] = package_version
+            with self.subTest(packageVersion=package_version), self.assertRaisesRegex(ValueError, "increment MSI packageVersion"):
+                self.check_source(tested, not_incremented)
         stable["tools"]["vulkanRuntime"]["sha256"] = "f" * 64
         with self.assertRaisesRegex(ValueError, "changed qualified dependencies"):
             self.check_source(tested, stable)

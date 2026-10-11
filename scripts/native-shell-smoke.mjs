@@ -19,16 +19,31 @@ const report = { expectedDevice, expectedRoot,
     phases: {} };
 const fixtureRoot = path.join(expectedRoot, 'data', 'hls-silent-30');
 const fixtureNames = new Set(['index.m3u8', 'segment-000.ts', 'segment-001.ts', 'segment-002.ts', 'segment-003.ts']);
+const strictCsp = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'";
+const connectionRequests = [];
 let socket;
 const server = http.createServer((_request, response) => {
     const requested = new URL(_request.url, 'http://127.0.0.1').pathname;
+    if (requested === '/System/Info/Public') {
+        connectionRequests.push({ route: 'publicInfo', destination: _request.headers['sec-fetch-dest'] || '' });
+        response.setHeader('Access-Control-Allow-Origin', '*');
+        response.setHeader('Content-Security-Policy', strictCsp);
+        response.setHeader('Content-Type', 'application/json; charset=utf-8');
+        response.end(JSON.stringify({ Id: 'synthetic-native-shell-server' }));
+        return;
+    }
     const fixtureName = requested.startsWith('/fixture-hls/') ? requested.slice('/fixture-hls/'.length) : null;
     if (fixtureNames.has(fixtureName)) {
         response.setHeader('Content-Type', fixtureName.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp2t');
         response.end(fs.readFileSync(path.join(fixtureRoot, fixtureName)));
         return;
     }
-    response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'");
+    if (requested === '/') {
+        connectionRequests.push({ route: 'rootHtml', destination: _request.headers['sec-fetch-dest'] || '' });
+    }
+    // Real reverse proxies may allow CORS for the API but not for web HTML.
+    // Direct navigation must work without fetching/re-writing this document.
+    response.setHeader('Content-Security-Policy', strictCsp);
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.end('<!doctype html><html><head><meta charset="utf-8"><title>NativeShell CSP smoke</title></head><body>Local NativeShell smoke</body></html>');
 });
@@ -91,15 +106,20 @@ try {
     await command('Runtime.enable');
     await command('Log.enable');
     await command('Page.enable');
+    await command('Network.enable');
     const expression = `(async () => {
         const result = { url: location.href, nativeShell: typeof window.NativeShell,
             deviceName: window.jmpInfo?.deviceName, channel: typeof window.QWebChannel,
             transport: !!window.qt?.webChannelTransport };
         const api = await Promise.race([window.apiPromise,
             new Promise((resolve, reject) => setTimeout(() => reject(Error('Native API timeout')), 2000))]);
+        await Promise.race([window.initCompleted,
+            new Promise((resolve, reject) => setTimeout(() => reject(Error('Native initialization timeout')), 2000))]);
         result.api = api ? Object.keys(api) : [];
         result.diagnosticsCapturing = api?.diagnostics?.capturing;
         const setting = (...args) => new Promise(resolve => api.settings.value(...args, resolve));
+        result.savedServer = await setting('main', 'userWebClient');
+        result.savedServerSnapshot = window.jmpInfo.settings.main.userWebClient;
         result.legacyMigration = {
             hardwareDecoding: await setting('video', 'hardwareDecoding'),
             autodetectCertBundle: await setting('main', 'autodetectCertBundle'),
@@ -125,7 +145,13 @@ try {
                 assert.equal(value.channel, 'function');
                 assert.equal(value.transport, true);
                 assert.equal(value.deviceName, expectedDevice);
-                if (expectedUrl) assert.equal(value.url, expectedUrl);
+                if (expectedUrl) {
+                    assert.equal(value.url, expectedUrl);
+                    assert.equal(new URL(value.savedServer).href, expectedUrl,
+                        'Native saved server must match the connected document');
+                    assert.equal(new URL(value.savedServerSnapshot).href, expectedUrl,
+                        'JS settings must refresh after file-to-HTTP navigation and reload');
+                }
                 const requiredApi = ['diagnostics', 'input', 'player', 'power', 'settings', 'system', 'taskbar'];
                 // Display can be absent on a headless Windows runner.
                 assert.ok(requiredApi.every(name => value.api.includes(name)), JSON.stringify(value.api));
@@ -141,18 +167,50 @@ try {
         }
         throw lastError;
     }
-    async function navigate(method, params) {
-        const cursor = events.length;
-        await command(method, params);
+    async function waitForLoad(cursor, description) {
         for (let attempt = 0; attempt < 50; attempt++) {
             if (events.slice(cursor).some(event => event.method === 'Page.loadEventFired')) return;
             await wait(100);
         }
-        throw new Error(`${method} did not complete loading within 5 seconds`);
+        throw new Error(`${description} did not complete loading within 5 seconds`);
+    }
+    async function navigate(method, params) {
+        const cursor = events.length;
+        await command(method, params);
+        await waitForLoad(cursor, method);
     }
     await verify('bundledFirstLaunch');
-    await navigate('Page.navigate', { url: report.syntheticUrl });
+    const connectionCursor = events.length;
+    // Do not await tryConnect across navigation: successful navigation destroys
+    // the chooser's JS execution context. The load event proves its completion.
+    const chooser = await command('Runtime.evaluate', {
+        expression: `(() => {
+            if (location.protocol !== 'file:' || typeof tryConnect !== 'function') {
+                throw Error('Actual bundled server chooser is unavailable');
+            }
+            void tryConnect(${JSON.stringify(report.syntheticUrl)});
+            return { invoked: true, originScheme: location.protocol };
+        })()`, returnByValue: true
+    });
+    assert.ok(!chooser.exceptionDetails, JSON.stringify(chooser.exceptionDetails));
+    assert.deepEqual(chooser.result.value, { invoked: true, originScheme: 'file:' });
+    await waitForLoad(connectionCursor, 'Actual server chooser connection');
     await verify('strictCsp', report.syntheticUrl);
+    const discoveryRequests = connectionRequests.filter(request => request.route === 'publicInfo');
+    const htmlRequests = connectionRequests.filter(request => request.route === 'rootHtml');
+    assert.equal(discoveryRequests.length, 1, 'Chooser must validate the synthetic server once');
+    assert.equal(htmlRequests.length, 1, 'Chooser must request web HTML once by direct navigation');
+    assert.equal(htmlRequests[0].destination, 'document', 'Web HTML must not be fetched from the file origin');
+    const rootNetworkRequests = events.slice(connectionCursor).filter(event =>
+        event.method === 'Network.requestWillBeSent' && event.params.request.url === report.syntheticUrl);
+    assert.equal(rootNetworkRequests.length, 1, 'Unexpected HTML fetch before or instead of navigation');
+    assert.equal(rootNetworkRequests[0].params.type, 'Document', 'Chooser must navigate to an actual remote document');
+    assert.equal(new URL(report.phases.strictCsp.savedServer).href, report.syntheticUrl,
+        'The saved server must survive the chooser document being replaced');
+    report.phases.chooserConnection = { publicInfoRequests: 1, rootHtmlRequests: 1,
+        rootHtmlFetchRequests: 0, directDocumentNavigation: true, savedServerMatches: true,
+        savedServerSnapshotMatches: true,
+        publicInfoAllowsCors: true, rootHtmlAllowsCors: false, strictCsp: true };
     await navigate('Page.reload', { ignoreCache: true });
     await verify('reload', report.syntheticUrl);
     // CSP errors indicate dynamic qrc/file script loading accidentally returned.
@@ -302,7 +360,7 @@ try {
     assert.deepEqual(report.phases.diagnosticsControls,
         { initiallyOff: true, ping: true, changes: [true, false], finallyOff: true });
     report.passed = true;
-    console.log('NativeShell startup/CSP/reload/Unicode, mpv paused audio readiness and music HLS/TS timestamps passed');
+    console.log('NativeShell chooser/API-only CORS/direct navigation/startup/CSP/reload/Unicode, mpv paused audio readiness and music HLS/TS timestamps passed');
 } catch (error) {
     report.passed = false;
     report.failure = String(error.stack || error);

@@ -10,6 +10,11 @@ the earlier tree reset in place. The target integration branch is `master`.
 
 - Qt6/C++17, explicit persistent WebEngine profile and profile-level NativeShell,
   updated QML Controls/WebEngine APIs, native Windows taskbar integration.
+- The rc.2 server chooser checks only the public API, acknowledges the saved
+  server setting before navigation, and opens the actual server document.
+  Removing the redundant cross-origin HTML fetch fixes false connection errors
+  when reverse proxies permit API CORS but omit it on Web HTML. See
+  [the connection fix and regression](server-connection-cors-fix.md).
 - OpenGL chosen before GUI creation. One PlayerComponent consumes mpv events;
   the scenegraph renderer renders into a reusable FBO and composites below QML
   in `beforeRenderPassRecording`, with external command boundaries and restored
@@ -55,7 +60,7 @@ for internal verification and the Windows toolchain. The release qualification
 remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
-The current retained local development packages were built from clean commit
+The retained rc.1 development-package checkpoint was built from clean commit
 `289859f75ade45a3bd3cd8f53ba8c5b429062626`, with manifest SHA256
 `af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc`.
 Both full normal and diagnostic pipelines, their native regression tests,

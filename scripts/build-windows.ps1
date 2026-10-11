@@ -24,7 +24,7 @@ try {
     Invoke-Checked 'python' @('scripts/test-release-validation.py')
     Invoke-Checked 'python' @('scripts/test-windows-runtime-validation.py')
     & (Join-Path $PSScriptRoot 'test-diagnostic-symbols-validation.ps1')
-    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js')) {
+    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js', 'test-find-webclient.js')) {
         Invoke-Checked 'node' @("scripts/$test")
     }
     $configure = @('-S', $sourceRoot, '-B', $nativeBuildDirectory, '-G', 'Ninja',
