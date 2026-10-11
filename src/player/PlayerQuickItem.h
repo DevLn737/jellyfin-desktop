@@ -20,6 +20,7 @@ using HANDLE = void*;
 
 class PlayerComponent;
 class RepaintDispatcher;
+class RendererTestAccess;
 
 // All OpenGL and mpv render-context operations belong to the scenegraph thread.
 // PlayerComponent remains the only consumer of mpv client events.
@@ -27,6 +28,7 @@ class PlayerRenderer : public QObject
 {
   Q_OBJECT
   friend class PlayerQuickItem;
+  friend class RendererTestAccess;
 public:
   PlayerRenderer(mpv::qt::Handle mpv, QQuickWindow* window,
                  std::shared_ptr<RepaintDispatcher> repaint);
@@ -68,6 +70,12 @@ public:
   explicit PlayerQuickItem(QQuickItem* parent = nullptr);
   ~PlayerQuickItem() override;
   void initMpv(PlayerComponent* player);
+  // Native embedding seam. Client events are consumed by the handle's owner.
+  // A live item owns one stable handle; replacing it requires a new item.
+  bool initMpvHandle(mpv::qt::Handle handle);
+  void setVideoRectangle(const QRect& rectangle);
+  void setVideoVisible(bool visible);
+  void setPlaybackActive(bool active);
   QString debugInfo() const { return m_debugInfo; }
   void releaseResources() override;
 
@@ -85,11 +93,13 @@ private slots:
   void onHandleFatalError(QString message);
 
 private:
+  friend class RendererTestAccess;
   mpv::qt::Handle m_mpv;
   PlayerRenderer* m_renderer = nullptr;
   QPointer<QQuickWindow> m_renderWindow;
   std::shared_ptr<RepaintDispatcher> m_repaint;
   QString m_debugInfo;
+  QRect m_videoRectangle;
   bool m_videoVisible = false;
   bool m_playbackActive = false;
   bool m_destroying = false;

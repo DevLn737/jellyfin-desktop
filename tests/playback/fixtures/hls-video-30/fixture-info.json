@@ -1,17 +1,18 @@
 {
   "schemaVersion": 1,
-  "kind": "synthetic-red-video-and-silent-audio-hls-timestamp-fixture",
-  "sourceMedia": "FFmpeg lavfi color/anullsrc; no server or user media",
+  "kind": "synthetic-asymmetric-red-cyan-video-and-silent-audio-hls-timestamp-fixture",
+  "sourceMedia": "FFmpeg lavfi color/drawbox/anullsrc; upper half red, lower half cyan; no server or user media",
   "ffmpegVersion": "9.0.1-full_build-www.gyan.dev",
   "ffmpegExecutableSha256": "57c56e369d5b4873b4d93fc1a1d833cb7cd8bc9325c14b05c34ce60b22842d8a",
   "generatorArguments": [
     "-hide_banner",
     "-loglevel",
     "error",
+    "-y",
     "-f",
     "lavfi",
     "-i",
-    "color=c=red:s=128x72:r=10",
+    "color=c=red:s=128x72:r=10,drawbox=x=0:y=36:w=128:h=36:color=cyan:t=fill",
     "-f",
     "lavfi",
     "-i",
@@ -52,12 +53,12 @@
   "firstPtsEvidence": "ffprobe -show_entries stream=index,codec_name,start_time,duration -of json index.m3u8",
   "loadTargetMilliseconds": 30000,
   "pausedSeekTargetMilliseconds": 32000,
-  "generatedMediaBytes": 19952,
+  "generatedMediaBytes": 20516,
   "sha256": {
     "index.m3u8": "0daeed08f247e4c61805bca830d67cbaf1aaea1d94aac689a7936d4148431565",
-    "segment-000.ts": "4dcef40de75e38485d30be44a4da826ccc9ec88ed2813379b017852212ab4f0e",
-    "segment-001.ts": "ef71efb75f17f0ceaa011d6c9c3b071f2d30e3cd16c8b868d7419dc8e7143742",
-    "segment-002.ts": "81a3063d0d6fb417c3a7741d0aaea5af42d766ea1ff3ac15f4ac0c0bfa165098"
+    "segment-000.ts": "71d1d73fd4d034ecf5ad618a1de228735cdd720ab0b49cc1624e6b85caa84e0d",
+    "segment-001.ts": "b3e9f2f3ed00d573bf378f908f1dc12e4bd2ece181ae4e3b923f394049ed2060",
+    "segment-002.ts": "d5551306feaceb8909c6e878b7fc1558d124b3ae11d98f2cc6e02da42387edaa"
   },
-  "acceptanceScope": "Local native video HLS original timestamp check only; never production or mixed Desktop/Web acceptance."
+  "acceptanceScope": "Offscreen native production renderer pixels/orientation and original HLS timestamps only; never production or mixed Desktop/Web acceptance."
 }

@@ -1,5 +1,4 @@
 #include "PlayerQuickItem.h"
-#include "PlayerComponent.h"
 #include "profiling/Trace.h"
 #include "utils/Utils.h"
 
@@ -290,6 +289,7 @@ PlayerQuickItem::PlayerQuickItem(QQuickItem* parent) : QQuickItem(parent)
 {
   connect(this, &QQuickItem::windowChanged, this, &PlayerQuickItem::onWindowChanged);
   connect(this, &PlayerQuickItem::onFatalError, this, &PlayerQuickItem::onHandleFatalError, Qt::QueuedConnection);
+  if (window()) onWindowChanged(window());
 }
 
 PlayerQuickItem::~PlayerQuickItem()
@@ -360,7 +360,7 @@ void PlayerQuickItem::onSynchronize()
   if (m_renderer)
   {
     m_renderer->m_size = window()->size() * window()->effectiveDevicePixelRatio();
-    const QRect rectangle = PlayerComponent::Get().videoRectangle();
+    const QRect rectangle = m_videoRectangle;
     m_renderer->m_videoRectangle = rectangle.width() > 0 && rectangle.height() > 0
       ? rectangle : QRect(QPoint(0, 0), m_renderer->m_size);
     m_renderer->m_visible = m_videoVisible;
@@ -395,23 +395,34 @@ void PlayerQuickItem::releaseResources()
       [](RepaintDispatcher* dispatcher) { dispatcher->deleteLater(); });
 }
 
-void PlayerQuickItem::initMpv(PlayerComponent* player)
+bool PlayerQuickItem::initMpvHandle(mpv::qt::Handle handle)
 {
-  m_mpv = player->getMpvHandle();
+  if (!handle) return false;
+  if (m_mpv)
+    return static_cast<mpv_handle*>(m_mpv) == static_cast<mpv_handle*>(handle);
+  m_mpv = std::move(handle);
   if (window())
     m_repaint = std::shared_ptr<RepaintDispatcher>(new RepaintDispatcher(window()),
       [](RepaintDispatcher* dispatcher) { dispatcher->deleteLater(); });
-  connect(player, &PlayerComponent::windowVisible, this, [this](bool visible) {
-    m_videoVisible = visible;
-    setVisible(visible);
-    if (window()) window()->update();
-  });
-  connect(player, &PlayerComponent::videoPlaybackActive, this, [this](bool active) {
-    m_playbackActive = active;
-    if (window()) window()->update();
-  });
-  connect(player, &PlayerComponent::onVideoRecangleChanged, this, [this] {
-    if (window()) window()->update();
-  });
+  if (window()) window()->update();
+  return true;
+}
+
+void PlayerQuickItem::setVideoRectangle(const QRect& rectangle)
+{
+  m_videoRectangle = rectangle;
+  if (window()) window()->update();
+}
+
+void PlayerQuickItem::setVideoVisible(bool visible)
+{
+  m_videoVisible = visible;
+  setVisible(visible);
+  if (window()) window()->update();
+}
+
+void PlayerQuickItem::setPlaybackActive(bool active)
+{
+  m_playbackActive = active;
   if (window()) window()->update();
 }

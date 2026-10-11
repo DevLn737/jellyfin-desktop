@@ -1,6 +1,15 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$ZipPath)
 $ErrorActionPreference = 'Stop'
+$sourceRoot = Split-Path $PSScriptRoot -Parent
+$manifestPath = Join-Path $sourceRoot 'build-manifest.json'
+$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+$manifestSha = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$expectedCommit = (& git -C $sourceRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $expectedCommit -notmatch '^[a-f0-9]{40}$') { throw 'Cannot identify the current source commit' }
+$checkoutStatus = @(& git -C $sourceRoot status --porcelain)
+if ($LASTEXITCODE -ne 0) { throw 'Cannot identify the current checkout state' }
+if ($checkoutStatus.Count) { $expectedCommit += '-dirty' }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $archive = [IO.Compression.ZipFile]::OpenRead([IO.Path]::GetFullPath($ZipPath))
 try {
@@ -12,14 +21,17 @@ try {
         $null = $stream.Read($header, 0, $header.Length)
         if ([Text.Encoding]::ASCII.GetString($header) -notmatch '^Microsoft C/C\+\+ MSF') { throw 'Diagnostic symbol asset is not a Windows PDB' }
     } finally { $stream.Dispose() }
-    $metadata = $archive.Entries | Where-Object { $_.FullName.TrimStart('./') -eq 'symbols-build.json' }
-    if (-not $metadata) { throw 'Diagnostic symbols have no build identity' }
-    $reader = New-Object IO.StreamReader ($metadata.Open())
+    $metadata = @($archive.Entries | Where-Object { $_.FullName.TrimStart('./') -eq 'symbols-build.json' })
+    if ($metadata.Count -ne 1) { throw 'Diagnostic symbols require exactly one build identity' }
+    $reader = New-Object IO.StreamReader ($metadata[0].Open())
     try { $info = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
-    $manifest = Get-Content (Join-Path (Split-Path $PSScriptRoot -Parent) 'build-manifest.json') -Raw | ConvertFrom-Json
-    if (-not $info.diagnostic -or $info.appVersion -ne $manifest.appVersion -or $info.qtVersion -ne $manifest.qt.version) {
+    if ($info.diagnostic -isnot [bool] -or -not $info.diagnostic -or
+        $info.appVersion -cne $manifest.appVersion -or $info.qtVersion -cne $manifest.qt.version) {
         throw 'Diagnostic PDB belongs to a different application version'
     }
-    if ($info.buildCommit -notmatch '^[a-f0-9]{40}(-dirty)?$') { throw 'Diagnostic symbol source commit is missing' }
+    if ($info.buildCommit -cne $expectedCommit) { throw 'Diagnostic symbols do not match the current source commit and checkout state' }
+    if ($info.buildManifestSha256 -cne $manifestSha) { throw 'Diagnostic symbols do not match the current build manifest SHA256' }
+    $packageVersion = $info.PSObject.Properties['packageVersion']
+    if (-not $packageVersion -or $packageVersion.Value -cne $manifest.packageVersion) { throw 'Diagnostic symbols do not match the current package version' }
 } finally { $archive.Dispose() }
 Write-Host 'Diagnostic symbols and build identity passed'

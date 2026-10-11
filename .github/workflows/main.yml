@@ -74,6 +74,8 @@ jobs:
             build/windows/${{ matrix.variant }}/native-shell-smoke/*.json
             build/windows/${{ matrix.variant }}/native-shell-smoke/*.stdout
             build/windows/${{ matrix.variant }}/native-shell-smoke/*.stderr
+            build/windows/${{ matrix.variant }}/tests/render/renderer-report.json
+            build/windows/${{ matrix.variant }}/tests/render/renderer-report.json.failure.png
             build/toolchain/wix/extract.log
           if-no-files-found: ignore
 

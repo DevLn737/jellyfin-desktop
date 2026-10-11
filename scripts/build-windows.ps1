@@ -22,6 +22,7 @@ Push-Location $sourceRoot
 try {
     Invoke-Checked 'python' @('scripts/validate-build-manifest.py')
     Invoke-Checked 'python' @('scripts/test-release-validation.py')
+    & (Join-Path $PSScriptRoot 'test-diagnostic-symbols-validation.ps1')
     foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js')) {
         Invoke-Checked 'node' @("scripts/$test")
     }
@@ -44,6 +45,11 @@ try {
         Invoke-Checked $ctest @('--test-dir', $testBuild, '--output-on-failure')
     }
     Invoke-Checked $cmake @('--build', $nativeBuildDirectory, '--target', 'windows_zip')
+    if (-not $Diagnostic) {
+        & (Join-Path $sourceRoot 'tests/render/run-windows.ps1') `
+            -StagePath (Join-Path $nativeBuildDirectory 'portable-stage') `
+            -BuildDirectory (Join-Path $nativeBuildDirectory 'tests/render')
+    }
     if ($Diagnostic) {
         $symbols = Get-ChildItem -LiteralPath $nativeBuildDirectory -Filter '*-diagnostic-symbols.zip' | Select-Object -First 1
         & (Join-Path $PSScriptRoot 'test-diagnostic-symbols.ps1') -ZipPath $symbols.FullName

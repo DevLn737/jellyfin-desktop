@@ -11,9 +11,10 @@ file(MAKE_DIRECTORY "${STAGING_DIR}")
 file(COPY "${PDB_PATH}" "${MANIFEST_PATH}" DESTINATION "${STAGING_DIR}")
 file(READ "${MANIFEST_PATH}" _manifest)
 string(JSON _app_version GET "${_manifest}" appVersion)
+string(JSON _package_version GET "${_manifest}" packageVersion)
 string(JSON _qt_version GET "${_manifest}" qt version)
 file(SHA256 "${MANIFEST_PATH}" _manifest_sha)
 file(WRITE "${STAGING_DIR}/symbols-build.json"
-  "{\n  \"appVersion\": \"${_app_version}\",\n  \"qtVersion\": \"${_qt_version}\",\n  \"buildCommit\": \"${BUILD_COMMIT}\",\n  \"buildManifestSha256\": \"${_manifest_sha}\",\n  \"diagnostic\": true\n}\n")
+  "{\n  \"appVersion\": \"${_app_version}\",\n  \"packageVersion\": \"${_package_version}\",\n  \"qtVersion\": \"${_qt_version}\",\n  \"buildCommit\": \"${BUILD_COMMIT}\",\n  \"buildManifestSha256\": \"${_manifest_sha}\",\n  \"diagnostic\": true\n}\n")
 execute_process(COMMAND "${CMAKE_COMMAND}" -E tar cf "${OUTPUT_ZIP}" --format=zip -- .
   WORKING_DIRECTORY "${STAGING_DIR}" COMMAND_ERROR_IS_FATAL ANY)

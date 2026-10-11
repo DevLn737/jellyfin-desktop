@@ -94,12 +94,24 @@ Desktop workflow. Do not manufacture passing quality reports to bypass a gate.
 
 The isolated `scripts/test-native-shell.ps1` probe verifies first navigation,
 strict CSP, page reload, Unicode configuration and explicit localhost-only
-DevTools. A generated silent WAV with null audio output exercises real mpv paused
-load/seek readiness and rapid replacement. Compact synthetic audio and video
-HLS fixtures check 30-second original timestamps, paused seek, timeline duration
-and ordinary direct-TS rebasing.
-These probes use no server media or account.
-The probe copies the deployment into its own temporary profile and refuses
+DevTools, diagnostics off at launch and native capture controls. A generated
+silent WAV with null audio output exercises real mpv paused load/seek readiness
+and rapid replacement. A compact synthetic music HLS fixture checks 30-second
+original timestamps, paused seek, timeline duration and ordinary direct-TS
+rebasing. This hidden app probe has no Qt render pass and cannot verify video.
+
+`tests/render/run-windows.ps1` builds the production PlayerQuickItem/renderer
+with a separate isolated mpv owner. Qt RenderControl supplies an offscreen GL
+render pass using the locked software OpenGL DLL; no app or visible window is
+launched. Synthetic video checks original paused load/seek timestamps, image
+orientation, QML overlay composition, rectangle resizing, FBO reuse and context
+invalidation. The component binding is separate from rendering so this harness
+uses the actual renderer without a second production mpv event consumer. It does
+not establish hardware-driver, minimize/restore or PlayerComponent recovery
+behavior.
+
+These probes use no server media or account. The NativeShell probe copies the
+deployment into its own temporary profile and refuses
 to interfere with an already running application. It does not replace hardware
 playback, installation-upgrade or long-running memory qualification.
 
