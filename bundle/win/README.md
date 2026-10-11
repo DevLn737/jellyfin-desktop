@@ -19,6 +19,9 @@ https://github.com/wixtoolset/wix/blob/v7.0.0/OSMFEULA.txt.
 portable Tracy distribution and a matching `diagnostic-symbols.zip` with its
 PDB, source commit and manifest checksum. The diagnostic executable never
 replaces the normal installer.
+MSI and portable ZIPs include the official, manifest-locked x64 Vulkan Loader
+required by libmpv and `VulkanRT-License.txt`. A driver's system installation is
+not a package dependency; update this app-local loader with the dependency lock.
 Portable ZIPs include the Microsoft x64 CRT and retain existing AppData by
 default. Add `-IsolatedPortable` to include an explicit `portable` marker; that
 archive stores its profile in `data/` and cache in `cache/` beside the executable.

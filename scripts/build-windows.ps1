@@ -22,6 +22,7 @@ Push-Location $sourceRoot
 try {
     Invoke-Checked 'python' @('scripts/validate-build-manifest.py')
     Invoke-Checked 'python' @('scripts/test-release-validation.py')
+    Invoke-Checked 'python' @('scripts/test-windows-runtime-validation.py')
     & (Join-Path $PSScriptRoot 'test-diagnostic-symbols-validation.ps1')
     foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js')) {
         Invoke-Checked 'node' @("scripts/$test")
@@ -31,6 +32,7 @@ try {
         "-DCMAKE_INSTALL_PREFIX=$nativeBuildDirectory/output", "-DQTROOT=$($state.qtRoot)",
         "-DMPV_INCLUDE_DIR=$($state.mpvRoot)/include", "-DMPV_LIBRARY=$($state.mpvLibrary)",
         "-DMPV_RUNTIME=$($state.mpvRuntime)", "-DJMP_VCRUNTIME_DIR=$($state.runtimeDirectory)",
+        "-DJMP_VULKAN_RUNTIME=$($state.vulkanRuntime)", "-DJMP_VULKAN_LICENSE=$($state.vulkanLicense)",
         "-DVCREDIST_EXE=$($state.vcRedistExe)", "-DWIX_EXECUTABLE=$($state.wixExe)",
         "-DJMP_TRACY_ARCHIVE=$($state.tracyArchive)",
         "-DWIX_UTIL_EXTENSION=$($state.wixUtilExtension)", "-DWIX_BAL_EXTENSION=$($state.wixBalExtension)",
@@ -45,6 +47,8 @@ try {
         Invoke-Checked $ctest @('--test-dir', $testBuild, '--output-on-failure')
     }
     Invoke-Checked $cmake @('--build', $nativeBuildDirectory, '--target', 'windows_zip')
+    Invoke-Checked 'python' @('scripts/validate-windows-runtime.py', (Join-Path $nativeBuildDirectory 'portable-stage'),
+        '--report', (Join-Path $nativeBuildDirectory 'windows-runtime-imports.json'))
     if (-not $Diagnostic) {
         & (Join-Path $sourceRoot 'tests/render/run-windows.ps1') `
             -StagePath (Join-Path $nativeBuildDirectory 'portable-stage') `

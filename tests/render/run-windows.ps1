@@ -22,7 +22,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $runtimeStage 'opengl32sw.dll'))) { 
 foreach ($dependency in @(
     @{Name='libmpv-2.dll'; Reference=$state.mpvRuntime},
     @{Name='Qt6Core.dll'; Reference=(Join-Path $state.qtRoot 'bin/Qt6Core.dll')},
-    @{Name='opengl32sw.dll'; Reference=(Join-Path $state.qtRoot 'bin/opengl32sw.dll')}
+    @{Name='opengl32sw.dll'; Reference=(Join-Path $state.qtRoot 'bin/opengl32sw.dll')},
+    @{Name='vulkan-1.dll'; Reference=$state.vulkanRuntime}
 )) {
     $actual = (Get-FileHash -LiteralPath (Join-Path $runtimeStage $dependency.Name) -Algorithm SHA256).Hash
     $locked = (Get-FileHash -LiteralPath $dependency.Reference -Algorithm SHA256).Hash
@@ -59,5 +60,13 @@ foreach ($module in @('QtQuick', 'QtQml')) {
     Copy-Item -LiteralPath (Join-Path $runtimeStage "qml/$module") -Destination (Join-Path $testBuild 'qml') -Recurse -Force
 }
 [IO.File]::WriteAllText((Join-Path $testBuild 'qt.conf'), "[Paths]`nPrefix=.`nPlugins=.`nQmlImports=qml`nQml2Imports=qml`n")
+Invoke-Checked 'python' @((Join-Path $sourceRoot 'scripts/validate-windows-runtime.py'), $testBuild,
+    '--report', (Join-Path $testBuild 'runtime-imports.json'))
 $ctest = Join-Path (Split-Path $state.cmakeExe) 'ctest.exe'
-Invoke-Checked $ctest @('--test-dir', $testBuild, '--output-on-failure')
+$originalPath = $env:PATH
+try {
+    # System32 remains for genuine Windows components. The static import guard
+    # rejects third-party DLLs there; SDK/driver/toolchain PATH entries are gone.
+    $env:PATH = $testBuild + ';' + (Join-Path $env:SystemRoot 'System32') + ';' + $env:SystemRoot
+    Invoke-Checked $ctest @('--test-dir', $testBuild, '--output-on-failure')
+} finally { $env:PATH = $originalPath }

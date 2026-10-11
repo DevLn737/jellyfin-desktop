@@ -90,6 +90,19 @@ Expand-LockedArchive $manifest.tools.node $nodeRoot
 $nodeExe = Join-Path $nodeRoot ("node-v" + $manifest.tools.node.version + '-win-x64\node.exe')
 $mpvRoot = Join-Path $toolchainDirectory 'mpv'
 Expand-LockedArchive $manifest.mpv $mpvRoot
+$vulkanRoot = Join-Path (Join-Path $toolchainDirectory 'vulkan') $manifest.tools.vulkanRuntime.version
+Expand-LockedArchive $manifest.tools.vulkanRuntime $vulkanRoot
+foreach ($payload in @($manifest.tools.vulkanRuntime.runtimeDll, $manifest.tools.vulkanRuntime.license)) {
+    $payloadPath = [IO.Path]::GetFullPath((Join-Path $vulkanRoot $payload.path))
+    if (-not $payloadPath.StartsWith($vulkanRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) -or
+        -not (Test-Path -LiteralPath $payloadPath) -or
+        (Get-Item -LiteralPath $payloadPath).Length -ne $payload.bytes -or
+        (Get-FileHash -LiteralPath $payloadPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $payload.sha256) {
+        throw "The official Vulkan runtime payload differs from its lock: $($payload.name)"
+    }
+}
+$vulkanRuntime = Join-Path $vulkanRoot $manifest.tools.vulkanRuntime.runtimeDll.path
+$vulkanLicense = Join-Path $vulkanRoot $manifest.tools.vulkanRuntime.license.path
 $mpvImportLibrary = Join-Path $mpvRoot 'libmpv-2.lib'
 if (-not $SkipMsvcImport) {
     $exportLines = & dumpbin.exe /nologo /exports (Join-Path $mpvRoot 'libmpv-2.dll')
@@ -170,6 +183,7 @@ $state = [ordered]@{
     nodeExe = $nodeExe;
     tracyArchive = $tracyArchive;
     mpvRoot = $mpvRoot; mpvLibrary = $mpvImportLibrary; mpvRuntime = Join-Path $mpvRoot 'libmpv-2.dll';
+    vulkanRuntime = $vulkanRuntime; vulkanLicense = $vulkanLicense;
     vcRedistExe = $redistExe; runtimeDirectory = $runtimeDirectory; wixExe = $wixExe;
     wixUtilExtension = $wixUtil; wixBalExtension = $wixBal;
     appVersion = $manifest.appVersion; packageVersion = $manifest.packageVersion

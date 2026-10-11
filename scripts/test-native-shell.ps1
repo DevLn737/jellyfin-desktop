@@ -30,6 +30,7 @@ if (-not $NodePath) {
         $NodePath = (Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json).nodeExe
     } else { $NodePath = (Get-Command node).Source }
 }
+$NodePath = [IO.Path]::GetFullPath((Get-Command $NodePath -CommandType Application -ErrorAction Stop).Source)
 if (-not $ReportDirectory) {
     $ReportDirectory = Join-Path $sourceRoot ('build/native-shell-smoke-' + [guid]::NewGuid().ToString('N'))
 }
@@ -62,6 +63,7 @@ $probe = $null
 $launchPhase = 'native-shell'
 $debuggingEnvironment = [Environment]::GetEnvironmentVariable('QTWEBENGINE_REMOTE_DEBUGGING', 'Process')
 $chromiumEnvironment = [Environment]::GetEnvironmentVariable('QTWEBENGINE_CHROMIUM_FLAGS', 'Process')
+$pathEnvironment = [Environment]::GetEnvironmentVariable('PATH', 'Process')
 function Stop-OwnedApplication {
     if ($script:application) {
         $script:application.Refresh()
@@ -87,6 +89,9 @@ function Get-OwnedProcessState([Diagnostics.Process]$Process) {
     return $state
 }
 try {
+    # Both app launches inherit only packaged and Windows system dependencies.
+    # The probe executable was resolved before removing developer tool paths.
+    $env:PATH = @($isolatedRoot, $env:SystemRoot, (Join-Path $env:SystemRoot 'System32')) -join [IO.Path]::PathSeparator
     $probeArguments = @(
         '"' + (Join-Path $PSScriptRoot 'native-shell-smoke.mjs') + '"',
         '"' + (Join-Path $reportRoot 'native-shell.json') + '"',
@@ -154,6 +159,8 @@ try {
     }
     throw $originalFailure
 } finally {
+    # Restore first, even if owned-process cleanup below throws.
+    [Environment]::SetEnvironmentVariable('PATH', $pathEnvironment, 'Process')
     Stop-OwnedApplication
     if ($probe) {
         $probe.Refresh()

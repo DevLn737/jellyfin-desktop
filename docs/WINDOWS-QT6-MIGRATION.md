@@ -54,6 +54,16 @@ responsibility. Server SSH reads are used only for compatibility evidence.
 toolchain. The release qualification remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
+The pinned libmpv directly imports `vulkan-1.dll`, including when playback uses
+OpenGL. MSI and both portable variants therefore include the official LunarG
+1.4.363.0 x64 loader and its unmodified license notice, with archive and payload
+SHA256 locks. This makes startup independent of a driver's global Vulkan runtime.
+The loader is updated with the application's dependencies; keeping an app-local
+loader indefinitely can miss future driver-discovery fixes, as described in the
+[Khronos loader documentation](https://github.com/KhronosGroup/Vulkan-Loader/blob/fa218055ff4948b159f31d43f800c808a13d51df/docs/LoaderApplicationInterface.md#bundling-the-loader-with-an-application).
+An import-closure check requires non-Windows DLLs in the deployed package even
+when a developer's System32 contains them. Runtime probes use a restricted PATH.
+
 The final server-agent handoff confirms the deployed Server/Web 12.2-syncplay.1
 pair and the immutable commits independently checked through read-only inventory
 and the public version API. The archive SHA256 is

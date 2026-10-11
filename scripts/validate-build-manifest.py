@@ -28,6 +28,29 @@ def committed_json(relative):
     return json.loads((ROOT / relative).read_text(encoding="utf-8-sig"))
 
 
+def check_vulkan_runtime(runtime):
+    require(isinstance(runtime, dict), "Pinned x64 Vulkan runtime is required")
+    version = runtime.get("version")
+    require(isinstance(version, str) and re.fullmatch(r"1\.[0-9]+\.[0-9]+\.[0-9]+", version), "Invalid Vulkan runtime version")
+    archive_name = f"VulkanRT-X64-{version}-Components.zip"
+    require(runtime.get("name") == archive_name, "Vulkan runtime must be the official x64 components ZIP")
+    require(runtime.get("url") == f"https://sdk.lunarg.com/sdk/download/{version}/windows/{archive_name}",
+            "Vulkan runtime must use its exact official LunarG download URL")
+    require(isinstance(runtime.get("commit"), str) and re.fullmatch(r"[a-f0-9]{40}", runtime["commit"]),
+            "Vulkan runtime requires an immutable source commit")
+    archive_root = archive_name.removesuffix(".zip")
+    for key, name, path in (("runtimeDll", "vulkan-1.dll", f"{archive_root}/x64/vulkan-1.dll"),
+                            ("license", "VulkanRT-License.txt", f"{archive_root}/VulkanRT-License.txt")):
+        payload = runtime.get(key)
+        require(isinstance(payload, dict), "Pinned Vulkan " + key + " payload is required")
+        # Exact archive-relative paths reject traversal, drive/UNC paths,
+        # backslash aliases and the archive's separate x86 payload.
+        require(payload.get("name") == name and payload.get("path") == path, "Unsafe or non-x64 Vulkan " + key + " path")
+        require(isinstance(payload.get("sha256"), str) and re.fullmatch(r"[a-f0-9]{64}", payload["sha256"]),
+                "Missing SHA256 for Vulkan " + key + " payload")
+        require(type(payload.get("bytes")) is int and payload["bytes"] > 0, "Vulkan " + key + " payload size is missing")
+
+
 def check_manifest(manifest):
     require(manifest["schemaVersion"] == 1, "Unsupported manifest schema")
     require(SEMVER.fullmatch(manifest["appVersion"]), "App version must be stable or rc.N SemVer")
@@ -41,12 +64,13 @@ def check_manifest(manifest):
     require({"msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll"} <= runtime.keys(), "Pinned app-local Microsoft CRT hashes are required")
     for name, digest in runtime.items():
         require(re.fullmatch(r"[A-Za-z0-9_]+\.dll", name) and re.fullmatch(r"[a-f0-9]{64}", digest), "Invalid app-local Microsoft CRT hash")
+    check_vulkan_runtime(manifest["tools"].get("vulkanRuntime"))
     archives = manifest["qt"]["archives"] + list(manifest["tools"].values()) + [manifest["mpv"], manifest["tracy"]] + manifest["wix"]["extensions"]
     names = set()
     for archive in archives:
         require(re.fullmatch(r"[a-f0-9]{64}", archive["sha256"]), "Missing SHA256 for " + archive["name"])
         url = urllib.parse.urlsplit(archive["url"])
-        require(url.scheme == "https" and url.hostname in {"download.qt.io", "github.com", "download.visualstudio.microsoft.com", "api.nuget.org", "nodejs.org"}, "Unexpected dependency URL")
+        require(url.scheme == "https" and url.hostname in {"download.qt.io", "github.com", "download.visualstudio.microsoft.com", "api.nuget.org", "nodejs.org", "sdk.lunarg.com"}, "Unexpected dependency URL")
         require(pathlib.PurePath(archive["name"]).name == archive["name"] and archive["name"] not in names, "Invalid or duplicate archive filename")
         require(isinstance(archive["bytes"], int) and archive["bytes"] > 0, "Archive size is missing")
         names.add(archive["name"])

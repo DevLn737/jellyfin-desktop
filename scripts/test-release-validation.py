@@ -2,15 +2,20 @@
 import copy
 import hashlib
 import importlib.util
+import io
 import json
 import pathlib
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location("release_validation", ROOT / "scripts/validate-build-manifest.py")
 validation = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(validation)
+lock_spec = importlib.util.spec_from_file_location("dependency_lock", ROOT / "scripts/lock-windows-dependencies.py")
+dependency_lock = importlib.util.module_from_spec(lock_spec)
+lock_spec.loader.exec_module(dependency_lock)
 MANIFEST = json.loads((ROOT / "build-manifest.json").read_text(encoding="utf-8-sig"))
 CONTRACT = json.loads((ROOT / "contracts/desktop-api-contract.json").read_text(encoding="utf-8-sig"))
 FIXTURE = json.loads((ROOT / CONTRACT["fixturePath"]).read_text(encoding="utf-8-sig"))
@@ -33,6 +38,64 @@ class ReleaseValidationTest(unittest.TestCase):
         manifest["qt"]["archives"][0]["sha256"] = "pending"
         with self.assertRaisesRegex(ValueError, "Missing SHA256"):
             validation.check_manifest(manifest)
+
+    def test_vulkan_runtime_requires_loader_license_source_and_safe_x64_paths(self):
+        validation.check_manifest(MANIFEST)
+        manifest = copy.deepcopy(MANIFEST)
+        del manifest["tools"]["vulkanRuntime"]
+        with self.assertRaisesRegex(ValueError, "Vulkan runtime is required"):
+            validation.check_manifest(manifest)
+        for key in ("runtimeDll", "license"):
+            manifest = copy.deepcopy(MANIFEST)
+            del manifest["tools"]["vulkanRuntime"][key]
+            with self.subTest(missing=key), self.assertRaisesRegex(ValueError, "payload is required"):
+                validation.check_manifest(manifest)
+            manifest = copy.deepcopy(MANIFEST)
+            del manifest["tools"]["vulkanRuntime"][key]["sha256"]
+            with self.subTest(hash=key), self.assertRaisesRegex(ValueError, "Missing SHA256"):
+                validation.check_manifest(manifest)
+        original = MANIFEST["tools"]["vulkanRuntime"]["runtimeDll"]["path"]
+        for unsafe in ("../vulkan-1.dll", "C:/Windows/System32/vulkan-1.dll", original.replace("/x64/", "/x86/"), original.replace("/", "\\")):
+            manifest = copy.deepcopy(MANIFEST)
+            manifest["tools"]["vulkanRuntime"]["runtimeDll"]["path"] = unsafe
+            with self.subTest(path=unsafe), self.assertRaisesRegex(ValueError, "Unsafe or non-x64"):
+                validation.check_manifest(manifest)
+        for field, value in (("commit", "moving-main"), ("url", "https://sdk.lunarg.com.evil.example/runtime.zip")):
+            manifest = copy.deepcopy(MANIFEST)
+            manifest["tools"]["vulkanRuntime"][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                validation.check_manifest(manifest)
+
+    def test_qt_lock_refresh_keeps_and_verifies_the_reviewed_vulkan_archive(self):
+        # Exercise candidate generation without downloads or output files. The
+        # archive-lock boundary receives Vulkan as well as the other archives.
+        reviewed = MANIFEST["tools"]["vulkanRuntime"]
+        known = {item["name"]: item for item in MANIFEST["qt"]["archives"] +
+                 list(MANIFEST["tools"].values()) + [MANIFEST["mpv"], MANIFEST["tracy"]] + MANIFEST["wix"]["extensions"]}
+        verified_names = []
+
+        def verify_cached_archive(archive, cache):
+            verified_names.append(archive["name"])
+            pinned = known[archive["name"]]
+            if archive["name"] == reviewed["name"]:
+                self.assertEqual(archive, reviewed)
+                self.assertIsNot(archive, reviewed)
+            archive.update(sha256=pinned["sha256"], bytes=pinned["bytes"])
+            return archive
+
+        output = MagicMock()
+        cmake_hash = (MANIFEST["tools"]["cmake"]["sha256"] + "  " + MANIFEST["tools"]["cmake"]["name"] + "\n").encode()
+        args = SimpleNamespace(qt_version=MANIFEST["qt"]["version"], output=output)
+        with patch.object(dependency_lock.argparse.ArgumentParser, "parse_args", return_value=args), \
+             patch.object(dependency_lock, "qt_archives", return_value=copy.deepcopy(MANIFEST["qt"]["archives"])), \
+             patch.object(dependency_lock, "request", return_value=io.BytesIO(cmake_hash)), \
+             patch.object(dependency_lock, "lock_archive", side_effect=verify_cached_archive), patch("builtins.print"):
+            dependency_lock.main()
+        candidate = json.loads(output.write_text.call_args.args[0])
+        self.assertIn(reviewed["name"], verified_names)
+        self.assertEqual(candidate["tools"]["vulkanRuntime"], reviewed)
+        self.assertFalse(candidate["qt"]["qualification"]["qualified"])
+        validation.check_manifest(candidate)
 
     def test_rc_acceptance_only_promotes_unchanged_code_and_dependencies(self):
         tested = copy.deepcopy(MANIFEST)
