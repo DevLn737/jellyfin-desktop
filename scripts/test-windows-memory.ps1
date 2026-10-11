@@ -177,13 +177,15 @@ try {
             -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $profileRoot 'app.stdout') -RedirectStandardError (Join-Path $profileRoot 'app.stderr')
         $owned += $app
         $statusPath = Join-Path $profileRoot 'workload.json'
+        $scenario = @{ name = $name; app = $app; driver = $null; statusPath = $statusPath
+            samples = New-Object 'System.Collections.Generic.List[object]'; children = @{}; port = $port
+            profileRoot = $profileRoot; startedUtcTicks = $app.StartTime.ToUniversalTime().Ticks }
+        $scenarios += $scenario
         $arguments = @('"' + (Join-Path $PSScriptRoot 'memory-stress.mjs') + '"', '"' + $profileRoot + '"', '"' + $statusPath + '"', $port, $name, $duration, $warmup)
         $driver = Start-Process -FilePath $node -WorkingDirectory $profileRoot -ArgumentList $arguments -WindowStyle Hidden -PassThru `
             -RedirectStandardOutput (Join-Path $profileRoot 'driver.stdout') -RedirectStandardError (Join-Path $profileRoot 'driver.stderr')
         $owned += $driver
-        $scenarios += @{ name = $name; app = $app; driver = $driver; statusPath = $statusPath
-            samples = New-Object 'System.Collections.Generic.List[object]'; children = @{}; port = $port
-            profileRoot = $profileRoot; startedUtcTicks = $app.StartTime.ToUniversalTime().Ticks }
+        $scenario.driver = $driver
         ++$port
     }
     $deadline = [DateTime]::UtcNow.AddSeconds(50)

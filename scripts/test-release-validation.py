@@ -222,6 +222,15 @@ class ReleaseValidationTest(unittest.TestCase):
         manifest = self.prepared_manifest()
         memory, _ = self.source_report(manifest)
         memory.update(issue="QTBUG-141377", passed=True, processTreeIncluded=True,
+                      qualificationEligible=True, forcedGarbageCollection=False, scope=protocol["scope"],
+                      workloads=[
+                          {"schemaVersion": 1, "scenario": "navigation-svg", "initialized": True, "passed": True,
+                           "scope": "hidden-full-desktop-webengine-svg", "forcedGarbageCollection": False,
+                           "elapsedSeconds": 3720, "operationCount": 2976, "dataRequests": 26040,
+                           "svgRequests": 20832, "navigationCount": 55},
+                          {"schemaVersion": 1, "scenario": "long-playback", "initialized": True, "passed": True,
+                           "scope": "hidden-full-desktop-webengine-and-native-music", "forcedGarbageCollection": False,
+                           "elapsedSeconds": 3720, "operationCount": 2976, "positionChecks": 2976, "fileChanges": 55}],
                       rawSamplesPath="quality/test-only-raw.json", scenarios=[
                           {"name": name, "durationSeconds": 3600, "rssBaselineBytes": 100000000,
                            "rssPeakBytes": 150000000, "rssFinalBytes": 110000000, "limitBytes": protocol["absoluteRssLimitBytes"]}
@@ -463,6 +472,83 @@ class ReleaseValidationTest(unittest.TestCase):
                 fixture[3]["scenarios"][0]["samples"] = [samples[0], samples[-1]]
             with self.subTest(mutation=mutation), self.assertRaisesRegex(ValueError, "elapsed zero|sample cadence|sample count"):
                 self.check_memory(*fixture)
+
+    def test_memory_gate_rejects_smoke_gc_or_wrong_report_scope(self):
+        for field, value in (("qualificationEligible", False), ("qualificationEligible", 1),
+                             ("forcedGarbageCollection", True), ("forcedGarbageCollection", 0),
+                             ("scope", "main-process-only")):
+            fixture = self.memory_fixture()
+            fixture[1][field] = value
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(ValueError, "eligible|garbage collection|process scope"):
+                self.check_memory(*fixture)
+        for field in ("qualificationEligible", "forcedGarbageCollection", "scope"):
+            fixture = self.memory_fixture()
+            del fixture[1][field]
+            with self.subTest(missing=field), self.assertRaises(ValueError):
+                self.check_memory(*fixture)
+
+    def test_memory_gate_requires_two_distinct_successful_non_gc_workloads(self):
+        for mutation in ("absent", "empty", "one", "extra", "duplicate", "unknown"):
+            fixture = self.memory_fixture()
+            workloads = fixture[1]["workloads"]
+            if mutation == "absent":
+                del fixture[1]["workloads"]
+            elif mutation == "empty":
+                fixture[1]["workloads"] = []
+            elif mutation == "one":
+                workloads.pop()
+            elif mutation == "extra":
+                workloads.append(copy.deepcopy(workloads[0]))
+            elif mutation == "duplicate":
+                workloads[1]["scenario"] = workloads[0]["scenario"]
+            else:
+                workloads[1]["scenario"] = "unrelated-page"
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                self.check_memory(*fixture)
+        for index in (0, 1):
+            for field, value in (("initialized", False), ("initialized", 1), ("passed", False), ("passed", 1),
+                                 ("forcedGarbageCollection", True), ("forcedGarbageCollection", 0),
+                                 ("scope", "unrelated-page"), ("elapsedSeconds", 3719),
+                                 ("elapsedSeconds", float("nan"))):
+                fixture = self.memory_fixture()
+                fixture[1]["workloads"][index][field] = value
+                with self.subTest(index=index, field=field, value=value), self.assertRaises(ValueError):
+                    self.check_memory(*fixture)
+
+    def test_memory_gate_requires_real_svg_navigation_and_native_playback_cadence(self):
+        for index, fields in ((0, ("operationCount", "dataRequests", "svgRequests", "navigationCount")),
+                              (1, ("operationCount", "positionChecks", "fileChanges"))):
+            for field in fields:
+                for mutation in ("below-floor", "missing", "bool", "fractional"):
+                    fixture = self.memory_fixture()
+                    workload = fixture[1]["workloads"][index]
+                    if mutation == "below-floor":
+                        workload[field] -= 1
+                    elif mutation == "missing":
+                        del workload[field]
+                    elif mutation == "bool":
+                        workload[field] = True
+                    else:
+                        workload[field] = float(workload[field])
+                    with self.subTest(index=index, field=field, mutation=mutation), self.assertRaisesRegex(ValueError, "cadence is insufficient"):
+                        self.check_memory(*fixture)
+        fixture = self.memory_fixture()
+        # A reported workload cannot stop at the nominal minimum if actual
+        # RSS observation continued beyond it. Keep raw/summary identities valid.
+        for scenario in fixture[3]["scenarios"]:
+            scenario["samples"][-1]["elapsedSeconds"] = 3605
+        for scenario in fixture[1]["scenarios"]:
+            scenario["durationSeconds"] = 3605
+        with self.assertRaisesRegex(ValueError, "warmup and entire measured interval"):
+            self.check_memory(*fixture)
+
+    def test_memory_gate_rejects_a_one_process_tree_sample(self):
+        for scenario in (0, 1):
+            for count in (1, 0, True, 2.0):
+                fixture = self.memory_fixture()
+                fixture[3]["scenarios"][scenario]["samples"][300]["processCount"] = count
+                with self.subTest(scenario=scenario, count=count), self.assertRaisesRegex(ValueError, "native/WebEngine process tree"):
+                    self.check_memory(*fixture)
 
     def test_memory_gate_checks_predeclared_peak_and_final_growth_limits(self):
         fixture = self.memory_fixture()

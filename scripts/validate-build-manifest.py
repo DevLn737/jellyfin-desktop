@@ -235,6 +235,8 @@ def finite_number(value, minimum=0):
 
 def check_memory_evidence(memory, manifest):
     require(memory["issue"] == "QTBUG-141377" and memory["passed"] is True, "A passing Qt memory qualification report is required")
+    require(memory.get("qualificationEligible") is True, "Memory report must be eligible for qualification, not a smoke run")
+    require(memory.get("forcedGarbageCollection") is False, "Memory qualification forbids forced garbage collection")
     require(memory.get("processTreeIncluded") is True, "Memory qualification must include the owned native/WebEngine process tree")
     protocol_path = manifest["qt"]["qualification"]["memoryProtocolPath"]
     protocol_bytes = committed_bytes(protocol_path)
@@ -245,6 +247,7 @@ def check_memory_evidence(memory, manifest):
     protocol = json.loads(protocol_bytes)
     scope = "windows-owned-process-tree-rss"
     require(protocol["schemaVersion"] == 1 and protocol["scope"] == scope, "Unsupported memory protocol or process scope")
+    require(memory.get("scope") == scope, "Memory report has the wrong process scope")
     expected = {"navigation-svg", "long-playback"}
     required = protocol["requiredScenarios"]
     require(isinstance(required, list) and len(required) == 2 and set(required) == expected,
@@ -258,15 +261,16 @@ def check_memory_evidence(memory, manifest):
     raw = json.loads(raw_bytes)
     require(raw["schemaVersion"] == 1 and raw["scope"] == scope, "Memory raw samples have the wrong schema or process scope")
 
-    def by_scenario(items):
+    def by_scenario(items, key="name"):
         require(isinstance(items, list) and len(items) == 2, "Memory evidence requires exactly two distinct scenarios")
-        require(all(isinstance(item, dict) and item.get("name") in expected for item in items), "Memory evidence has an unknown scenario")
-        result = {item["name"]: item for item in items}
+        require(all(isinstance(item, dict) and item.get(key) in expected for item in items), "Memory evidence has an unknown scenario")
+        result = {item[key]: item for item in items}
         require(set(result) == expected, "Memory evidence requires both navigation-svg and long-playback")
         return result
 
     observations = by_scenario(raw["scenarios"])
     summaries = by_scenario(memory["scenarios"])
+    workloads = by_scenario(memory.get("workloads"), key="scenario")
     for scenario_name in sorted(expected):
         samples = observations[scenario_name]["samples"]
         require(isinstance(samples, list) and len(samples) >= 2, "Memory qualification requires raw observation samples")
@@ -276,7 +280,8 @@ def check_memory_evidence(memory, manifest):
         for sample in samples:
             require(finite_number(sample["elapsedSeconds"]) and sample["elapsedSeconds"] > previous, "Memory samples must have strictly increasing finite elapsed times")
             require(finite_number(sample["rssBytes"], 1), "Memory RSS observations must be finite positive bytes")
-            require(type(sample["processCount"]) is int and sample["processCount"] > 0, "Memory samples must count the owned process tree")
+            require(type(sample["processCount"]) is int and sample["processCount"] >= 2,
+                    "Memory samples must include the native/WebEngine process tree, not one process")
             require(previous < 0 or sample["elapsedSeconds"] - previous <= maximum_gap,
                     "Memory sample cadence exceeds twice the predeclared interval")
             previous = sample["elapsedSeconds"]
@@ -293,6 +298,32 @@ def check_memory_evidence(memory, manifest):
             require(finite_number(summary[key], 1) and summary[key] == value, "Memory summary differs from raw observations or predeclared limit: " + key)
         require(peak <= protocol["absoluteRssLimitBytes"], "Memory scenario exceeds its predeclared RSS limit")
         require(final - baseline <= protocol["finalGrowthLimitBytes"], "Memory scenario exceeds its predeclared final-growth limit")
+        workload = workloads[scenario_name]
+        require(workload.get("schemaVersion") == 1 and workload.get("initialized") is True and workload.get("passed") is True,
+                "Memory workloads must be initialized and successfully completed")
+        require(workload.get("forcedGarbageCollection") is False, "Memory workloads forbid forced garbage collection")
+        workload_scopes = {"navigation-svg": "hidden-full-desktop-webengine-svg",
+                           "long-playback": "hidden-full-desktop-webengine-and-native-music"}
+        require(workload.get("scope") == workload_scopes[scenario_name], "Memory workload has the wrong scenario scope")
+        workload_seconds = samples[-1]["elapsedSeconds"] + protocol["warmupSeconds"]
+        require(finite_number(workload.get("elapsedSeconds"), workload_seconds),
+                "Memory workload must cover the warmup and entire measured interval")
+
+        def require_counter(field, minimum):
+            value = workload.get(field)
+            require(type(value) is int and value >= minimum, "Memory workload cadence is insufficient: " + field)
+
+        # Match memory-stress.mjs's workload floors. The driver includes a
+        # post-measurement tail; counters must cover the measured interval
+        # and warmup without using that tail to shorten qualification.
+        require_counter("operationCount", math.ceil(workload_seconds * 0.8))
+        if scenario_name == "navigation-svg":
+            require_counter("dataRequests", math.ceil(workload_seconds * 7))
+            require_counter("svgRequests", math.ceil(workload["dataRequests"] * 0.8))
+            require_counter("navigationCount", math.floor(samples[-1]["elapsedSeconds"] / 65))
+        else:
+            require_counter("positionChecks", math.ceil(workload_seconds * 0.8))
+            require_counter("fileChanges", math.floor(samples[-1]["elapsedSeconds"] / 65))
 
 
 def check_final_contract(contract, fixture):
