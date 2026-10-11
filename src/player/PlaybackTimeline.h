@@ -47,19 +47,19 @@ public:
   {
     if (!m_ready || publicMs < 0) return {};
     const double seconds = publicMs / 1000.0;
-    return mapsMusic() ? std::max(0.0, seconds - m_startSeconds) : seconds;
+    return mapsMusic() ? (std::max)(0.0, seconds - m_startSeconds) : seconds;
   }
   bool positionMilliseconds(double rawSeconds, std::int64_t& result) const
   {
     if (!m_ready || !std::isfinite(rawSeconds) || rawSeconds < 0) return false;
     return PlaybackValues::tryMillisecondsFromSeconds(
-      std::max(0.0, rawSeconds + (mapsMusic() ? m_startSeconds : 0.0)), result);
+      (std::max)(0.0, rawSeconds + (mapsMusic() ? m_startSeconds : 0.0)), result);
   }
   bool durationMilliseconds(double durationSeconds, std::int64_t& result) const
   {
     if (!m_ready || !std::isfinite(durationSeconds) || durationSeconds < 0) return false;
     return PlaybackValues::tryMillisecondsFromSeconds(
-      std::max(0.0, durationSeconds + (m_preserve ? m_startSeconds : 0.0)), result);
+      (std::max)(0.0, durationSeconds + (m_preserve ? m_startSeconds : 0.0)), result);
   }
 private:
   std::uint64_t m_generation = 0;

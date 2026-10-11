@@ -53,6 +53,9 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
       unrelated to server, media or session identifiers
     - preserveTimestamps: per-file original timestamps and absolute start time;
       used for server HLS/copytimestamps transcoding, not ordinary direct TS
+      - music maps the probed stream origin at the native boundary; video keeps
+        original decoder timestamps and independent external-track alignment
+      - positions, readiness and duration endpoint share that original timeline
     - metadata: dict { bool interlaced, float frameRate, str type }
         - type can be "video" or "music"
     - audioStream: "#" + index from mkv, or pass external url
