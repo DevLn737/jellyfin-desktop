@@ -235,6 +235,14 @@ async function createApi() {
             style.replaceSync(`
                 .card, .cardScalable, .cardIndicators { contain: style !important; }
                 .cardPadder, .cardImageContainer { contain: size style !important; }
+                /* A translucent full-window backdrop makes software Viz redraw
+                   the entire transparent video surface during menu animations.
+                   Keep the modal hit area and the dialog's entry/exit animation,
+                   but leave native video undimmed while its menus are open. */
+                .transparentDocument .dialogBackdrop {
+                    opacity: 0 !important;
+                    will-change: auto !important;
+                }
             `);
             document.adoptedStyleSheets = [...document.adoptedStyleSheets, style];
         }
