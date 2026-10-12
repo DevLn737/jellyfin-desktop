@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "observation": "quiet",
+  "appVersion": "2.0.0-rc.1",
+  "qtVersion": "6.11.3",
+  "buildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "logicalCpuCount": 12,
+  "completed": true,
+  "qualificationEligible": false,
+  "withinSyntheticThresholds": false,
+  "scope": "synthetic-idle-hidden-webchannel-ordinary-build-owned-process-tree",
+  "commandsPerPhase": 10000,
+  "rounds": 3,
+  "requestedPacingMilliseconds": 10,
+  "actualPhaseOrder": [
+    "off",
+    "on",
+    "on",
+    "off",
+    "off",
+    "on"
+  ],
+  "thresholds": {
+    "cpuIncreasePercentagePoints": 2,
+    "p95IncreasePercent": 5
+  },
+  "thresholdDecision": "all-three-pairs-must-pass",
+  "sourceSummarySha256": "e51358a84d092ce9a2b0ca5e1b88b2f6675f2db758a9188f3ab66d1fbafe708e",
+  "sourceRawSha256": "b144bd0cd65d6d493cdb1d96fcc27db4d199f904f729998e65afdd2f3125dda9",
+  "cpuCounterVerificationAvailable": true,
+  "cpuVerification": "raw-before-after-counters-and-paired-deltas",
+  "phases": [
+    {
+      "phaseId": 1,
+      "round": 1,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 0.940571879212903,
+      "cpuWindowSeconds": 115.3165899,
+      "processCount": 2,
+      "commandWindowMilliseconds": 115109.30000001192,
+      "p95Milliseconds": 0.9000000357627869,
+      "cpuCounterVerificationAvailable": true,
+      "cpuBeforeTicks": 15937500,
+      "cpuAfterTicks": 146093750,
+      "cpuDeltaTicks": 130156250
+    },
+    {
+      "phaseId": 2,
+      "round": 1,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 1.1238804930038908,
+      "cpuWindowSeconds": 118.5207198,
+      "processCount": 2,
+      "commandWindowMilliseconds": 118269.80000001192,
+      "p95Milliseconds": 1,
+      "cpuCounterVerificationAvailable": true,
+      "cpuBeforeTicks": 146250000,
+      "cpuAfterTicks": 306093750,
+      "cpuDeltaTicks": 159843750
+    },
+    {
+      "phaseId": 3,
+      "round": 2,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 1.0921532345639842,
+      "cpuWindowSeconds": 116.956459,
+      "processCount": 2,
+      "commandWindowMilliseconds": 116762.89999997616,
+      "p95Milliseconds": 1,
+      "cpuCounterVerificationAvailable": true,
+      "cpuBeforeTicks": 306562500,
+      "cpuAfterTicks": 459843750,
+      "cpuDeltaTicks": 153281250
+    },
+    {
+      "phaseId": 4,
+      "round": 2,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 0.7607811219506477,
+      "cpuWindowSeconds": 146.6762758,
+      "processCount": 2,
+      "commandWindowMilliseconds": 146415,
+      "p95Milliseconds": 1.100000023841858,
+      "cpuCounterVerificationAvailable": true,
+      "cpuBeforeTicks": 460000000,
+      "cpuAfterTicks": 593906250,
+      "cpuDeltaTicks": 133906250
+    },
+    {
+      "phaseId": 5,
+      "round": 3,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 1.0065130258096555,
+      "cpuWindowSeconds": 156.0151195,
+      "processCount": 2,
+      "commandWindowMilliseconds": 155762.30000001192,
+      "p95Milliseconds": 1.100000023841858,
+      "cpuCounterVerificationAvailable": true,
+      "cpuBeforeTicks": 593906250,
+      "cpuAfterTicks": 782343750,
+      "cpuDeltaTicks": 188437500
+    },
+    {
+      "phaseId": 6,
+      "round": 3,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 0.9625584636764969,
+      "cpuWindowSeconds": 157.1874219,
+      "processCount": 2,
+      "commandWindowMilliseconds": 156950,
+      "p95Milliseconds": 1.100000023841858,
+      "cpuCounterVerificationAvailable": true,
+      "cpuBeforeTicks": 782500000,
+      "cpuAfterTicks": 964062500,
+      "cpuDeltaTicks": 181562500
+    }
+  ],
+  "comparisons": [
+    {
+      "round": 1,
+      "cpuIncreasePercentagePoints": 0.18330861379098784,
+      "p95IncreasePercent": 11.111106695952412,
+      "withinSyntheticThresholds": false
+    },
+    {
+      "round": 2,
+      "cpuIncreasePercentagePoints": 0.33137211261333643,
+      "p95IncreasePercent": -9.090911061310525,
+      "withinSyntheticThresholds": true
+    },
+    {
+      "round": 3,
+      "cpuIncreasePercentagePoints": -0.043954562133158626,
+      "p95IncreasePercent": 0.0,
+      "withinSyntheticThresholds": true
+    }
+  ],
+  "descriptiveOnly": {
+    "pooledOffP95Milliseconds": 1.0999999642372131,
+    "pooledOnP95Milliseconds": 1,
+    "pooledP95IncreasePercent": -9.090906135306776,
+    "medianPairCpuIncreasePercentagePoints": 0.18330861379098784,
+    "medianPairP95IncreasePercent": 0.0,
+    "changesOverallFailure": false
+  },
+  "resolutionObservation": {
+    "gridMilliseconds": 0.1,
+    "maximumResidualMilliseconds": 4.7683716530855236e-08,
+    "sampleCount": 60000,
+    "interpretation": "values-consistent-with-tenths-millisecond-quantization",
+    "causalAttributionEstablished": false
+  },
+  "protocolSha256": "65e837ae7d0f86e63c32cca073022f3e9249cfedd4e2341642152879b835b80f",
+  "attempts": 1,
+  "adaptiveRetries": false
+}

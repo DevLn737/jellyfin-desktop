@@ -132,13 +132,12 @@ void InputComponent::handleAction(const QString& action)
         else
         {
           qDebug() << "Invoking slot" << qPrintable(recvSlot->m_slot.data());
-          QGenericArgument arg0 = QGenericArgument();
-
-          if (recvSlot->m_hasArguments)
-            arg0 = Q_ARG(const QString&, hostArguments);
-
-          if (!QMetaObject::invokeMethod(recvSlot->m_receiver, recvSlot->m_slot.data(),
-                                         Qt::AutoConnection, arg0))
+          const bool invoked = recvSlot->m_hasArguments
+            ? QMetaObject::invokeMethod(recvSlot->m_receiver, recvSlot->m_slot.data(),
+                                        Qt::AutoConnection, Q_ARG(QString, hostArguments))
+            : QMetaObject::invokeMethod(recvSlot->m_receiver, recvSlot->m_slot.data(),
+                                        Qt::AutoConnection);
+          if (!invoked)
           {
             qCritical() << "Invoking slot" << qPrintable(recvSlot->m_slot.data()) << "failed!";
           }
@@ -188,12 +187,12 @@ void InputComponent::remapInput(const QString &source, const QString &keycode, I
   auto actions = m_mappings->mapToAction(source, keycode);
   for (auto action : actions)
   {
-    if (action.type() == QVariant::String)
+    if (action.typeId() == QMetaType::QString)
     {
       queuedActions.append(action.toString());
       m_autoRepeatActions.append(action.toString());
     }
-    else if (action.type() == QVariant::Map)
+    else if (action.typeId() == QMetaType::QVariantMap)
     {
       QVariantMap map = action.toMap();
       if (map.contains("long"))
@@ -211,7 +210,7 @@ void InputComponent::remapInput(const QString &source, const QString &keycode, I
         queuedActions.append(map.value("short").toString());
       }
     }
-    else if (action.type() == QVariant::List)
+    else if (action.typeId() == QMetaType::QVariantList)
     {
       queuedActions.append(action.toStringList());
     }

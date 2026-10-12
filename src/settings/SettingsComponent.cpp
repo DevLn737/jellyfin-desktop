@@ -56,7 +56,7 @@ void SettingsComponent::cycleSettingCommand(const QString& args)
   // Otherwise log an error message, that it's not possible to cycle through the value.
   if (values.size() == 0)
   {
-    if (section->defaultValue(valueName).type() == QVariant::Bool)
+    if (section->defaultValue(valueName).typeId() == QMetaType::Bool)
     {
       QVariant currentValue = section->value(valueName);
       auto nextValue = currentValue.toBool() ? false : true;
@@ -237,11 +237,11 @@ void SettingsComponent::loadConf(const QString& path, bool storage)
 
   int version = json["version"].toInt(0);
 
-  if (version == 4 && m_settingsVersion == 6)
+  if (version == 4 && m_settingsVersion >= 6)
   {
     migrateJmpSettings4 = true;
   }
-  else if (version == 5 && m_settingsVersion == 6)
+  else if (version == 5 && m_settingsVersion >= 6)
   {
     migrateJmpSettings5 = true;
   }
@@ -300,9 +300,11 @@ void SettingsComponent::loadConf(const QString& path, bool storage)
     if (getSection(SETTINGS_SECTION_VIDEO)->value("hardwareDecoding") == "enabled") {
       getSection(SETTINGS_SECTION_VIDEO)->setValue("hardwareDecoding", "copy");
     }
-  } else if (migrateJmpSettings6) {
-    if (getSection(SETTINGS_SECTION_MAIN)->value("autodetectCertBundle") == "false") {
-      getSection(SETTINGS_SECTION_MAIN)->setValue("autodetectCertBundle", "true");
+  }
+  // Direct upgrades from 4/5 also pass through the 6-to-7 certificate change.
+  if (migrateJmpSettings6 || ((migrateJmpSettings4 || migrateJmpSettings5) && m_settingsVersion >= 7)) {
+    if (!getSection(SETTINGS_SECTION_MAIN)->value("autodetectCertBundle").toBool()) {
+      getSection(SETTINGS_SECTION_MAIN)->setValue("autodetectCertBundle", true);
     }
   }
 }
@@ -390,7 +392,7 @@ void SettingsComponent::setValues(const QVariantMap& options)
   QString key = options["key"].toString();
   QVariant values = options["value"];
 
-  if (values.type() == QVariant::Map || values.isNull())
+  if (values.typeId() == QMetaType::QVariantMap || values.isNull())
   {
     SettingsSection* section = getSection(key);
     if (!section)
@@ -409,7 +411,7 @@ void SettingsComponent::setValues(const QVariantMap& options)
 
     saveSection(section);
   }
-  else if (values.type() == QVariant::String)
+  else if (values.typeId() == QMetaType::QString)
   {
     setValue(SETTINGS_SECTION_WEBCLIENT, key, values);
   }

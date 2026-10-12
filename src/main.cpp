@@ -5,7 +5,13 @@
 #include <QFileInfo>
 #include <QIcon>
 #include <QtQml>
-#include <QtWebEngine/qtwebengineglobal.h>
+#include <QtWebEngineQuick/qtwebenginequickglobal.h>
+#include <QQuickWindow>
+#include <QSGRendererInterface>
+#include <QStandardPaths>
+#include <QPointer>
+#include <QEvent>
+#include <QRegularExpression>
 #include <QErrorMessage>
 #include <QCommandLineOption>
 #include <QDebug>
@@ -20,15 +26,45 @@
 #include "settings/SettingsComponent.h"
 #include "settings/SettingsSection.h"
 #include "ui/KonvergoWindow.h"
-#include "ui/KonvergoWindow.h"
 #include "Globals.h"
 #include "ui/ErrorMessage.h"
 #include "UniqueApplication.h"
+#include "shared/ApplicationScope.h"
 #include "utils/Log.h"
 
 #ifdef Q_OS_MAC
 #include "PFMoveApplication.h"
 #endif
+
+// Qt 6 WebEngine can create dropdowns as non-focusable tool windows. Keep
+// their transient parent and focus behavior consistent with native popups.
+class WebEnginePopupFilter : public QObject
+{
+public:
+  explicit WebEnginePopupFilter(QQuickWindow* window, QObject* parent)
+    : QObject(parent), m_window(window) {}
+protected:
+  bool eventFilter(QObject* object, QEvent* event) override
+  {
+    auto* popup = qobject_cast<QWindow*>(object);
+    if (!m_window || !popup || popup == m_window || event->type() != QEvent::Show)
+      return QObject::eventFilter(object, event);
+    auto flags = popup->flags();
+    if ((flags & Qt::WindowType_Mask) != Qt::Tool
+        || !(flags & Qt::FramelessWindowHint)
+        || !(flags & Qt::WindowStaysOnTopHint))
+      return QObject::eventFilter(object, event);
+    if (!popup->transientParent()) popup->setTransientParent(m_window);
+    popup->setModality(Qt::NonModal);
+    flags &= ~Qt::WindowType_Mask;
+    flags |= Qt::Popup;
+    flags &= ~Qt::WindowDoesNotAcceptFocus;
+    popup->setFlags(flags);
+    return QObject::eventFilter(object, event);
+  }
+private:
+  QPointer<QQuickWindow> m_window;
+};
 
 #if defined(Q_OS_MAC) || defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
 #include "SignalManager.h"
@@ -41,19 +77,9 @@ static void preinitQt()
   QCoreApplication::setApplicationVersion(Version::GetVersionString());
   QCoreApplication::setOrganizationDomain("jellyfin.org");
 
-#ifdef Q_OS_WIN32
-  QVariant useOpengl = SettingsComponent::readPreinitValue(SETTINGS_SECTION_MAIN, "useOpenGL");
-
-  // Warning: this must be the same as the default value as declared in
-  // the settings_description.json file, or confusion will result.
-  if (useOpengl.type() != QMetaType::Bool)
-    useOpengl = false;
-
-  if (useOpengl.toBool())
-    QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
-  else
-    QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
-#endif
+  // libmpv needs OpenGL before Quick windows and WebEngine are initialized.
+  QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+  QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -76,16 +102,12 @@ void ShowLicenseInfo()
   QFile licenses(":/misc/licenses.txt");
   licenses.open(QIODevice::ReadOnly | QIODevice::Text);
   QByteArray contents = licenses.readAll();
-  printf("%.*s\n", contents.size(), contents.data());
+  printf("%.*s\n", int(contents.size()), contents.data());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 QStringList g_qtFlags = {
-  "--disable-web-security",
-  "--enable-gpu-rasterization",
-#ifdef Q_OS_LINUX
-  "--disable-gpu"
-#endif
+  "--disable-features=MediaSessionService"
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -104,6 +126,7 @@ int main(int argc, char *argv[])
                        {"fullscreen",              "Start in fullscreen"},
                        {"terminal",                "Log to terminal"},
                        {"disable-gpu",             "Disable QtWebEngine gpu accel"},
+                       {"webengine-gpu",            "Opt in to WebEngine GPU rendering for this diagnostic launch"},
                        {"force-external-webclient","Use webclient provided by server"}});
 
     auto scaleOption = QCommandLineOption("scale-factor", "Set to a integer or default auto which controls" \
@@ -115,14 +138,15 @@ int main(int argc, char *argv[])
     platformOption.setValueName("platform");
     platformOption.setDefaultValue("default");
 
-    auto devOption = QCommandLineOption("remote-debugging-port", "Port number for devtools.");
-    devOption.setValueName("port");
+    auto devOption = QCommandLineOption("webengine-devtools", "Enable WebEngine DevTools on localhost for this launch (default port 9222).");
+    auto devPortOption = QCommandLineOption("webengine-devtools-port", "Localhost DevTools port (1024..65535); requires --webengine-devtools.", "port", "9222");
     parser.addOption(scaleOption);
     parser.addOption(devOption);
+    parser.addOption(devPortOption);
     parser.addOption(platformOption);
 
     char **newArgv = appendCommandLineArguments(argc, argv, g_qtFlags);
-    int newArgc = argc + g_qtFlags.size();
+    int newArgc = argc + int(g_qtFlags.size());
 
     // Qt calls setlocale(LC_ALL, "") in a bunch of places, which breaks
     // float/string processing in mpv and ffmpeg.
@@ -136,7 +160,7 @@ int main(int argc, char *argv[])
 
     QStringList arguments;
     for (int i = 0; i < argc; i++)
-      arguments << QString::fromLatin1(argv[i]);
+      arguments << QString::fromUtf8(argv[i]);
 
     {
       // This is kinda dumb. But in order for the QCommandLineParser
@@ -148,8 +172,39 @@ int main(int argc, char *argv[])
       //
       QCoreApplication core(newArgc, newArgv);
 
+      // applicationDirPath needs an application instance. No settings or
+      // logging are initialized before portable detection.
+      Paths::detectAndEnablePortableMode();
+      if (Paths::isPortableMode())
+        qputenv("QSG_RHI_DISABLE_DISK_CACHE", "1");
+
       // Now parse the command line.
       parser.process(arguments);
+    }
+
+#if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
+    constexpr bool webEngineDefaultsToSoftware = true;
+#else
+    constexpr bool webEngineDefaultsToSoftware = false;
+#endif
+    const auto softwareWebEngine = ApplicationScope::webEngineSoftwareRendering(
+      parser.isSet("disable-gpu"), parser.isSet("webengine-gpu"), webEngineDefaultsToSoftware);
+    if (!softwareWebEngine)
+    {
+      qCritical("--disable-gpu and --webengine-gpu cannot be used together.");
+      return EXIT_FAILURE;
+    }
+
+    if (parser.isSet(devPortOption) && !parser.isSet(devOption))
+    {
+      qCritical("--webengine-devtools-port requires --webengine-devtools.");
+      return EXIT_FAILURE;
+    }
+    const auto devPort = ApplicationScope::devToolsPort(parser.value(devPortOption));
+    if (!devPort)
+    {
+      qCritical("--webengine-devtools-port must be an ASCII integer from 1024 to 65535.");
+      return EXIT_FAILURE;
     }
 
     if (parser.isSet("licenses"))
@@ -159,9 +214,8 @@ int main(int argc, char *argv[])
     }
 
     auto scale = parser.value("scale-factor");
-    if (scale.isEmpty() || scale == "auto")
-      QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    else if (scale != "none")
+    // Qt 6 enables high DPI scaling by default.
+    if (!scale.isEmpty() && scale != "auto" && scale != "none")
       qputenv("QT_SCALE_FACTOR", scale.toUtf8());
 
     auto platform = parser.value("platform");
@@ -170,7 +224,25 @@ int main(int argc, char *argv[])
       qputenv("QT_QPA_PLATFORM", platform.toUtf8());
     }
 
+    // An inherited Chromium flag must not override the explicit localhost-only
+    // diagnostic launch or silently open a debugger on an ordinary launch.
+    // Windows Qt Quick OpenGL / Chromium D3D11 interop showed rapid memory
+    // growth with an animated transparent Web overlay. Use software WebEngine
+    // by default there; Qt Quick OpenGL and native mpv hardware decoding remain
+    // independent. Linux retains its existing software WebEngine default.
+    const QString chromiumFlags = ApplicationScope::chromiumLaunchFlags(
+      QString::fromUtf8(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS")), g_qtFlags,
+      *softwareWebEngine, parser.isSet("webengine-gpu"));
+    qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromiumFlags.toUtf8());
+    if (parser.isSet(devOption))
+      qputenv("QTWEBENGINE_REMOTE_DEBUGGING", QString("127.0.0.1:%1").arg(*devPort).toUtf8());
+    else
+      qunsetenv("QTWEBENGINE_REMOTE_DEBUGGING");
+
+    QtWebEngineQuick::initialize();
     QApplication app(newArgc, newArgv);
+    app.setProperty("softwareWebEngine", ApplicationScope::chromiumArguments(chromiumFlags)
+      .contains(QStringLiteral("--disable-gpu")));
     app.setApplicationName("Jellyfin Media Player");
 
 #if defined(Q_OS_WIN)
@@ -214,13 +286,21 @@ int main(int argc, char *argv[])
 
     SettingsComponent::Get().setCommandLineValues(parser.optionNames());
 
-    QtWebEngine::initialize();
-
     // load QtWebChannel so that we can register our components with it.
     QQmlApplicationEngine *engine = Globals::Engine();
 
-    KonvergoWindow::RegisterClass();
+    KonvergoWindow::registerQmlTypes();
     Globals::SetContextProperty("components", &ComponentManager::Get().getQmlPropertyMap());
+    const QString webEngineStorage = Paths::isPortableMode()
+      ? Paths::dataDir("QtWebEngine/Default")
+      // Qt 5's DataLocation was AppLocalDataLocation. On Windows using
+      // AppDataLocation here would switch Local to Roaming and lose login.
+      : QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/QtWebEngine/Default";
+    const QString webEngineCache = Paths::isPortableMode()
+      ? Paths::cacheDir("QtWebEngine/Default")
+      : QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/QtWebEngine/Default";
+    Globals::SetContextProperty("webEngineStoragePath", QVariant(webEngineStorage));
+    Globals::SetContextProperty("webEngineCachePath", QVariant(webEngineCache));
 
     // the only way to detect if QML parsing fails is to hook to this signal and then see
     // if we get a valid object passed to it. Any error messages will be reported on stderr
@@ -234,6 +314,8 @@ int main(int argc, char *argv[])
         throw FatalException(QObject::tr("Failed to parse application engine script."));
 
       KonvergoWindow* window = Globals::MainWindow();
+      auto* popupFilter = new WebEnginePopupFilter(window, QCoreApplication::instance());
+      QCoreApplication::instance()->installEventFilter(popupFilter);
 
       QObject* webChannel = qvariant_cast<QObject*>(window->property("webChannel"));
       Q_ASSERT(webChannel);

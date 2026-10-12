@@ -1,0 +1,7 @@
+build-manifest.json text eol=lf
+contracts/*.json text eol=lf
+quality/*.json text eol=lf
+contracts/**/*.json text eol=lf
+tests/playback/fixtures/**/*.ts binary
+tests/playback/fixtures/**/*.m3u8 text eol=lf
+tests/playback/fixtures/**/*.json text eol=lf

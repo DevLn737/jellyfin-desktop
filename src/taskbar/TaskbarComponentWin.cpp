@@ -1,8 +1,13 @@
 #include <QApplication>
 #include <QStyle>
 #include <QUrlQuery>
+#include <QImage>
+#include <QMetaObject>
+#include <cstring>
+#include <vector>
 
 #include <Windows.Foundation.h>
+#include <roapi.h>
 #include <systemmediatransportcontrolsinterop.h>
 #include <wrl\client.h>
 #include <wrl\wrappers\corewrappers.h>
@@ -20,15 +25,61 @@ using namespace Microsoft::WRL::Wrappers;
 using ABI::Windows::Storage::Streams::IRandomAccessStreamReference;
 using ABI::Windows::Storage::Streams::IRandomAccessStreamReferenceStatics;
 
+namespace {
+constexpr UINT PreviousButton = 1;
+constexpr UINT PauseButton = 2;
+constexpr UINT NextButton = 3;
+
+HICON nativeIcon(QStyle::StandardPixmap standardPixmap)
+{
+  const QImage image = QApplication::style()->standardIcon(standardPixmap)
+    .pixmap(32, 32).toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+  if (image.isNull()) return nullptr;
+  BITMAPINFO info {};
+  info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  info.bmiHeader.biWidth = image.width();
+  info.bmiHeader.biHeight = -image.height();
+  info.bmiHeader.biPlanes = 1;
+  info.bmiHeader.biBitCount = 32;
+  info.bmiHeader.biCompression = BI_RGB;
+  void* pixels = nullptr;
+  HBITMAP color = CreateDIBSection(nullptr, &info, DIB_RGB_COLORS, &pixels, nullptr, 0);
+  if (!color) return nullptr;
+  std::memcpy(pixels, image.constBits(), size_t(image.sizeInBytes()));
+  const std::vector<BYTE> maskBits(size_t((image.width() + 15) / 16 * 2 * image.height()), 0);
+  HBITMAP mask = CreateBitmap(image.width(), image.height(), 1, 1, maskBits.data());
+  ICONINFO iconInfo {};
+  iconInfo.fIcon = TRUE;
+  iconInfo.hbmColor = color;
+  iconInfo.hbmMask = mask;
+  HICON icon = mask ? CreateIconIndirect(&iconInfo) : nullptr;
+  if (mask) DeleteObject(mask);
+  DeleteObject(color);
+  return icon;
+}
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 TaskbarComponentWin::~TaskbarComponentWin()
 {
-  if (m_initialized)
-  {
+  if (QCoreApplication::instance())
+    QCoreApplication::instance()->removeNativeEventFilter(this);
+  if (m_buttonSubscribed && m_systemControls)
     m_systemControls->remove_ButtonPressed(m_buttonPressedToken);
+  if (m_displayUpdater)
     m_displayUpdater->ClearAll();
-  }
+  if (m_taskbar && m_hwnd)
+    m_taskbar->SetProgressState(m_hwnd, TBPF_NOPROGRESS);
+  for (HICON icon : m_icons)
+    if (icon) DestroyIcon(icon);
+  // Keep the apartment alive until every native interface is released. This
+  // component is static and can outlive QApplication's own OleInitialize.
+  m_thumbnail.Reset();
+  m_displayUpdater.Reset();
+  m_systemControls.Reset();
+  m_taskbar.Reset();
+  if (m_runtimeInitialized)
+    RoUninitialize();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -40,28 +91,25 @@ void TaskbarComponentWin::setWindow(QQuickWindow* window)
   bool EnableTaskbar = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "enableWindowsTaskbarIntegration").toBool();
   bool EnableMediaControls = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "enableWindowsMediaIntegration").toBool();
 
-  if (EnableTaskbar) {
-    m_button = new QWinTaskbarButton(m_window);
-    m_button->setWindow(m_window);
+  if ((EnableTaskbar || EnableMediaControls) && !m_runtimeInitialized)
+  {
+    // Match Qt's GUI STA. Never attempt to switch it to an MTA.
+    const HRESULT result = RoInitialize(RO_INIT_SINGLETHREADED);
+    m_runtimeInitialized = SUCCEEDED(result);
+    if (!m_runtimeInitialized)
+      qWarning() << "Windows Runtime initialization failed:" << Qt::hex << quint32(result);
+  }
 
-    m_toolbar = new QWinThumbnailToolBar(m_window);
-    m_toolbar->setWindow(m_window);
-
-    m_prev = new QWinThumbnailToolButton(m_toolbar);
-    connect(m_prev, &QWinThumbnailToolButton::clicked, this, &TaskbarComponentWin::onPrevClicked);
-
-    m_pause = new QWinThumbnailToolButton(m_toolbar);
-    connect(m_pause, &QWinThumbnailToolButton::clicked, this, &TaskbarComponentWin::onPauseClicked);
-
-    m_next = new QWinThumbnailToolButton(m_toolbar);
-    connect(m_next, &QWinThumbnailToolButton::clicked, this, &TaskbarComponentWin::onNextClicked);
-
-    m_prev->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaSkipBackward));
-    m_next->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaSkipForward));
-
-    m_toolbar->addButton(m_prev);
-    m_toolbar->addButton(m_pause);
-    m_toolbar->addButton(m_next);
+  m_hwnd = reinterpret_cast<HWND>(window->winId());
+  m_taskbarEnabled = EnableTaskbar;
+  if (m_taskbarEnabled) {
+    m_taskbarCreated = RegisterWindowMessageW(L"TaskbarButtonCreated");
+    m_icons[0] = nativeIcon(QStyle::SP_MediaSkipBackward);
+    m_icons[1] = nativeIcon(QStyle::SP_MediaPause);
+    m_icons[2] = nativeIcon(QStyle::SP_MediaPlay);
+    m_icons[3] = nativeIcon(QStyle::SP_MediaSkipForward);
+    QCoreApplication::instance()->installNativeEventFilter(this);
+    initializeTaskbar();
   }
 
   connect(&PlayerComponent::Get(), &PlayerComponent::positionUpdate, this, &TaskbarComponentWin::setProgress);
@@ -74,26 +122,93 @@ void TaskbarComponentWin::setWindow(QQuickWindow* window)
   setPaused(false);
 
   if (EnableMediaControls) {
-    initializeMediaTransport((HWND)window->winId());
+    initializeMediaTransport(m_hwnd);
   }
+}
+
+void TaskbarComponentWin::initializeTaskbar()
+{
+  if (!m_taskbarEnabled || !m_hwnd) return;
+  m_taskbar.Reset();
+  m_buttonsAdded = false;
+  if (FAILED(CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER,
+                              IID_PPV_ARGS(m_taskbar.GetAddressOf())))
+      || FAILED(m_taskbar->HrInit()))
+  {
+    m_taskbar.Reset();
+    qWarning() << "Windows taskbar API initialization failed";
+    return;
+  }
+  updateTaskbarButtons();
+}
+
+void TaskbarComponentWin::updateTaskbarButtons()
+{
+  if (!m_taskbar || !m_hwnd) return;
+  THUMBBUTTON buttons[3] {};
+  const UINT ids[] {PreviousButton, PauseButton, NextButton};
+  HICON icons[] {m_icons[0], m_paused ? m_icons[2] : m_icons[1], m_icons[3]};
+  const wchar_t* tips[] {L"Previous", m_paused ? L"Resume" : L"Pause", L"Next"};
+  for (int i = 0; i < 3; ++i)
+  {
+    buttons[i].dwMask = static_cast<THUMBBUTTONMASK>(THB_ICON | THB_TOOLTIP | THB_FLAGS);
+    buttons[i].iId = ids[i];
+    buttons[i].hIcon = icons[i];
+    buttons[i].dwFlags = m_controlsVisible ? THBF_ENABLED : THBF_HIDDEN;
+    lstrcpynW(buttons[i].szTip, tips[i], int(sizeof(buttons[i].szTip) / sizeof(wchar_t)));
+  }
+  if (m_buttonsAdded)
+    m_taskbar->ThumbBarUpdateButtons(m_hwnd, 3, buttons);
+  else
+    m_buttonsAdded = SUCCEEDED(m_taskbar->ThumbBarAddButtons(m_hwnd, 3, buttons));
+  m_taskbar->SetProgressState(m_hwnd, !m_controlsVisible ? TBPF_NOPROGRESS
+    : m_paused ? TBPF_PAUSED : TBPF_NORMAL);
+}
+
+bool TaskbarComponentWin::nativeEventFilter(const QByteArray& eventType, void* message, qintptr* result)
+{
+  Q_UNUSED(eventType);
+  auto* event = static_cast<MSG*>(message);
+  if (!event || event->hwnd != m_hwnd) return false;
+  if (m_taskbarCreated && event->message == m_taskbarCreated)
+    initializeTaskbar(); // Also restores controls after Explorer restarts.
+  if (event->message != WM_COMMAND || HIWORD(event->wParam) != THBN_CLICKED)
+    return false;
+  switch (LOWORD(event->wParam))
+  {
+    case PreviousButton: onPrevClicked(); break;
+    case PauseButton: onPauseClicked(); break;
+    case NextButton: onNextClicked(); break;
+    default: return false;
+  }
+  if (result) *result = 0;
+  return true;
+}
+
+void TaskbarComponentWin::sendMediaAction(const QString& action)
+{
+  // SMTC calls arrive from WinRT threads; InputComponent belongs to the GUI.
+  QMetaObject::invokeMethod(this, [action] {
+    InputComponent::Get().sendAction(action);
+  }, Qt::QueuedConnection);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 void TaskbarComponentWin::onPauseClicked()
 {
-  InputComponent::Get().sendAction("play_pause");
+  sendMediaAction("play_pause");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 void TaskbarComponentWin::onNextClicked()
 {
-  InputComponent::Get().sendAction("next");
+  sendMediaAction("next");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 void TaskbarComponentWin::onPrevClicked()
 {
-  InputComponent::Get().sendAction("previous");
+  sendMediaAction("previous");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -118,14 +233,8 @@ void TaskbarComponentWin::stopped()
 /////////////////////////////////////////////////////////////////////////////////////////
 void TaskbarComponentWin::setControlsVisible(bool value)
 {
-  if (m_button) {
-    m_button->progress()->setVisible(value);
-
-    for (auto& button : m_toolbar->buttons())
-    {
-      button->setVisible(value);
-    }
-  }
+  m_controlsVisible = value;
+  updateTaskbarButtons();
 
   if (m_initialized)
   {
@@ -137,33 +246,18 @@ void TaskbarComponentWin::setControlsVisible(bool value)
 /////////////////////////////////////////////////////////////////////////////////////////
 void TaskbarComponentWin::setProgress(quint64 value)
 {
-  if (m_button) {
-    qint64 duration = PlayerComponent::Get().getDuration();
-    int progress = 0;
-    if (duration != 0) {
-      progress = (int) (value / duration / 10);
-    }
-    m_button->progress()->setValue(progress);
-  }
+  if (!m_taskbar || !m_hwnd || !m_controlsVisible)
+    return;
+  const qint64 duration = PlayerComponent::Get().getDuration();
+  if (duration > 0)
+    m_taskbar->SetProgressValue(m_hwnd, qMin(value, quint64(duration)), quint64(duration));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 void TaskbarComponentWin::setPaused(bool value)
 {
-  if (m_button) {
-    if (value)
-    {
-      // m_pause->setToolTip("Resume");
-      m_pause->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPlay));
-    }
-    else
-    {
-      // m_pause->setToolTip("Pause");
-      m_pause->setIcon(QApplication::style()->standardIcon(QStyle::SP_MediaPause));
-    }
-
-    m_button->progress()->setPaused(value);
-  }
+  m_paused = value;
+  updateTaskbarButtons();
 
   if (m_initialized)
   {
@@ -203,6 +297,7 @@ void TaskbarComponentWin::initializeMediaTransport(HWND hwnd)
     qWarning() << "Failed to add callback handler";
     return;
   }
+  m_buttonSubscribed = true;
 
   hr = m_systemControls->put_IsEnabled(false);
 
@@ -365,8 +460,8 @@ void TaskbarComponentWin::setThumbnail(const QVariantMap& meta, QUrl baseUrl)
     imgUrl = baseUrl.toString();
   }
   else if (meta.contains("AlbumId") && meta.contains("AlbumPrimaryImageTag")
-           && meta["AlbumId"].canConvert(QMetaType::QString)
-           && meta["AlbumPrimaryImageTag"].canConvert(QMetaType::QString))
+           && meta["AlbumId"].canConvert<QString>()
+           && meta["AlbumPrimaryImageTag"].canConvert<QString>())
   {
     auto itemId = meta["AlbumId"].toString();
     auto imgTag = meta["AlbumPrimaryImageTag"].toString();
@@ -428,6 +523,7 @@ void TaskbarComponentWin::setThumbnail(const QVariantMap& meta, QUrl baseUrl)
 HRESULT TaskbarComponentWin::buttonPressed(ISystemMediaTransportControls* sender,
   ISystemMediaTransportControlsButtonPressedEventArgs* args)
 {
+  Q_UNUSED(sender);
   SystemMediaTransportControlsButton button;
   auto hr = args->get_Button(&button);
   if (FAILED(hr))
@@ -439,39 +535,39 @@ HRESULT TaskbarComponentWin::buttonPressed(ISystemMediaTransportControls* sender
   switch (button)
   {
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_Play:
-      InputComponent::Get().sendAction("play_pause");
+      sendMediaAction("play_pause");
       qDebug() << "Received play button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_Pause:
-      InputComponent::Get().sendAction("play_pause");
+      sendMediaAction("play_pause");
       qDebug() << "Received pause button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_Next:
-      InputComponent::Get().sendAction("next");
+      sendMediaAction("next");
       qDebug() << "Received next button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_Previous:
-      InputComponent::Get().sendAction("previous");
+      sendMediaAction("previous");
       qDebug() << "Received previous button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_Stop:
-      InputComponent::Get().sendAction("stop");
+      sendMediaAction("stop");
       qDebug() << "Received stop button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_FastForward:
-      InputComponent::Get().sendAction("seek_forward");
+      sendMediaAction("seek_forward");
       qDebug() << "Received seek_forward button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_Rewind:
-      InputComponent::Get().sendAction("seek_backward");
+      sendMediaAction("seek_backward");
       qDebug() << "Received seek_backward button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_ChannelUp:
-      InputComponent::Get().sendAction("channelup");
+      sendMediaAction("channelup");
       qDebug() << "Received channelup button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_ChannelDown:
-      InputComponent::Get().sendAction("channeldown");
+      sendMediaAction("channeldown");
       qDebug() << "Received channeldown button press";
       break;
     case SystemMediaTransportControlsButton::SystemMediaTransportControlsButton_Record:

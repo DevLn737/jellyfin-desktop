@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "status": "historical-additional-evidence-not-applied-to-tested-manifest",
+  "observedAtUtc": "2026-10-11T17:46:10.4457604Z",
+  "packageSourceEvidenceDelta": {
+    "binarySbom": {
+      "archive": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+      "officialArchiveUrl": "https://download.qt.io/online/qtsdkrepository/windows_x86/extensions/qtwebengine/6113/msvc2022_64/extensions.qtwebengine.6113.win64_msvc2022_64/6.11.3-0-202609240437qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+      "archiveSha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c",
+      "pathWithinArchive": "sbom/qtwebengine-6.11.3.spdx.json",
+      "bytes": 519828,
+      "sha256": "ffd8df951bdbd57a1dfcd775995029ba36fe2afb7e2cc28e65fe8315f828b4b8",
+      "selectedPackage": {
+        "name": "WebEngineCore",
+        "versionInfo": "6.11.3",
+        "spdxId": "SPDXRef-Package-qtwebengine-qt-module-WebEngineCore-27142b1a60b6",
+        "downloadLocation": "git://code.qt.io/qt/qtwebengine.git@8c73295524f3ce6a2e10ad2f71141c695376c876"
+      },
+      "selectedFile": {
+        "path": "./bin/Qt6WebEngineCore.dll",
+        "spdxId": "SPDXRef-PackagedFile-qt-module-WebEngineCore-RelWithDebInfo-27142b1a60b6",
+        "sha1": "ae4c51d6dd08702947ed8a66a4912801ff3c8238"
+      },
+      "relationship": {
+        "spdxElementId": "SPDXRef-Package-qtwebengine-qt-module-WebEngineCore-27142b1a60b6",
+        "relatedSpdxElement": "SPDXRef-PackagedFile-qt-module-WebEngineCore-RelWithDebInfo-27142b1a60b6",
+        "relationshipType": "CONTAINS"
+      },
+      "relationshipOccurrences": 2,
+      "deployedSignedDllSha1": "0f14b1b588b7507ceafab512bc3e042b198409c0",
+      "deployedSignedDllSha256": "7461c85b35347e86ad563f32bec83b503f5fefdc91898dab25a2db4504ca3b0b",
+      "preSigningComparison": {
+        "expectedPreSigningSha1": "ae4c51d6dd08702947ed8a66a4912801ff3c8238",
+        "originalChecksum": 203773851,
+        "signedBytes": 203763000,
+        "certificateOffset": 203750912,
+        "certificateBytes": 12088,
+        "matched": true,
+        "zeroPaddingBytesRemoved": [
+          0
+        ]
+      },
+      "comparisonMethod": "Zero PE checksum and security-directory entry; exclude appended certificate bytes. All other PE bytes retained. Exact unsigned SBOM SHA1 reproduced with zero padding removed."
+    },
+    "verificationLimit": "Producer SBOM now ties this signed binary to the exact source pin. Generated V8 GN overrides and compiled write-barrier code are not independently disassembled. This does not qualify memory behavior or official release status."
+  },
+  "cdpReadOnlyEvidence": {
+    "chromiumCommit": "7927ce61b5a302a3da8172eefbe260ec17484bcd",
+    "implementationReferences": [
+      {
+        "path": "chromium/third_party/blink/renderer/core/inspector/inspector_memory_agent.cc",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fthird_party%2Fblink%2Frenderer%2Fcore%2Finspector%2Finspector_memory_agent.cc/content",
+        "bytes": 9772,
+        "sha256": "1040c61d7ad68367e72901181af70343cbd2c43dfa0a54a04267b5efdfc14d72"
+      },
+      {
+        "path": "chromium/third_party/blink/renderer/core/inspector/inspector_performance_agent.cc",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fthird_party%2Fblink%2Frenderer%2Fcore%2Finspector%2Finspector_performance_agent.cc/content",
+        "bytes": 14952,
+        "sha256": "be9269895534c7210d8e3b249163fe20496eef9b2c52f01f89a6ca25f07abcc5"
+      },
+      {
+        "path": "chromium/v8/src/inspector/v8-runtime-agent-impl.cc",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fv8%2Fsrc%2Finspector%2Fv8-runtime-agent-impl.cc/content",
+        "bytes": 48081,
+        "sha256": "f9f6a7aca2d4c5c4ca30a40b7101eedef2f134fff21d45300d85f9479fc523ae"
+      },
+      {
+        "path": "chromium/v8/src/api/api.cc",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fv8%2Fsrc%2Fapi%2Fapi.cc/content",
+        "bytes": 497736,
+        "sha256": "f2d55e9e48bf824f7dba804673866da41e2444f054d51933113c8cf8e6954181"
+      },
+      {
+        "path": "chromium/v8/src/heap/cppgc-js/cpp-heap.cc",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fv8%2Fsrc%2Fheap%2Fcppgc-js%2Fcpp-heap.cc/content",
+        "bytes": 49686,
+        "sha256": "bda287f3e83c8707eb894163f9233879d7f20c5579b5db36c21b40d6578ca8b2"
+      },
+      {
+        "path": "chromium/v8/src/heap/cppgc/heap-base.cc",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fv8%2Fsrc%2Fheap%2Fcppgc%2Fheap-base.cc/content",
+        "bytes": 12878,
+        "sha256": "1cc00fa64da3a23b8ac21fb4c3c3a8d1f9b2077a906f2165b3393cc6dd92ad31"
+      },
+      {
+        "path": "chromium/v8/src/heap/heap.cc",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fv8%2Fsrc%2Fheap%2Fheap.cc/content",
+        "bytes": 288529,
+        "sha256": "1341943a25a0b4b60f9ba80125c3c2ce010af6e4ccc51cc6d348f9371c1beb7f"
+      },
+      {
+        "path": "chromium/v8/BUILD.gn",
+        "url": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd/files/chromium%2Fv8%2FBUILD.gn/content",
+        "bytes": 284165,
+        "sha256": "8135e09c05ab1c95ed8184cbe8bad67a1fe7953470e64edb355891f1c047564c"
+      }
+    ],
+    "calledMethods": [
+      "Memory.getDOMCounters",
+      "Runtime.getHeapUsage"
+    ],
+    "forcedGarbageCollection": false,
+    "domainEnableCalled": false,
+    "facts": [
+      "Memory.getDOMCounters returns three InstanceCounters values only.",
+      "Runtime.getHeapUsage calls V8 GetHeapStatistics and CppHeap CollectStatistics with kBrief.",
+      "GetHeapStatistics releases unused linear allocation buffers and reads heap statistics; no collection request.",
+      "CppHeap forwards to HeapBase CollectStatistics; kBrief returns existing counters before any sweeper calls.",
+      "Performance.getMetrics would return an empty array without enabling its domain; neither it nor Performance.enable was called.",
+      "Pinned V8 BUILD.gn defaults v8_disable_write_barriers to false."
+    ],
+    "observationFiles": [
+      "quality/observations/qt6113-numeric-observations.json"
+    ],
+    "runtimeLimit": "Short bounded observations show natural reduction of document/node/embedder counters; this alone neither proves a leak nor passes the full-hour growth gate.",
+    "originalObservationFiles": [
+      "build/windows/qt6113/memory-final-6eeebfa/cdp-numeric-observations.jsonl",
+      "build/windows/qt6113/memory-final-6eeebfa/os-numeric-observations.jsonl"
+    ]
+  },
+  "sourceCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "originalEvidenceSha256": "45f9ec62c8a3704bc1578edd453e3ff122a25ec4df05d6d62b5316c16263e916",
+  "qualificationEligible": false,
+  "qualificationChanged": false
+}

@@ -1,4 +1,5 @@
-const jmpInfo = JSON.parse(window.atob("@@data@@"));
+const jmpInfo = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
+    Uint8Array.from(window.atob("@@data@@"), character => character.charCodeAt(0))));
 window.jmpInfo = jmpInfo;
 
 const features = [
@@ -23,6 +24,7 @@ const plugins = [
     'mpvVideoPlayer',
     'mpvAudioPlayer',
     'jmpInputPlugin',
+    'jmpDiagnosticsPlugin',
     'jmpUpdatePlugin'
 ];
 
@@ -39,6 +41,7 @@ function loadScript(src) {
 // Add plugin loaders
 for (const plugin of plugins) {
     window[plugin] = async () => {
+        if (window["_" + plugin]) return window["_" + plugin];
         await loadScript(`${jmpInfo.scriptPath}${plugin}.js`);
         return window["_" + plugin];
     };
@@ -220,7 +223,33 @@ async function createApi() {
             document.addEventListener('DOMContentLoaded', resolve);
         });
 
-        await loadScript('qrc:///qtwebchannel/qwebchannel.js');
+        if (jmpInfo.softwareWebEngine) {
+            // Hundreds of nested card containment boundaries make Chromium's
+            // software PaintArtifactCompositor spend a frame budget layerizing
+            // even a small animation. Retain size/style containment, but avoid
+            // those independent layout/paint boundaries in the Desktop view.
+            // This is local to the software client; GPU rendering keeps Web CSS.
+            // A constructed sheet also works on servers with style-src 'self',
+            // without weakening their CSP or fetching a local file remotely.
+            const style = new CSSStyleSheet();
+            style.replaceSync(`
+                .card, .cardScalable, .cardIndicators { contain: style !important; }
+                .cardPadder, .cardImageContainer { contain: size style !important; }
+                /* A translucent full-window backdrop makes software Viz redraw
+                   the entire transparent video surface during menu animations.
+                   Keep the modal hit area and the dialog's entry/exit animation,
+                   but leave native video undimmed while its menus are open. */
+                .transparentDocument .dialogBackdrop {
+                    opacity: 0 !important;
+                    will-change: auto !important;
+                }
+            `);
+            document.adoptedStyleSheets = [...document.adoptedStyleSheets, style];
+        }
+
+        if (typeof window.QWebChannel !== 'function') {
+            await loadScript('qrc:///qtwebchannel/qwebchannel.js');
+        }
     } catch (e) {
         // try clearing out any cached CSPs
         let foundCache = false;
@@ -266,6 +295,31 @@ jmpInfo.settingsUpdate = [];
 window.apiPromise = createApi();
 window.initCompleted = new Promise(async (resolve) => {
     window.api = await window.apiPromise;
+    // The profile script contains startup settings. A new document/origin must
+    // see changes made by the chooser or a previous page before exposing its
+    // settings proxies; another origin's sessionStorage cannot supply them.
+    const currentSettings = await new Promise(done => window.api.settings.allValues('', done));
+    Object.assign(rawSettings, currentSettings);
+    if (window.api.diagnostics) {
+        const diagnostics = window.api.diagnostics;
+        let roundTripPending = false;
+        // No polling when capture is disabled; at most one outstanding sample.
+        const latencyTimer = window.setInterval(() => {
+            if (!diagnostics.capturing || roundTripPending) return;
+            roundTripPending = true;
+            const before = performance.now();
+            diagnostics.ping(() => {
+                roundTripPending = false;
+                if (diagnostics.capturing) diagnostics.recordWebChannelLatency(performance.now() - before);
+            });
+        }, 1000);
+        window.addEventListener('pagehide', () => window.clearInterval(latencyTimer), { once: true });
+        window.NativeShell.Diagnostics = {
+            recordSyncPlayEvent(event, metrics = {}) {
+                if (diagnostics.capturing) diagnostics.recordSyncPlayEvent(event, metrics);
+            }
+        };
+    }
     const settingUpdate = (section, key) => (
         (data) => new Promise(resolve => {
             rawSettings[section][key] = data;
@@ -486,6 +540,20 @@ async function showSettingsModal() {
                     label.appendChild(labelText);
                     if (helpElement) label.appendChild(helpElement);
                     label.appendChild(control);
+                } else if (setting.inputType === "text") {
+                    const control = document.createElement("input");
+                    control.type = "text";
+                    control.className = "emby-input";
+                    control.value = values[setting.key];
+                    control.addEventListener("change", e => {
+                        jmpInfo.settings[section][setting.key] = e.target.value.trim();
+                    });
+                    const labelText = document.createElement('label');
+                    labelText.className = "inputLabel";
+                    labelText.textContent = (setting.displayName ? setting.displayName : setting.key) + ": ";
+                    label.appendChild(labelText);
+                    if (helpElement) label.appendChild(helpElement);
+                    label.appendChild(control);
                 } else if (setting.inputType === "textarea") {
                     const control = document.createElement("textarea");
                     control.className = "emby-select-withcolor emby-select";
@@ -528,6 +596,60 @@ async function showSettingsModal() {
     };
     jmpInfo.settingsDescriptionsUpdate.push(onSectionUpdate);
     jmpInfo.settingsUpdate.push(onSectionUpdate);
+
+    if (window.api.diagnostics) {
+        const diagnostics = window.api.diagnostics;
+        const group = document.createElement('fieldset');
+        group.className = 'dialog-content-centered';
+        group.style.border = '0';
+        const heading = document.createElement('h2');
+        heading.textContent = 'Диагностика';
+        group.appendChild(heading);
+        const help = document.createElement('p');
+        help.textContent = 'Локальный сбор числовых показателей: последние 10 минут, до 16 MiB. ' +
+            'Автоматическая остановка через 15 минут. Отчёт не содержит названий медиа, URL, токенов или обычных логов и никуда не отправляется.';
+        group.appendChild(help);
+        const status = document.createElement('p');
+        status.setAttribute('role', 'status');
+        group.appendChild(status);
+        const buttons = {};
+        for (const [method, label] of [['startCapture', 'Начать'], ['stopCapture', 'Остановить'],
+            ['saveReport', 'Сохранить отчёт'], ['clearCapture', 'Очистить']]) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'raised emby-button';
+            button.style.marginRight = '0.5em';
+            button.textContent = label;
+            button.addEventListener('click', () => diagnostics[method]());
+            group.appendChild(button);
+            buttons[method] = button;
+        }
+        const update = active => {
+            status.textContent = active ? 'Сбор включён' : 'Сбор выключен';
+            buttons.startCapture.disabled = active;
+            buttons.stopCapture.disabled = !active;
+        };
+        const saved = success => {
+            status.textContent = (success ? 'Отчёт сохранён. ' : 'Не удалось сохранить отчёт. ') +
+                (diagnostics.capturing ? 'Сбор включён' : 'Сбор выключен');
+        };
+        diagnostics.captureChanged.connect(update);
+        diagnostics.reportSaved.connect(saved);
+        update(diagnostics.capturing);
+        const devTools = document.createElement('p');
+        devTools.textContent = 'Для отдельного профиля JavaScript/layout/paint запустите приложение один раз с --webengine-devtools ' +
+            'и откройте http://127.0.0.1:9222. При обычном запуске порт выключен.';
+        group.appendChild(devTools);
+        modalContents.appendChild(group);
+        const removal = new MutationObserver(() => {
+            if (!modalContainer.isConnected) {
+                diagnostics.captureChanged.disconnect(update);
+                diagnostics.reportSaved.disconnect(saved);
+                removal.disconnect();
+            }
+        });
+        removal.observe(document.body, { childList: true });
+    }
 
     if (jmpInfo.settings.main.userWebClient) {
         const group = document.createElement("fieldset");

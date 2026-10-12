@@ -22,8 +22,7 @@ function(copy_resources target)
   # in the output field, and this is still cleaner than hardcoding the path
   # of the output binary.
   #  
-  get_property(TARGET_LOC TARGET ${target} PROPERTY LOCATION)
-  get_filename_component(TARGET_DIR ${TARGET_LOC} DIRECTORY)
+  set(TARGET_DIR "$<TARGET_FILE_DIR:${target}>")
   if(APPLE)
     set(TARGET_LOC ${TARGET_DIR}/..)
   else()
@@ -36,14 +35,11 @@ function(copy_resources target)
       list(GET PARTS 0 SOURCE_FILE)
       list(GET PARTS 1 _TARGET_FILE)
       set(TARGET_FILE ${TARGET_LOC}/${_TARGET_FILE})
-      add_custom_command(OUTPUT ${TARGET_FILE}
+      add_custom_command(TARGET ${target} POST_BUILD
                          COMMAND ${CMAKE_COMMAND} -E copy "${SOURCE_FILE}" "${TARGET_FILE}"
                          DEPENDS ${SOURCE_FILE}
                          COMMENT "CopyResource (${target}): ${TARGET_FILE}")
-      list(APPEND RESOURCES ${TARGET_FILE})
     endforeach()
-    add_custom_target(${target}_CopyResources DEPENDS ${RESOURCES})
-    add_dependencies(${target} ${target}_CopyResources)
   endif(RESOURCE_LIST)
 endfunction()
 
@@ -222,7 +218,7 @@ ENDMACRO()
 
 #############################################################
 function(std_target_properties target)
-  set_target_properties(${target} PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
+  set_target_properties(${target} PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 endfunction()
 
 #############################################################

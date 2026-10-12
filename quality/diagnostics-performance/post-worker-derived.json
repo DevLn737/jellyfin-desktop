@@ -1,0 +1,398 @@
+{
+  "schemaVersion": 1,
+  "observation": "post-worker",
+  "appVersion": "2.0.0-rc.1",
+  "qtVersion": "6.11.3",
+  "buildCommit": "ebd33bb096f72fdd05912ab576f92747446b3743",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "logicalCpuCount": 12,
+  "completed": true,
+  "qualificationEligible": false,
+  "qualified": false,
+  "withinSyntheticThresholds": false,
+  "scope": "synthetic-idle-hidden-isolated-localhost-webchannel-ordinary-build-owned-process-tree",
+  "totalVerifiedReplies": 60000,
+  "commandsPerPhase": 10000,
+  "rounds": 3,
+  "requestedPacingMilliseconds": 10,
+  "actualPhaseOrder": [
+    "off",
+    "on",
+    "on",
+    "off",
+    "off",
+    "on"
+  ],
+  "attempts": 1,
+  "adaptiveRetries": false,
+  "thresholds": {
+    "cpuIncreasePercentagePoints": 2,
+    "p95IncreasePercent": 5
+  },
+  "thresholdDecision": "all-three-pairs-must-pass",
+  "sourceSummarySha256": "3f333ffdc23520372358b0bd8129d6c3147aa9af1a43a033ba436dc75ba426f5",
+  "sourceRawSha256": "43cbf0f0e17249940c2aceae59de0d5e1c3b23acdd326697049292e9319113bb",
+  "protocolSha256": "f2dca048ead5e52e760ade46b0362c8ca4b1b93f308c16bdab742430d5562605",
+  "protocolSources": {
+    "ownerSha256": "fd85002f4e7d3f41a19a6b587bc31f286eee4474f9e3d16a9dcacf572ee088b3",
+    "driverSha256": "b7ceaa8f7700a4b963194c531baee97a410c2a95eeb65bc1ab658644f32da69e"
+  },
+  "reviewedSourceFiles": [
+    {
+      "sourceFileCode": 0,
+      "gitSourceSha256": "d7e9ebe8ffe3126de26a570a4193d3588771ec1da5a978826c5e7bb7ea855140",
+      "gitBlobSha1": "29155e436aca6ad1e1b5c804b6c3bdbfcd3eddfa",
+      "workingTreeSha256": "cb65ccfffd8af685fa2e490517d7451624ffd818c6671fa472a2cc078640a29c"
+    },
+    {
+      "sourceFileCode": 1,
+      "gitSourceSha256": "000f0bd624be798e563537d2c44c278ce66cbe8f727030d6985719bfa10c5a93",
+      "gitBlobSha1": "a4362604fda4744bd9d5e499e156bf114fb74e94",
+      "workingTreeSha256": "0fdda0f53b4b21a18bf083e46e00434d4f3bf97afb7dae9e35717cd9ab6d2356"
+    },
+    {
+      "sourceFileCode": 2,
+      "gitSourceSha256": "5dff3319f5455681ccafbce00c62159c4a06c130833bc3a16e556b0d3bf9b6e6",
+      "gitBlobSha1": "a49f7130fb98a2b14e56ed31ed4fbf6bffca953a",
+      "workingTreeSha256": "cf16366b16f4c78cd1695584fc28368e2440078d638dac7e1c9c686088afc5b3"
+    },
+    {
+      "sourceFileCode": 3,
+      "gitSourceSha256": "fcbed0247a46cb8de31c2bd457c2b65c44e8ac6f71ce34d1a40d54d5e298f2c4",
+      "gitBlobSha1": "5d0552ad0564ba91e3c24b310748df12441ce87b",
+      "workingTreeSha256": "e9045982621ff4f4f01daefba4203ff3241f650de74fa6b575f4117b470f9b19"
+    }
+  ],
+  "cpuCounterVerificationAvailable": true,
+  "sourceIntegrityVerification": "Frozen owner required clean exact source at launch; auditor verified Git blobs, working source and manifest after completion.",
+  "cpuDerivation": {
+    "scope": "owned-packaged-process-tree",
+    "counterUnitNanoseconds": 100,
+    "formula": "100 * cpuDeltaTicks / (cpuWindowTicks * logicalCpuCount)",
+    "allSixWindowsRecomputed": true
+  },
+  "nativeProfileInjectionVerified": {
+    "nativeShell": true,
+    "qWebChannel": true,
+    "diagnostics": true,
+    "initiallyOff": true,
+    "crossOriginIsolated": true,
+    "isSecureContext": true,
+    "position": 0
+  },
+  "initialClockProbe": {
+    "crossOriginIsolated": true,
+    "isSecureContext": true,
+    "readCount": 40000,
+    "positiveStepCount": 2971,
+    "zeroStepCount": 37029,
+    "minimumPositiveStepMilliseconds": 0.004999995231628418,
+    "medianPositiveStepMilliseconds": 0.004999995231628418
+  },
+  "phases": [
+    {
+      "phaseId": 1,
+      "round": 1,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 0.8406118519424419,
+      "cpuBeforeTicks": 22656250,
+      "cpuAfterTicks": 180000000,
+      "cpuDeltaTicks": 157343750,
+      "cpuWindowSeconds": 155.981374,
+      "processCount": 2,
+      "p95Milliseconds": 1.1700000166893005,
+      "commandWindowMilliseconds": 155793.91000002623,
+      "cpuPercentRecomputed": 0.8406118519424419,
+      "cpuWindowTicksReconstructed": 1559813740,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.845714000082016,
+      "sumRoundTripMilliseconds": 8457.14000082016,
+      "meanIterationMilliseconds": 15.579391000002623,
+      "residualOutsideRoundTripMillisecondsPerIteration": 14.733676999920608,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 3086,
+        "zeroStepCount": 36914,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2049,
+        "zeroStepCount": 37951,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 2,
+      "round": 1,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 1.0122696834399167,
+      "cpuBeforeTicks": 180468750,
+      "cpuAfterTicks": 370000000,
+      "cpuDeltaTicks": 189531250,
+      "cpuWindowSeconds": 156.0282906,
+      "processCount": 2,
+      "p95Milliseconds": 1.1850000023841858,
+      "commandWindowMilliseconds": 155761.84999996424,
+      "cpuPercentRecomputed": 1.0122696834399167,
+      "cpuWindowTicksReconstructed": 1560282906,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.8533100004434585,
+      "sumRoundTripMilliseconds": 8533.100004434586,
+      "meanIterationMilliseconds": 15.576184999996423,
+      "residualOutsideRoundTripMillisecondsPerIteration": 14.722874999552964,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2188,
+        "zeroStepCount": 37812,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2845,
+        "zeroStepCount": 37155,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 3,
+      "round": 2,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 1.0971145603779513,
+      "cpuBeforeTicks": 370312500,
+      "cpuAfterTicks": 551562500,
+      "cpuDeltaTicks": 181250000,
+      "cpuWindowSeconds": 137.6717365,
+      "processCount": 2,
+      "p95Milliseconds": 1.1100000143051147,
+      "commandWindowMilliseconds": 137439.11500000954,
+      "cpuPercentRecomputed": 1.0971145603779513,
+      "cpuWindowTicksReconstructed": 1376717365,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.8180250000059605,
+      "sumRoundTripMilliseconds": 8180.250000059605,
+      "meanIterationMilliseconds": 13.743911500000953,
+      "residualOutsideRoundTripMillisecondsPerIteration": 12.925886499994993,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 1850,
+        "zeroStepCount": 38150,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2390,
+        "zeroStepCount": 37610,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 4,
+      "round": 2,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 1.013138663448176,
+      "cpuBeforeTicks": 552187500,
+      "cpuAfterTicks": 695156250,
+      "cpuDeltaTicks": 142968750,
+      "cpuWindowSeconds": 117.5955763,
+      "processCount": 2,
+      "p95Milliseconds": 0.9800000190734863,
+      "commandWindowMilliseconds": 117371.93000000715,
+      "cpuPercentRecomputed": 1.013138663448176,
+      "cpuWindowTicksReconstructed": 1175955763,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.7708940002858639,
+      "sumRoundTripMilliseconds": 7708.940002858639,
+      "meanIterationMilliseconds": 11.737193000000715,
+      "residualOutsideRoundTripMillisecondsPerIteration": 10.966298999714851,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 3061,
+        "zeroStepCount": 36939,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2395,
+        "zeroStepCount": 37605,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 5,
+      "round": 3,
+      "capturing": false,
+      "commandCount": 10000,
+      "cpuPercent": 0.9607715025695824,
+      "cpuBeforeTicks": 695468750,
+      "cpuAfterTicks": 829843750,
+      "cpuDeltaTicks": 134375000,
+      "cpuWindowSeconds": 116.551299,
+      "processCount": 2,
+      "p95Milliseconds": 0.9799999594688416,
+      "commandWindowMilliseconds": 116317.25999999046,
+      "cpuPercentRecomputed": 0.9607715025695824,
+      "cpuWindowTicksReconstructed": 1165512990,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.7674949998557568,
+      "sumRoundTripMilliseconds": 7674.949998557568,
+      "meanIterationMilliseconds": 11.631725999999047,
+      "residualOutsideRoundTripMillisecondsPerIteration": 10.86423100014329,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2043,
+        "zeroStepCount": 37957,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 3157,
+        "zeroStepCount": 36843,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    },
+    {
+      "phaseId": 6,
+      "round": 3,
+      "capturing": true,
+      "commandCount": 10000,
+      "cpuPercent": 1.1088155007296507,
+      "cpuBeforeTicks": 830312500,
+      "cpuAfterTicks": 985468750,
+      "cpuDeltaTicks": 155156250,
+      "cpuWindowSeconds": 116.6081056,
+      "processCount": 2,
+      "p95Milliseconds": 0.9950000047683716,
+      "commandWindowMilliseconds": 116341.79500001669,
+      "cpuPercentRecomputed": 1.1088155007296507,
+      "cpuWindowTicksReconstructed": 1166081056,
+      "p95Derivation": {
+        "method": "nearest-rank",
+        "sampleCount": 10000,
+        "rankOneBased": 9500,
+        "indexZeroBased": 9499
+      },
+      "meanRoundTripMilliseconds": 0.7737934996843338,
+      "sumRoundTripMilliseconds": 7737.934996843338,
+      "meanIterationMilliseconds": 11.634179500001668,
+      "residualOutsideRoundTripMillisecondsPerIteration": 10.860386000317334,
+      "clockBefore": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2297,
+        "zeroStepCount": 37703,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      },
+      "clockAfter": {
+        "crossOriginIsolated": true,
+        "isSecureContext": true,
+        "readCount": 40000,
+        "positiveStepCount": 2570,
+        "zeroStepCount": 37430,
+        "minimumPositiveStepMilliseconds": 0.004999995231628418,
+        "medianPositiveStepMilliseconds": 0.004999995231628418
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "round": 1,
+      "cpuIncreasePercentagePoints": 0.17165783149747482,
+      "p95IncreasePercent": 1.2820500411042879,
+      "withinSyntheticThresholds": true
+    },
+    {
+      "round": 2,
+      "cpuIncreasePercentagePoints": 0.08397589692977525,
+      "p95IncreasePercent": 13.265305377701253,
+      "withinSyntheticThresholds": false
+    },
+    {
+      "round": 3,
+      "cpuIncreasePercentagePoints": 0.1480439981600683,
+      "p95IncreasePercent": 1.530616930602724,
+      "withinSyntheticThresholds": true
+    }
+  ],
+  "resolutionObservation": {
+    "actualProbeCount": 13,
+    "readsPerProbe": 40000,
+    "minimumObservedPositiveStepMilliseconds": 0.004999995231628418,
+    "maximumOfProbeMinimumPositiveStepsMilliseconds": 0.004999995231628418,
+    "unchangedClockGuardMilliseconds": 0.02,
+    "priorObservedStepMicroseconds": 5,
+    "crossOriginIsolatedEveryProbe": true,
+    "secureContextEveryProbe": true,
+    "clockProbesOutsideCpuWindows": true
+  },
+  "oldObservationsSuperseded": false,
+  "retrospectiveCausalAttribution": false,
+  "limitations": [
+    "One fixed new-source idle comparison does not establish a cause for old failures.",
+    "All three old completed failures remain immutable and visible.",
+    "Threshold success here cannot qualify Qt, playback, rendering, mixed clients, Tracy overhead or user acceptance.",
+    "No private profile or application logs enter this numeric export.",
+    "The auditor validates numeric receipts and source identity; shutdown is checked separately by the owner."
+  ]
+}

@@ -1,0 +1,137 @@
+#include "DiscordActivity.h"
+
+#include <QHostAddress>
+#include <QRegularExpression>
+#include <QUrlQuery>
+
+namespace
+{
+const QString Logo = QStringLiteral("https://raw.githubusercontent.com/jellyfin/jellyfin-media-player/v1.12.0/resources/images/icon.png");
+
+QString clipped(QString text)
+{
+  text = text.simplified();
+  // Discord limits these fields to 128 UTF-8 bytes. Do not split a code point.
+  while (text.toUtf8().size() > 128)
+  {
+    if (text.at(text.size() - 1).isLowSurrogate())
+      text.chop(2);
+    else
+      text.chop(1);
+  }
+  return text;
+}
+
+QString clockText(qint64 ms)
+{
+  const qint64 seconds = qMax<qint64>(0, ms) / 1000;
+  return seconds >= 3600
+    ? QStringLiteral("%1:%2:%3").arg(seconds / 3600).arg(seconds / 60 % 60, 2, 10, QLatin1Char('0')).arg(seconds % 60, 2, 10, QLatin1Char('0'))
+    : QStringLiteral("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QLatin1Char('0'));
+}
+}
+
+QString DiscordActivity::posterUrl(const QVariantMap& item, const QUrl& playbackUrl)
+{
+  // Never share a playback URL, authentication query, credentials or private host.
+  // Discord's image proxy can only retrieve publicly accessible images.
+  const QString host = playbackUrl.host().toLower();
+  QHostAddress address;
+  if (playbackUrl.scheme() != QStringLiteral("https") || host.isEmpty() ||
+      address.setAddress(host) || !host.contains('.') || host.endsWith(".localhost") ||
+      host.endsWith(".local") || host.endsWith(".lan") || host.endsWith(".internal"))
+    return {};
+
+  const bool episode = item.value("Type").toString() == QStringLiteral("Episode");
+  QString id = episode ? item.value("SeriesId").toString() : item.value("Id").toString();
+  QString tag = episode ? item.value("SeriesPrimaryImageTag").toString()
+                        : item.value("ImageTags").toMap().value("Primary").toString();
+  if (id.isEmpty() || tag.isEmpty())
+    return {};
+  const QRegularExpression identifier(QStringLiteral("^[A-Za-z0-9-]+$"));
+  if (!identifier.match(id).hasMatch() || !identifier.match(tag).hasMatch())
+    return {};
+
+  // Preserve reverse-proxy subpaths, including /jellyfin, without trusting queries.
+  const QString path = playbackUrl.path();
+  const int videoPath = path.indexOf(QStringLiteral("/Videos/"), 0, Qt::CaseInsensitive);
+  if (videoPath < 0)
+    return {};
+  QUrl result = playbackUrl.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment);
+  result.setPath(path.left(videoPath) + QStringLiteral("/Items/%1/Images/Primary").arg(id));
+  QUrlQuery query;
+  query.addQueryItem(QStringLiteral("tag"), tag);
+  query.addQueryItem(QStringLiteral("maxHeight"), QStringLiteral("512"));
+  query.addQueryItem(QStringLiteral("quality"), QStringLiteral("90"));
+  result.setQuery(query);
+  const QString url = result.toString(QUrl::FullyEncoded);
+  return url.size() <= 256 ? url : QString();
+}
+
+qint64 DiscordActivity::startTimestamp(qint64 previousStart, qint64 positionMs, bool playing, qint64 nowSeconds)
+{
+  return !playing && previousStart > 0 ? previousStart
+    : qMax<qint64>(1, nowSeconds - qMax<qint64>(0, positionMs) / 1000);
+}
+
+QJsonObject DiscordActivity::build(const QVariantMap& item, const QUrl& playbackUrl,
+                                   qint64 positionMs, bool playing, bool buffering, qint64 nowSeconds,
+                                   qint64 retainedStart, qint64 fallbackDurationMs)
+{
+  const QString type = item.value("Type").toString();
+  if (type != QStringLiteral("Movie") && type != QStringLiteral("Episode"))
+    return {};
+
+  const bool episode = type == QStringLiteral("Episode");
+  QString title = episode ? item.value("SeriesName").toString() : item.value("Name").toString();
+  if (title.trimmed().isEmpty())
+    title = item.value("Name").toString();
+  if (title.trimmed().isEmpty())
+    return {};
+
+  QStringList state;
+  if (episode)
+  {
+    if (item.contains("ParentIndexNumber") && !item.value("ParentIndexNumber").isNull())
+      state << QStringLiteral("S%1").arg(item.value("ParentIndexNumber").toInt(), 2, 10, QLatin1Char('0'));
+    if (item.contains("IndexNumber") && !item.value("IndexNumber").isNull())
+    {
+      QString number = QStringLiteral("E%1").arg(item.value("IndexNumber").toInt(), 2, 10, QLatin1Char('0'));
+      if (item.value("IndexNumberEnd").toInt() > item.value("IndexNumber").toInt())
+        number += QStringLiteral("\u2013%1").arg(item.value("IndexNumberEnd").toInt(), 2, 10, QLatin1Char('0'));
+      state << number;
+    }
+  }
+  else if (item.value("ProductionYear").toInt() > 0)
+    state << QString::number(item.value("ProductionYear").toInt());
+
+  const QString status = buffering ? QStringLiteral("\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430")
+    : playing ? QStringLiteral("\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440")
+              : QStringLiteral("\u041f\u0430\u0443\u0437\u0430");
+  QString stateText = episode ? QStringLiteral("\u0421\u0435\u0440\u0438\u0430\u043b")
+                             : QStringLiteral("\u0424\u0438\u043b\u044c\u043c");
+  if (!state.isEmpty())
+    stateText += QStringLiteral(" \u00b7 ") + state.join(QLatin1Char(' '));
+  // Watching is already shown by Discord's activity type; keep the main line minimal.
+  if (!playing)
+    stateText += QStringLiteral(" \u00b7 ") + status + QStringLiteral(" \u00b7 ") + clockText(positionMs);
+
+  const QString poster = posterUrl(item, playbackUrl);
+  QJsonObject assets{{"large_image", poster.isEmpty() ? Logo : poster},
+                     {"large_text", clipped(title)}, {"small_image", Logo},
+                     {"small_text", QStringLiteral("Jellyfin Desktop \u00b7 ") + status}};
+  QJsonObject activity{{"type", 3}, {"details", clipped(title)},
+                       {"state", clipped(stateText)}, {"assets", assets}, {"instance", false}};
+  // Removing timestamps on pause makes Discord fall back to a new session timer.
+  // Its timer cannot freeze: retain the anchor and show the exact paused position in state.
+  const qint64 start = startTimestamp(retainedStart, positionMs, playing, nowSeconds);
+  QJsonObject timestamps{{"start", static_cast<double>(start)}};
+  // RPC timestamps use seconds. Watching supports a native time bar with both endpoints.
+  // Prefer Jellyfin's full runtime over mpv's potentially shorter transcoded stream.
+  const qint64 runtimeMs = item.value("RunTimeTicks").toLongLong() / 10000;
+  const qint64 durationSeconds = (runtimeMs > 0 ? runtimeMs : fallbackDurationMs) / 1000;
+  if (durationSeconds > 0)
+    timestamps.insert("end", static_cast<double>(start + durationSeconds));
+  activity.insert("timestamps", timestamps);
+  return activity;
+}

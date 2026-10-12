@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic-silent-audio-only-hls-timestamp-fixture",
+  "sourceMedia": "FFmpeg lavfi anullsrc; no server or user media",
+  "ffmpegVersion": "9.0.1-full_build-www.gyan.dev",
+  "ffmpegExecutableSha256": "57c56e369d5b4873b4d93fc1a1d833cb7cd8bc9325c14b05c34ce60b22842d8a",
+  "generatorArguments": ["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", "6", "-c:a", "aac", "-b:a", "64k", "-output_ts_offset", "30", "-hls_time", "2", "-hls_playlist_type", "vod", "-hls_segment_options", "mpegts_copyts=1", "-hls_segment_filename", "segment-%03d.ts", "-f", "hls", "index.m3u8"],
+  "nominalStartMilliseconds": 30000,
+  "firstAudioPtsMilliseconds": 29978.667,
+  "aacEncoderPrimingMilliseconds": 21.333,
+  "firstPtsEvidence": "ffprobe -select_streams a:0 -show_entries stream=start_time,duration -of json segment-000.ts reports start_time=29.978667",
+  "loadTargetMilliseconds": 30000,
+  "pausedSeekTargetMilliseconds": 32000,
+  "expectedOrdinaryDirectTsStartMilliseconds": 0,
+  "generatedMediaBytes": 8893,
+  "sha256": {
+    "index.m3u8": "4b73a133bb468144604969cb19a04208f2e3401dd25c5b03a56d4a4c57c351ce",
+    "segment-000.ts": "24c317d36f15072586ecf2b4bc4d4750de2c1cfa1311fceb5c3f878f30452b67",
+    "segment-001.ts": "b50cdd057c9b21911b96597d98b61b24047aec1d8110933f4eb11b4fec522010",
+    "segment-002.ts": "80c647f82ac3209c04e47d000fe43304529ad40aa9b291a855fdc343a738396a",
+    "segment-003.ts": "4f76e07f0d4209634bcce33146b2b1b9e5dbc4a68639c42cf1de39a0a7e4e6e4"
+  },
+  "acceptanceScope": "Local libmpv synthetic timestamp correctness only; never production HLS or mixed Desktop/Web acceptance."
+}

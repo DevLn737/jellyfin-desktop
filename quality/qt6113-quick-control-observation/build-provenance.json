@@ -1,0 +1,771 @@
+{
+  "schemaVersion": 1,
+  "desktopBuildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "qtVersion": "6.11.3",
+  "msvcToolsVersion": "14.44.35207",
+  "windowsSdkVersion": "10.0.26100.0",
+  "qualificationEligible": false,
+  "peSubsystem": 2,
+  "nodeExeSha256": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32",
+  "runtimePayloads": [
+    {
+      "name": "concrt140.dll",
+      "sha256": "2405355f0a58067b258f8df33c327e3a3d716eaac5a3a5aebb757842d85bd376"
+    },
+    {
+      "name": "d3dcompiler_47.dll",
+      "sha256": "a05f99734f7c4822fefc12b367af21fd0976ed6608752fb1e1e80b6ece7ecbbb"
+    },
+    {
+      "name": "dxcompiler.dll",
+      "sha256": "b855ee494c60a5dd0638d4574bc4d728c87fac5d415b9be3122058b5adefda77"
+    },
+    {
+      "name": "dxil.dll",
+      "sha256": "2ae215743ca9c9c5ccfe4d53856e582c234a300a3186fc987c1d2bbe0738c50a"
+    },
+    {
+      "name": "JellyfinMediaPlayer.exe",
+      "sha256": "e0691a6533f7b0e940a25f49b8380be60c20954968b4ab556afc94ae0a314284"
+    },
+    {
+      "name": "libmpv-2.dll",
+      "sha256": "e023856d0d2a96c66e75098c290dfd83b66a1c87740bb58152864e53e74f5ffb"
+    },
+    {
+      "name": "msvcp140_1.dll",
+      "sha256": "bfad5aef4c63a669e3c140655cdfdf395b6c979b400a447bd5dcb65ed8826c3d"
+    },
+    {
+      "name": "msvcp140_2.dll",
+      "sha256": "3ea06f0ee098b4823cb79599df3780e7f23cce52c19aac31d2a0d47efe33a5e9"
+    },
+    {
+      "name": "msvcp140_atomic_wait.dll",
+      "sha256": "640b2aefced484d0368eea5bdd06addd0658a3a70a49256e560d6923b404a479"
+    },
+    {
+      "name": "msvcp140_codecvt_ids.dll",
+      "sha256": "f2069a52880ec885ee7f0511186100eb7fada0411a2b4948fafea7735b878a18"
+    },
+    {
+      "name": "msvcp140.dll",
+      "sha256": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9"
+    },
+    {
+      "name": "opengl32sw.dll",
+      "sha256": "b04de4541863bc7d8879040a78889c4849c1b1da2784c4630f734c146c2998ce"
+    },
+    {
+      "name": "qt.conf",
+      "sha256": "f9cc128248f396d72c8e251cbbe5ba060ff2670b229074b86f44bcfb230a37c5"
+    },
+    {
+      "name": "Qt6Core.dll",
+      "sha256": "b20757be279b4e074c89be1f183a40975bf867b9a2a4e0ca4ea34a95fe2bb39e"
+    },
+    {
+      "name": "Qt6Gui.dll",
+      "sha256": "695ee5e5a7ac83b7a1f7d397ccb0dda39b84f8369fd2237d90c1229b78af0cd5"
+    },
+    {
+      "name": "Qt6LabsFolderListModel.dll",
+      "sha256": "94b3ac3c7cfd19ded5c5c3c8fa5551a5c221c29064204388c6529c882af2e78b"
+    },
+    {
+      "name": "Qt6Network.dll",
+      "sha256": "ced0ea6ee03079a03ec19d1bdc4da5c1bf607cefa09f4f526768f54a4c0db8af"
+    },
+    {
+      "name": "Qt6OpenGL.dll",
+      "sha256": "9f2866a8d10992ccf7f565fdd48562f44249be11a351681869458e86687297ce"
+    },
+    {
+      "name": "Qt6Positioning.dll",
+      "sha256": "0077860a4731c0ab34299fe704a28aad7a105d303742ff6cf51d2a659d84558f"
+    },
+    {
+      "name": "Qt6Qml.dll",
+      "sha256": "88746f6493bd5d3b9b6f3af39998f4274025a84a8fd93f5c161573161cb02777"
+    },
+    {
+      "name": "Qt6QmlMeta.dll",
+      "sha256": "4abcbe252ca27f4ede320539180c1cd9a75d933930d7387ede40154f80319f14"
+    },
+    {
+      "name": "Qt6QmlModels.dll",
+      "sha256": "ea92bb8f90e7b3620559e8e776b9b71beecdef3a7fae65d4290c9d1ba4e2f65b"
+    },
+    {
+      "name": "Qt6QmlWorkerScript.dll",
+      "sha256": "6b67f642b16b01b761433f889495728e162ce03ee3534021f44a736f5046fafc"
+    },
+    {
+      "name": "Qt6Quick.dll",
+      "sha256": "701f7a6f70ffffd263f43a27365a827d529b5af9946bccc39306be5bced69073"
+    },
+    {
+      "name": "Qt6QuickControls2.dll",
+      "sha256": "42a63345c0dade342fea78dd5aadb68f5425c9b0376053dd9c88d83149d7e772"
+    },
+    {
+      "name": "Qt6QuickControls2Basic.dll",
+      "sha256": "6f48fa8221b36a64c6c8b970a85ca1ae581a29c9cea8a99ba6c7d89efd4698eb"
+    },
+    {
+      "name": "Qt6QuickControls2BasicStyleImpl.dll",
+      "sha256": "1a2582dae43b638a657016cf6b387fc2cd551a435a6d03b5e5414530c79b72f1"
+    },
+    {
+      "name": "Qt6QuickControls2FluentWinUI3StyleImpl.dll",
+      "sha256": "9782a6b9d4144b2e6c2b785b9ae9fabeff4aa877bb9f898ade2271647408cc45"
+    },
+    {
+      "name": "Qt6QuickControls2Fusion.dll",
+      "sha256": "49e7f274a2fa1562ec1e400372e00c7e429bf31041f534fffc5bd630dddb0668"
+    },
+    {
+      "name": "Qt6QuickControls2FusionStyleImpl.dll",
+      "sha256": "2b764f8a8d08778159afe7ef58c615f23b494864ec192a5ed3e7b1f102fc8d39"
+    },
+    {
+      "name": "Qt6QuickControls2Imagine.dll",
+      "sha256": "e551ac2f1c7367b9edb33d082c3999a23fceac254615139b08bd3aba4d52bede"
+    },
+    {
+      "name": "Qt6QuickControls2ImagineStyleImpl.dll",
+      "sha256": "797fbb54ba96186d7002811ac4ff36ffbb6adf56bbd42bd3ff2b5c8a9fe245e5"
+    },
+    {
+      "name": "Qt6QuickControls2Impl.dll",
+      "sha256": "0a33d7332ded37ab892ad32e4c3500219752be18341fda9dc8d97e571b411003"
+    },
+    {
+      "name": "Qt6QuickControls2Material.dll",
+      "sha256": "a16fe7531fe8af7711e8b5238520c123bbb24072abda81fbe7986f4df5152e14"
+    },
+    {
+      "name": "Qt6QuickControls2MaterialStyleImpl.dll",
+      "sha256": "0cf5824dee9eb100be398cb9cc9163792d1f0ed185e9ef16804637a6b31357a1"
+    },
+    {
+      "name": "Qt6QuickControls2Universal.dll",
+      "sha256": "9234b2cc8193c75d35c6cc55c5089be50559a001b8f41e2c9e826a1d0f6efce5"
+    },
+    {
+      "name": "Qt6QuickControls2UniversalStyleImpl.dll",
+      "sha256": "0ca607827805ed0e7ba6752bb93ac65fcaafd2e8c2dbd1b7032bed5eac8729f5"
+    },
+    {
+      "name": "Qt6QuickControls2WindowsStyleImpl.dll",
+      "sha256": "57db88b9c80ce4cf9b9bf9977fb78244d0269776b9eda6ba1a638286453066a0"
+    },
+    {
+      "name": "Qt6QuickDialogs2.dll",
+      "sha256": "f91bb19aadf103f3794b6c4277f9a771c8d10082027c33e8dfd9ca6199301783"
+    },
+    {
+      "name": "Qt6QuickDialogs2QuickImpl.dll",
+      "sha256": "3abfdd09554f30af76181844fa7c8af0e108131feaa54fda6db5cf14686b89b1"
+    },
+    {
+      "name": "Qt6QuickDialogs2Utils.dll",
+      "sha256": "c01ced14567eb97a06e2e2c73c063accc1ee0ddb67def2023eefb25fb20ab502"
+    },
+    {
+      "name": "Qt6QuickEffects.dll",
+      "sha256": "ed3925d1e1f7fc70984f3db624b01095259852bc256fc21eb1d2ac3a702d8f61"
+    },
+    {
+      "name": "Qt6QuickLayouts.dll",
+      "sha256": "6b2f142f4d25f0931e8a7da84cd8a5b0c3d9a99b3d2c89ee7fdddcdd69700f42"
+    },
+    {
+      "name": "Qt6QuickShapes.dll",
+      "sha256": "eb16e75c9c7d95ed56329cd17658cede0e49fc5f0e9582b2dce6be8db9edbf54"
+    },
+    {
+      "name": "Qt6QuickTemplates2.dll",
+      "sha256": "d9d429945cd1e938e6be92498e7306404a8e922715c66993f7a2a28ad0309e54"
+    },
+    {
+      "name": "Qt6SerialPort.dll",
+      "sha256": "9a7ddc3364b9bb72623ed72e82315cf63bb33731f2eea91c77c75fd8551d385a"
+    },
+    {
+      "name": "Qt6Svg.dll",
+      "sha256": "bc77f4dd32a07518b61930a0d6ef1d5ff81436afd77886da239822dbf8c49e7a"
+    },
+    {
+      "name": "Qt6WebChannel.dll",
+      "sha256": "ba966ebaad665db87562ab7c2698acdcf7d8e69ee137ee7d1e17aa3623a5d445"
+    },
+    {
+      "name": "Qt6WebChannelQuick.dll",
+      "sha256": "f6a26c07164dc675e007867b7ed7782d29591fd71fa66b95bca64c8f75fa0f13"
+    },
+    {
+      "name": "Qt6WebEngineCore.dll",
+      "sha256": "7461c85b35347e86ad563f32bec83b503f5fefdc91898dab25a2db4504ca3b0b"
+    },
+    {
+      "name": "Qt6WebEngineQuick.dll",
+      "sha256": "ff3c4e088c9e8d4a953b550224d185c85e9d6c745f342560c14f9430fe66b0ac"
+    },
+    {
+      "name": "Qt6WebEngineQuickDelegatesQml.dll",
+      "sha256": "eb606d5bc78fd030f6129dcba8ef779ba3712e16efccf2c7e8d82b59efaa6451"
+    },
+    {
+      "name": "Qt6Widgets.dll",
+      "sha256": "16e181e86e4084ca26de4daaf9a32ab61c1eed9c4649e6176dbddc7849ea1e06"
+    },
+    {
+      "name": "Qt6Xml.dll",
+      "sha256": "e6597806f27d82ba346177704a505b765081261f5035c0343ed306dae4402956"
+    },
+    {
+      "name": "QtWebEngineProcess.exe",
+      "sha256": "e6590c760fd9792081b627df71704c15acda4b19d581eb3efce921cda93b608f"
+    },
+    {
+      "name": "quick-control.exe",
+      "sha256": "cd178da4f68f55dfa5da2ac66362525a3359de7bd5f56a5334f3b5dcf5ec591f"
+    },
+    {
+      "name": "vccorlib140.dll",
+      "sha256": "19839407c3fdbc824e5bce189bf68ddf8097f12ec28b757797ffa0415c144ddd"
+    },
+    {
+      "name": "vcruntime140_1.dll",
+      "sha256": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f"
+    },
+    {
+      "name": "vcruntime140_threads.dll",
+      "sha256": "219915cf20822f34d5e7c1fdd4e21ae7f3396881096c51036225fb8f84b47afa"
+    },
+    {
+      "name": "vcruntime140.dll",
+      "sha256": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066"
+    },
+    {
+      "name": "vulkan-1.dll",
+      "sha256": "e1fcfc9489beefa6a6d9d11d6c7517f6a2b7f16e0d3fb8f4103bee0210f314a3"
+    },
+    {
+      "name": "generic/qtuiotouchplugin.dll",
+      "sha256": "91b2aa1161c24f8eaaf13346a9fec7ea795e80d2c999bb940fe914e37fa0e4f1"
+    },
+    {
+      "name": "iconengines/qsvgicon.dll",
+      "sha256": "c5d7ed7942069c656b2bca01a6c958e61dd7385998ad70af9a215d31a070d511"
+    },
+    {
+      "name": "imageformats/qgif.dll",
+      "sha256": "ab27920999dbe30c8b49ebdaefcc4740f931afc23f137ee9c77822d9069c4e59"
+    },
+    {
+      "name": "imageformats/qico.dll",
+      "sha256": "9cb3025a26c2e5a6225b601ca89c62bfa4dffc17f258cc10d439b1c3ac6d6256"
+    },
+    {
+      "name": "imageformats/qjpeg.dll",
+      "sha256": "efa72d5df5eafac48021b2e7ab501668989944b1fd84e902e21f17ddeac4bdfb"
+    },
+    {
+      "name": "imageformats/qsvg.dll",
+      "sha256": "57292a5bac79d01b7c55240e06cf6e4796f6efe63edc825d644232db9e124187"
+    },
+    {
+      "name": "networkinformation/qnetworklistmanager.dll",
+      "sha256": "e838e8a4349a35f99f1a7ff7fb15c89e2697a6a4be857fe06fde222c3c810fae"
+    },
+    {
+      "name": "platforms/qwindows.dll",
+      "sha256": "e8c633f1c5054ec2972ea5dd85062d1078a6b1011cbeb3dd1fb6ed954da78765"
+    },
+    {
+      "name": "position/qtposition_nmea.dll",
+      "sha256": "a22fa7649947254efa1dd633dbd2ea1aeb8e9740a13855c7e8c3a08a5d8955d5"
+    },
+    {
+      "name": "position/qtposition_positionpoll.dll",
+      "sha256": "53722d37e05654217f83ce0a192f1edade94776964dc90889f937fab578cdbaf"
+    },
+    {
+      "name": "position/qtposition_winrt.dll",
+      "sha256": "d1896ceb3c7c2ad507afbac1563972a2a8e6c3b55642deb8c0963d4fcf928f87"
+    },
+    {
+      "name": "qml/Qt/labs/folderlistmodel/qmlfolderlistmodelplugin.dll",
+      "sha256": "374e7e99361b3ac17c1569d6c7c29ec0e428ad634efcacf6e0979607ecedefd3"
+    },
+    {
+      "name": "qml/QtQml/qmlplugin.dll",
+      "sha256": "61afdc0e9874459ea15883c60a496612ec8266c119c89246e7c66700c7c25529"
+    },
+    {
+      "name": "qml/QtQml/Models/modelsplugin.dll",
+      "sha256": "71026407bd4e7639a23e1b9fd3f1efaa4683056fe53315a4efb31f987c7bcf69"
+    },
+    {
+      "name": "qml/QtQml/WorkerScript/workerscriptplugin.dll",
+      "sha256": "5f3714e5cd8d7c051bcada5188508a082a208bf41e73f2d046c5399dddf1d4cc"
+    },
+    {
+      "name": "qml/QtQuick/qtquick2plugin.dll",
+      "sha256": "aa1a29fc2ad7783785ffbc1e07ffe835ddc6111889f70fa2be5b69de38129d1b"
+    },
+    {
+      "name": "qml/QtQuick/Controls/qtquickcontrols2plugin.dll",
+      "sha256": "9508f455635c78bb61685bf318401c23853c2bd380c0ebec69374c6264e7a513"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Basic/qtquickcontrols2basicstyleplugin.dll",
+      "sha256": "9b4f2a843627c43fd61731dd03b5349961d76766af65e62e2b8b17130fbc5a13"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Basic/impl/qtquickcontrols2basicstyleimplplugin.dll",
+      "sha256": "cbb98ddc7bc3ce9d59edd7db12f2e2a3acbba98f1b527506d1ef7a569ee3abe5"
+    },
+    {
+      "name": "qml/QtQuick/Controls/FluentWinUI3/qtquickcontrols2fluentwinui3styleplugin.dll",
+      "sha256": "b03e92412b0695913b8ad5f0fef4fc1ff8605ee32ecedf5a3b62434bb5ecc18e"
+    },
+    {
+      "name": "qml/QtQuick/Controls/FluentWinUI3/impl/qtquickcontrols2fluentwinui3styleimplplugin.dll",
+      "sha256": "0a51825c2131b1ac6fe2686a21a43d2d46b2647f63b32854d721b23af5404acc"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Fusion/qtquickcontrols2fusionstyleplugin.dll",
+      "sha256": "6ee262091a6b9be6cebc51a6380eb2ed2271c36528985d6e525ed59b3d678e27"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Fusion/impl/qtquickcontrols2fusionstyleimplplugin.dll",
+      "sha256": "50a8b4706bec72636c56b3e192be21035fa060bfffe76071f75b5715e71050c4"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Imagine/qtquickcontrols2imaginestyleplugin.dll",
+      "sha256": "bc32efbbb4769b4878a896778f5f269d99db4a56fc151714e8493f2314ba991c"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Imagine/impl/qtquickcontrols2imaginestyleimplplugin.dll",
+      "sha256": "abf826e64f5938b33528eb92978f54225bb02a98667ef8ced021fd053e7bf773"
+    },
+    {
+      "name": "qml/QtQuick/Controls/impl/qtquickcontrols2implplugin.dll",
+      "sha256": "0d4114b0c77ae80ab6ae392b5b8d97632a2f1efe3b881c9eee3a72fcc56218d0"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Material/qtquickcontrols2materialstyleplugin.dll",
+      "sha256": "8d8bc18eabd6ffc67302ce24ae88746c9e1bea282ebe815103be2cb296f5fa66"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Material/impl/qtquickcontrols2materialstyleimplplugin.dll",
+      "sha256": "d1ec1e48287197a385559c79f96e9587947384eafd3fc3bb07d764870313150c"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Universal/qtquickcontrols2universalstyleplugin.dll",
+      "sha256": "3ce2fe1dd83b6299eda4a3afd2bbe87769f5c31faac3db6571c6e34091711ecb"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Universal/impl/qtquickcontrols2universalstyleimplplugin.dll",
+      "sha256": "957cf57a01d8cab7fb112dadb9f24e8d88f69a7190f87c7816bab46ccf0225c5"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Windows/qtquickcontrols2windowsstyleplugin.dll",
+      "sha256": "6e5753e22edd97246b49b6775f4f91bbbb7595954e5b7229abc9c0f7ba2e84ab"
+    },
+    {
+      "name": "qml/QtQuick/Controls/Windows/impl/qtquickcontrols2windowsstyleimplplugin.dll",
+      "sha256": "684bbdf2280200966cc09ebfc24ff70c22c706a69c967be090bd50c8c2bf1ef8"
+    },
+    {
+      "name": "qml/QtQuick/Dialogs/qtquickdialogsplugin.dll",
+      "sha256": "e391ea971fdde04bb508d2e6471bb4b594d683f54a82ce01a7712b21379639db"
+    },
+    {
+      "name": "qml/QtQuick/Dialogs/quickimpl/qtquickdialogs2quickimplplugin.dll",
+      "sha256": "fd8865f7b2afd0e9090891c2f64c532e20a0afedd3f1f5ea1bdf10b6b5f6766d"
+    },
+    {
+      "name": "qml/QtQuick/Effects/effectsplugin.dll",
+      "sha256": "d7ce1044afb2d309298241c6c6563dff6a0ef000573e0be95b02637a64f4b29e"
+    },
+    {
+      "name": "qml/QtQuick/Layouts/qquicklayoutsplugin.dll",
+      "sha256": "6d02cae5739cc2b5ea683b796fa9de3c969616ae9799558e2b2f51946381ca5f"
+    },
+    {
+      "name": "qml/QtQuick/NativeStyle/qtquickcontrols2nativestyleplugin.dll",
+      "sha256": "bf9289660ffaa3c7ebb06597fa991e609b43b498f08cd1ece6e222e42f5d6b78"
+    },
+    {
+      "name": "qml/QtQuick/Shapes/qmlshapesplugin.dll",
+      "sha256": "be2bfd4b0c0ed0338377e8a28043b9296d05c86ea2ff294fc7baf6a2cb382e1f"
+    },
+    {
+      "name": "qml/QtQuick/Templates/qtquicktemplates2plugin.dll",
+      "sha256": "5d495196187cd3fcfef1cd275dc7327282ad14462b9060016954350fb812a07f"
+    },
+    {
+      "name": "qml/QtQuick/Window/quickwindowplugin.dll",
+      "sha256": "630f0f5d266faf9afc1d47deebbb831ced43e22230962ff84ec45f06fe758eac"
+    },
+    {
+      "name": "qml/QtWebChannel/webchannelquickplugin.dll",
+      "sha256": "c7f6fe539114a1fa11e8bbf2cab0da0e87def71e5ff47491644f4b85828f3598"
+    },
+    {
+      "name": "qml/QtWebEngine/qtwebenginequickplugin.dll",
+      "sha256": "986216f7da4e08e3b2782008701d1f06dcf8f1cadf09e7352a39dd1f285e5675"
+    },
+    {
+      "name": "qml/QtWebEngine/ControlsDelegates/qtwebenginequickdelegatesplugin.dll",
+      "sha256": "5fa71fae838a6058bbe14400364b9d57bb898078fa1bb5c4cbcdb0dee63b791c"
+    },
+    {
+      "name": "qmltooling/qmldbg_debugger.dll",
+      "sha256": "7708f2224745ec600b0940622311b666daa33e44cc5f4218ce0a969032caf8f4"
+    },
+    {
+      "name": "qmltooling/qmldbg_inspector.dll",
+      "sha256": "e39cadd8915ae0d7e9d22091c49d9007c0a5bfe9fd86cbcc2381f1e6f3e578c7"
+    },
+    {
+      "name": "qmltooling/qmldbg_local.dll",
+      "sha256": "9a1a2437eb6f7941ce80c13d3ae36e0bead5520bbfdc3345dee755f5bf538415"
+    },
+    {
+      "name": "qmltooling/qmldbg_messages.dll",
+      "sha256": "ab2950ae3f04403cfbf08be0a2f1fe2c9b524b02be60ac729ed952a412cc42fd"
+    },
+    {
+      "name": "qmltooling/qmldbg_native.dll",
+      "sha256": "eb43c3a075d750e8781ae8d377525c134d663da6e96e7fb094f6c42b5870e316"
+    },
+    {
+      "name": "qmltooling/qmldbg_nativedebugger.dll",
+      "sha256": "2d0362611e79e659e076bc57b5f95a261cea5c0fe69286640d53435a3e002af8"
+    },
+    {
+      "name": "qmltooling/qmldbg_preview.dll",
+      "sha256": "e76ed6c9b68fc15b616a9c96a50645e5236c0ca99a280b1f450c4f4ef2d2532d"
+    },
+    {
+      "name": "qmltooling/qmldbg_profiler.dll",
+      "sha256": "9de1d97c88b3ec7d4e5dfb227c56fb649eef1e4b124ac44a63d154889d3a5046"
+    },
+    {
+      "name": "qmltooling/qmldbg_quickeventreplay.dll",
+      "sha256": "527f7f34169b370e70fde32df707d2b35238b82574f0c5b76ed67203a06cd193"
+    },
+    {
+      "name": "qmltooling/qmldbg_quickprofiler.dll",
+      "sha256": "a7a640a5d34312d25a26447b18a40598859cc6302cb6169117bef71f59318050"
+    },
+    {
+      "name": "qmltooling/qmldbg_server.dll",
+      "sha256": "cd1a085f64081f9d8999d62e998854f82261406705ea9983fc1642fefe6363d7"
+    },
+    {
+      "name": "qmltooling/qmldbg_tcp.dll",
+      "sha256": "0f2547f37b747ef2c82d7ce5bceb6356d41a46c3fb3529d0ae9ea4066ca1a251"
+    },
+    {
+      "name": "resources/icudtl.dat",
+      "sha256": "5070de99fbd8a48378543511fb7a072f85bf36f94b4f4e1d420d54be1435d6f1"
+    },
+    {
+      "name": "resources/qtwebengine_devtools_resources.pak",
+      "sha256": "d6c2acb3088f2d5b640ec60db13939a03ef63c79dd4898f614ae61743225f040"
+    },
+    {
+      "name": "resources/qtwebengine_resources_100p.pak",
+      "sha256": "bcb53a053fe3c3f9e00d80f7da01e2eb77777e993271425a79e5115735da1cdb"
+    },
+    {
+      "name": "resources/qtwebengine_resources_200p.pak",
+      "sha256": "aaef9ae44bf93ed1c7537cfba76b9a1a738a33e9f25ff5f466f23722ba971aa3"
+    },
+    {
+      "name": "resources/qtwebengine_resources.pak",
+      "sha256": "5453004e167e8bd62a204c6912b9d958ff55c41b8b37e87ea4b0fd0a7ecd315f"
+    },
+    {
+      "name": "styles/qmodernwindowsstyle.dll",
+      "sha256": "180d8c0b5cdce42ebaf26cd96f2582200784cde069dac487534e755eb6b581fb"
+    },
+    {
+      "name": "tls/qcertonlybackend.dll",
+      "sha256": "14f6c3dc09935b539371a2f88d05ac0c6cb06d64efbaa4db28ad8019cb3a1203"
+    },
+    {
+      "name": "tls/qschannelbackend.dll",
+      "sha256": "2460a9525f2673342f073e144affbecda505f34b9ddb130dd489496900944237"
+    },
+    {
+      "name": "translations/qtwebengine_locales/am.pak",
+      "sha256": "184f72b495d74df92f4f858cbb0fb517bbbf867bf3f8ac172bd0b8e03a587972"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ar.pak",
+      "sha256": "8725b98799a1c968933b3d63060a95616fe41ab22e3a34d10b1367bbfcacc696"
+    },
+    {
+      "name": "translations/qtwebengine_locales/bg.pak",
+      "sha256": "73a39a1f202e7c60d4f292c57fd13734494a1b392dae1a00449dae0fcb1a372f"
+    },
+    {
+      "name": "translations/qtwebengine_locales/bn.pak",
+      "sha256": "f91320ecc351ba3aa1d0fb10e136ffa862e0f35ac2bf4dd4fbb737412ffb9806"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ca.pak",
+      "sha256": "26fd11a11a6cd92917d222e3d351880b908405b829436c09e38e7d628c917320"
+    },
+    {
+      "name": "translations/qtwebengine_locales/cs.pak",
+      "sha256": "1c4a7e8251163df42f375e872222358eb2f234931c181ba15fa85808d47d7748"
+    },
+    {
+      "name": "translations/qtwebengine_locales/da.pak",
+      "sha256": "92d70096a932938f02e33830b89d03c47c8997206644777fd04ae06042d83564"
+    },
+    {
+      "name": "translations/qtwebengine_locales/de.pak",
+      "sha256": "872edc6953fec0262a217e92a5039265277d6ca512bab6e976fb56e9bd62f103"
+    },
+    {
+      "name": "translations/qtwebengine_locales/el.pak",
+      "sha256": "9809de72d271004b7c27864a8260eecb91b4db02e033f4a0b3956cad01dc5601"
+    },
+    {
+      "name": "translations/qtwebengine_locales/en-GB.pak",
+      "sha256": "c18704eaf8f1df17da3dc48ca7f22e11aa148bdeea0ae204fe074830310f4533"
+    },
+    {
+      "name": "translations/qtwebengine_locales/en-US.pak",
+      "sha256": "3d3967a20a78e66e73bd5293f431e8cd2f08a3275594d9e8aaa998e4b42e6e13"
+    },
+    {
+      "name": "translations/qtwebengine_locales/es-419.pak",
+      "sha256": "9613f4d3af9c6873c0f03dfbe17da9038b2d760d22d6374739575cadc4e10f71"
+    },
+    {
+      "name": "translations/qtwebengine_locales/es.pak",
+      "sha256": "28693e9046d161798c16f38d00412dbc6e920b286144034e33ca5cb38e2c6373"
+    },
+    {
+      "name": "translations/qtwebengine_locales/et.pak",
+      "sha256": "53e432ef1b5d5dc4f61628c615f064de8e58489d4d9a52d4a93abacc6164d425"
+    },
+    {
+      "name": "translations/qtwebengine_locales/fa.pak",
+      "sha256": "21010191890299e111805889fde5fb106978001d5d7c09c75c4530c802590d1e"
+    },
+    {
+      "name": "translations/qtwebengine_locales/fi.pak",
+      "sha256": "d58a0fee5faefd597b66d3983a75e55d175793547d6902a3ca9b0d56696c2da9"
+    },
+    {
+      "name": "translations/qtwebengine_locales/fil.pak",
+      "sha256": "53bc1eaa56ee5549333c097a298bd8b615b1ebcf3882191684d360dd635d913a"
+    },
+    {
+      "name": "translations/qtwebengine_locales/fr.pak",
+      "sha256": "e633981741824f1c43039ecfb42f7000972d70a79f2c432f4a77622577b4bc09"
+    },
+    {
+      "name": "translations/qtwebengine_locales/gu.pak",
+      "sha256": "a2c34e741d668726e74ff2ace2f0ff44b3a94d895abd832374c3cbfc51a7b609"
+    },
+    {
+      "name": "translations/qtwebengine_locales/he.pak",
+      "sha256": "d459d295f5e64546f19a104f6915fba446cd847ca98c86cfab435338caf5b1dc"
+    },
+    {
+      "name": "translations/qtwebengine_locales/hi.pak",
+      "sha256": "78d5c63426886dc52fda08dfadcd7e825ace82b8ec7d78f911494566c2cfd9d8"
+    },
+    {
+      "name": "translations/qtwebengine_locales/hr.pak",
+      "sha256": "ca909a2647981132ae87e8b0fcf45b65354404bbe2bc38f92424b627c4f6fa61"
+    },
+    {
+      "name": "translations/qtwebengine_locales/hu.pak",
+      "sha256": "a5c366b059561ff6a8c521132cd59a136a8ae50bf75570b855d89ed842ae3697"
+    },
+    {
+      "name": "translations/qtwebengine_locales/id.pak",
+      "sha256": "2a7f8356af73aefdb7461338bf98fc1a8dee7a7059703eb7b4f457fea0eb4b7f"
+    },
+    {
+      "name": "translations/qtwebengine_locales/it.pak",
+      "sha256": "645c3b01be73d58ab34afbf68b66221248ed50d77b9d9ed61eb841754adbe6e1"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ja.pak",
+      "sha256": "f68505a43b310cac8b95721723db464bd4a0524afe0549395a474160e863d8fc"
+    },
+    {
+      "name": "translations/qtwebengine_locales/kn.pak",
+      "sha256": "716adacf77f0d7c2eacf5ad1c971fe004feb852753d71c0cbf0748b5f1c82233"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ko.pak",
+      "sha256": "58d56e049e0f9e2c0e02d6a84b8834a64c8a4f65c9a1a8d720fed74fe07f730e"
+    },
+    {
+      "name": "translations/qtwebengine_locales/lt.pak",
+      "sha256": "d5251254082418b26b55613339c3f9d4f92166ba22c293abc0b01bc0f18d8555"
+    },
+    {
+      "name": "translations/qtwebengine_locales/lv.pak",
+      "sha256": "1a56d72198413c2b4df0418807720b58b8d31c950301f031162b59f75ee0711c"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ml.pak",
+      "sha256": "29918bf885f19432624cde4f61b0dce2e6d047b3bb7d2917eca736f75735f128"
+    },
+    {
+      "name": "translations/qtwebengine_locales/mr.pak",
+      "sha256": "9cddcd496e7f2e1eacfb127224c2c01883bc483ee72af1b0248e5f3bf30e8c0d"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ms.pak",
+      "sha256": "9302e6573733f5ff9728675af5c50ecf4f827d35a5e2eb63be3b29997815951d"
+    },
+    {
+      "name": "translations/qtwebengine_locales/nb.pak",
+      "sha256": "3bdde7088253489753d02e7c8cf337a932fdc44966a8cff472ad972f2c999481"
+    },
+    {
+      "name": "translations/qtwebengine_locales/nl.pak",
+      "sha256": "a1ae587a1aada3f6290e5f3fd29bba3d60e34822caf2fa0da6f5729805534b70"
+    },
+    {
+      "name": "translations/qtwebengine_locales/pl.pak",
+      "sha256": "8175543bedddd66dad58a9a76f6d23c19477e0961460449728fae9a88b74b842"
+    },
+    {
+      "name": "translations/qtwebengine_locales/pt-BR.pak",
+      "sha256": "e75a416c1f45a666190e59f2386f111f92701bdb8b3bf6e909043a0e997922cc"
+    },
+    {
+      "name": "translations/qtwebengine_locales/pt-PT.pak",
+      "sha256": "163e456ad62268fb6ec15b36733bf8358320b01dc25f221b4115bf84bdf19cb2"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ro.pak",
+      "sha256": "5b0dbe3614e023397f23e5c4b7e3d351a5d2ad0b8ac720737f48987ae9b1cab9"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ru.pak",
+      "sha256": "7b122d991c8c31851413ce6483a2cc8c11fa735e00e37821c9e3106e633de248"
+    },
+    {
+      "name": "translations/qtwebengine_locales/sk.pak",
+      "sha256": "ba527d29ee5e0038c3a0826f5c5bcdae39cbc00a6901fdbbfeaee0067558da7d"
+    },
+    {
+      "name": "translations/qtwebengine_locales/sl.pak",
+      "sha256": "2f0814635430cb33ec82e2b8f6fbb3b7c2aff72592860c8817884f0b5642875b"
+    },
+    {
+      "name": "translations/qtwebengine_locales/sr.pak",
+      "sha256": "0b8b6edd534654395d05569881c7084ad4b911d6503beee5357fcdf20fb01854"
+    },
+    {
+      "name": "translations/qtwebengine_locales/sv.pak",
+      "sha256": "63a4d3aea4cb62bbb9372a324124720c90310a3080ba1702c3c08e8bd702de0e"
+    },
+    {
+      "name": "translations/qtwebengine_locales/sw.pak",
+      "sha256": "8d98ffbe07b8efa1a6c3cfc90dbe1b75bf63c7fb71733589578adb1713b94cb2"
+    },
+    {
+      "name": "translations/qtwebengine_locales/ta.pak",
+      "sha256": "a491df19393803b8ff224965a3601e75f312150b44cab6aa644fd1a7ece4f7ab"
+    },
+    {
+      "name": "translations/qtwebengine_locales/te.pak",
+      "sha256": "cbbd8563907f741e8e140fee9a7c494db1d36bc6ad79a91f661814500454aedf"
+    },
+    {
+      "name": "translations/qtwebengine_locales/th.pak",
+      "sha256": "75b195a3c5d714dad5a5807636fcdf58cad4d7c3d03c149336ea0807c7fa2a65"
+    },
+    {
+      "name": "translations/qtwebengine_locales/tr.pak",
+      "sha256": "61f76e388dc7996e106e8d15f5b8bb2b0049a74bf1922fda858419e65288cc76"
+    },
+    {
+      "name": "translations/qtwebengine_locales/uk.pak",
+      "sha256": "513c91325d292d2412d629f1454b319dbfe25bc093387f55b706c1c6fe30a44a"
+    },
+    {
+      "name": "translations/qtwebengine_locales/vi.pak",
+      "sha256": "0ac5f5ac74fefe8f3b2dee431cabd9a27d8f359e7b8949ed18ba29692e02e0dd"
+    },
+    {
+      "name": "translations/qtwebengine_locales/zh-CN.pak",
+      "sha256": "10263179b8a0a6730945120098b48c817aae66e40d1973eec1f4d85c069efcc6"
+    },
+    {
+      "name": "translations/qtwebengine_locales/zh-TW.pak",
+      "sha256": "3b9d21dd8324c4fcc123974cb9c821d9e0b20e6ce694c2d1a3505679b36ebaee"
+    }
+  ],
+  "sources": [
+    {
+      "name": "CMakeLists.txt",
+      "sha256": "e6ac25285512963bcc661406cb539470362d63522da710dce5d3fb0414f18c41"
+    },
+    {
+      "name": "main.cpp",
+      "sha256": "b9636dc6ac16b848e5122fb04d353b9aae11a7722075b40ae417da0eb766e856"
+    },
+    {
+      "name": "control.qml",
+      "sha256": "45b0d19e789de54161f499dd073e596f66d8d4267070b5f262ebd9e8b9b76f27"
+    },
+    {
+      "name": "control.qrc",
+      "sha256": "d9cd92e56151b5d7e06013e83411b5d6dead14195cfe50abb1d9d75e800ea86a"
+    },
+    {
+      "name": "prior-investigations.json",
+      "sha256": "0dc1a95cc9112e1344f0ddf8d12910c74f21102ee9c026551cd79e8c84725c52"
+    },
+    {
+      "name": "build-control.ps1",
+      "sha256": "aa7478835c73cfeb859fbeed5b840993ec1750f41343b891574581f3688301c3"
+    },
+    {
+      "name": "control-driver.mjs",
+      "sha256": "6d977b4d99b4f88feb54bc02f4659c7f49ddfb5e1f960f21ed8fe9d66bde7896"
+    },
+    {
+      "name": "run-control.ps1",
+      "sha256": "161612df1e727b9615b9ba09172f73d65e2c6e3646abcd246f0c8757d783ed04"
+    },
+    {
+      "name": "verify-workload.mjs",
+      "sha256": "2cca17ba23c0352df2ef4f8954023686ca35a42be456e6f5be2bb07622e955a6"
+    },
+    {
+      "name": "verify-argv.ps1",
+      "sha256": "bd3e8a6871c73b6c94ad95c60695257a0988aecc2311f6e72d086f6721769a86"
+    },
+    {
+      "name": "protocol.json",
+      "sha256": "d0a7e8eb6ec862f10b1c496a0b27d4f2a81b06d70bb31798f3ed74559a1633cf"
+    },
+    {
+      "name": "workload-digest.json",
+      "sha256": "4ecb938a7046b665917d64d1b0fd09662c4947cc35803591bcede3f34512160d"
+    }
+  ]
+}

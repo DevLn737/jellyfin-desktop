@@ -22,6 +22,8 @@ add_subdirectory(system)
 add_subdirectory(settings)
 add_subdirectory(power)
 add_subdirectory(taskbar)
+add_subdirectory(discord)
+add_subdirectory(diagnostics)
 
 get_property(ALL_SRCS GLOBAL PROPERTY SRCS_LIST)
 set(MAIN_SRCS main.cpp)
@@ -65,7 +67,7 @@ add_custom_command(OUTPUT resources.qrc
 )
 set_source_files_properties(resources.qrc PROPERTIES GENERATED TRUE)
 add_custom_command(OUTPUT qrc_resources.cpp
-  COMMAND ${Qt5Core_RCC_EXECUTABLE} -name resources -o qrc_resources.cpp resources.qrc
+  COMMAND Qt6::rcc -name resources -o qrc_resources.cpp resources.qrc
   DEPENDS resources.qrc ${CMAKE_SOURCE_DIR}/src/ui/webview.qml ${RESOURCE_FILES}
 )
 set_source_files_properties(qrc_resources.cpp PROPERTIES GENERATED TRUE)
@@ -128,7 +130,19 @@ endif()
 
 get_property(BUNDLED_FILES GLOBAL PROPERTY CONFIG_BUNDLED_FILES)
 add_executable(${MAIN_TARGET} WIN32 MACOSX_BUNDLE ${SOURCES} ${BUNDLED_FILES} ${RESOURCE_FILES} ${XCODE_RESOURCES})
+include(DiscordCompileOptions)
+if(WIN32)
+  configure_discord_sources(discord/DiscordActivity.cpp discord/DiscordIpc.cpp discord/DiscordComponent.cpp)
+endif()
 std_target_properties(${MAIN_TARGET})
+if(MSVC)
+  target_compile_options(${MAIN_TARGET} PRIVATE /utf-8)
+endif()
+if(JMP_DIAGNOSTIC)
+  target_link_libraries(${MAIN_TARGET} PRIVATE Tracy::TracyClient)
+endif()
+target_compile_definitions(${MAIN_TARGET} PRIVATE JMP_BUILD_COMMIT="${JMP_BUILD_COMMIT}")
+target_compile_definitions(${MAIN_TARGET} PRIVATE JMP_MPV_VERSION="${JMP_MPV_VERSION}")
 set_target_properties(${MAIN_TARGET} PROPERTIES
   MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/bundle/osx/Info.plist.in
   INSTALL_RPATH "${QTROOT}/lib"
@@ -164,10 +178,11 @@ else()
 endif()
 
 target_link_libraries(${MAIN_TARGET}
+  PRIVATE
   shared
   ${MPV_LIBRARY}
   ${OPENGL_LIBS}
-  ${QT5_LIBRARIES}
+  ${QT6_LIBRARIES}
   ${OS_LIBS}
   ${EXTRA_LIBS}
   ${X11_LIBRARIES}

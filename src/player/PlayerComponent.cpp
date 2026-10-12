@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QRegularExpression>
 #include "display/DisplayComponent.h"
 #include "settings/SettingsComponent.h"
 #include "system/SystemComponent.h"
@@ -14,6 +15,9 @@
 #include "settings/SettingsSection.h"
 
 #include "PlayerQuickItem.h"
+#include "PlaybackValues.h"
+#include "diagnostics/DiagnosticsScope.h"
+#include "profiling/Trace.h"
 #include "input/InputComponent.h"
 
 #include <math.h>
@@ -23,6 +27,15 @@
 #if !defined(Q_OS_WIN)
 #include <unistd.h>
 #endif
+
+namespace {
+constexpr uint64_t DiagnosticObservationBase = 0xD100;
+const char* const DiagnosticProperties[] = {
+  "speed", "avsync", "decoder-frame-drop-count", "frame-drop-count",
+  "demuxer-cache-duration", "estimated-vf-fps", "display-fps", "video-bitrate", "audio-bitrate"
+};
+constexpr int DiagnosticPropertyCount = sizeof(DiagnosticProperties) / sizeof(DiagnosticProperties[0]);
+}
 
 #if !defined(Q_OS_WIN)
 #include <unistd.h>
@@ -91,6 +104,13 @@ bool PlayerComponent::componentInitialize()
   // hardcoded properties below.
   mpv::qt::set_property(m_mpv, "config", "yes");
   mpv::qt::set_property(m_mpv, "config-dir", Paths::dataDir());
+
+  // libmpv otherwise queues frames early and waits up to 50 ms inside render().
+  // That stalls Qt Quick's shared video/Web UI render thread. Ask mpv to notify
+  // us at presentation time instead, retaining audio/video synchronization
+  // without sleeping in the scenegraph callback (see mpv/render.h).
+  if (mpv_set_option_string(m_mpv, "video-timing-offset", "0") < 0)
+    throw FatalException(tr("Failed to configure native video timing."));
 
   mpv_set_wakeup_callback(m_mpv, wakeup_cb, this);
 
@@ -195,6 +215,7 @@ bool PlayerComponent::componentInitialize()
   mpv_observe_property(m_mpv, 0, "audio-device-list", MPV_FORMAT_NODE);
   mpv_observe_property(m_mpv, 0, "video-dec-params", MPV_FORMAT_NODE);
   mpv_observe_property(m_mpv, 0, "track-list", MPV_FORMAT_NODE);
+  mpv_observe_property(m_mpv, 0, "vid", MPV_FORMAT_INT64);
 
   // Setup a hook with the ID 1, which is run during the file is loaded.
   // Used to delay playback start for display framerate switching.
@@ -268,7 +289,28 @@ void PlayerComponent::setQtQuickWindow(QQuickWindow* window)
   if (!video)
     throw FatalException(tr("Failed to load video element."));
 
+  // The renderer's direct signal may run on the scenegraph thread. This
+  // callback writes atomics only, before free causes a vid=no property event.
+  connect(video, &PlayerQuickItem::renderContextInvalidated, this,
+          [this] { m_videoTrackRestore.contextLost(); }, Qt::DirectConnection);
+  connect(video, &PlayerQuickItem::renderContextRecreated, this,
+          &PlayerComponent::onRenderContextRecreated, Qt::UniqueConnection);
   video->initMpv(this);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+void PlayerComponent::onRenderContextRecreated()
+{
+  JMP_PROFILE_ZONE("Player restore video track");
+  // Drain changes from context loss/file transitions through the same consumer
+  // before deciding whether this file still owns the saved selection.
+  handleMpvEvents();
+  const auto track = m_videoTrackRestore.takeRestoreTrack();
+  if (m_inPlayback && track > 0)
+  {
+    if (mpv::qt::set_property(m_mpv, "vid", qint64(track)) < 0)
+      qWarning() << "Failed to restore video track after render context recreation";
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,22 +340,31 @@ void PlayerComponent::setWindow(QQuickWindow* window)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 bool PlayerComponent::load(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream , const QString& subtitleStream)
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Load);
+  JMP_PROFILE_ZONE("Player load");
   stop();
-  queueMedia(url, options, metadata, audioStream, subtitleStream);
-  return true;
+  return queueMedia(url, options, metadata, audioStream, subtitleStream);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream)
+bool PlayerComponent::queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream)
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Queue);
+  JMP_PROFILE_ZONE("Player queue");
   InputComponent::Get().cancelAutoRepeat();
 
-  m_mediaFrameRate = metadata["frameRate"].toFloat(); // returns 0 on failure
-  m_serverMediaInfo = metadata["media"].toMap();
-
-  updateVideoConfiguration();
-
   QUrl qurl = url;
+  if (qurl.isEmpty() || !qurl.isValid()) return false;
+  quint64 nativeRequestId = 0;
+  if (options.contains("nativeRequestId"))
+  {
+    const auto value = options.value("nativeRequestId");
+    if (value.typeId() != QMetaType::Double && value.typeId() != QMetaType::Int &&
+        value.typeId() != QMetaType::LongLong && value.typeId() != QMetaType::ULongLong) return false;
+    const double request = value.toDouble();
+    if (!PlaybackValues::isNativeRequestId(request)) return false;
+    nativeRequestId = static_cast<quint64>(request);
+  }
   QString host = qurl.host();
 
   QVariantList command;
@@ -326,19 +377,29 @@ void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
 
   QVariantMap extraArgs;
 
-  quint64 startMilliseconds = options["startMilliseconds"].toLongLong();
-  if (startMilliseconds != 0)
-    extraArgs.insert("start", "+" + QString::number(startMilliseconds / 1000.0));
+  const qint64 startMilliseconds = qMax<qint64>(0, options["startMilliseconds"].toLongLong());
+  const auto preserveOption = options.value("preserveTimestamps");
+  const bool preserveTimestamps = preserveOption.typeId() == QMetaType::Bool && preserveOption.toBool();
+  const bool music = metadata["type"] == "music";
+  if (preserveTimestamps)
+  {
+    extraArgs.insert("rebase-start-time", music ? "yes" : "no");
+    if (music)
+      // Back up the per-file option now; the preloaded hook maps the original
+      // start once the real demuxer start PTS is known.
+      extraArgs.insert("start", "0");
+  }
+  if (startMilliseconds != 0 && !(preserveTimestamps && music))
+    // With preserved timestamps '+' adds the demuxer start offset again.
+    // Bare time is absolute media PTS; ordinary files keep the relative syntax.
+    extraArgs.insert("start", (preserveTimestamps ? "" : "+") +
+      QString::number(startMilliseconds / 1000.0, 'f', 3));
 
   // we're going to select these streams later, in the preloaded hook
   extraArgs.insert("aid", "no");
   extraArgs.insert("sid", "no");
 
-  m_currentSubtitleStream = subtitleStream;
-  m_currentAudioStream = audioStream;
-  m_pendingExternalAudioStream.clear();
-
-  if (metadata["type"] == "music")
+  if (music)
     extraArgs.insert("vid", "no");
 
   extraArgs.insert("pause", options["autoplay"].toBool() ? "no" : "yes");
@@ -353,9 +414,19 @@ void PlayerComponent::queueMedia(const QString& url, const QVariantMap& options,
 
   command << extraArgs;
 
-  mpv::qt::command(m_mpv, command);
-
-  emit onMetaData(metadata["metadata"].toMap(), qurl.adjusted(QUrl::RemovePath | QUrl::RemoveQuery));
+  const auto loadResult = mpv::qt::command(m_mpv, command);
+  if (mpv::qt::get_error(loadResult) >= 0)
+  {
+    const auto playlist = mpv::qt::get_property(m_mpv, "playlist").toList();
+    const qint64 playlistId = playlist.isEmpty() ? -1 : playlist.last().toMap().value("id", -1).toLongLong();
+    m_presenceQueue.enqueue({metadata["metadata"].toMap(),
+      qurl.adjusted(QUrl::RemoveUserInfo | QUrl::RemoveQuery | QUrl::RemoveFragment),
+      startMilliseconds, playlistId, audioStream, subtitleStream,
+      metadata["frameRate"].toFloat(), metadata["media"].toMap(), nativeRequestId,
+      preserveTimestamps, music});
+    return true;
+  }
+  return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -509,6 +580,48 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
     case MPV_EVENT_START_FILE:
     {
       m_inPlayback = true;
+      m_playbackTimeline.reset();
+      m_lastPositionUpdate = -1;
+      m_videoTrackRestore.nextFile();
+      m_diagnosticMetrics.clear();
+      const auto pendingAudio = m_externalAudioRequest.nextFile();
+      if (pendingAudio) mpv_abort_async_command(m_mpv, pendingAudio);
+      m_pendingExternalAudioStream.clear();
+      // Publish only when this file starts, after the previous file's END_FILE.
+      // Enqueuing the next episode must not replace the current presence early.
+      int presenceIndex = m_presenceQueue.isEmpty() ? -1 : 0;
+#if MPV_CLIENT_API_VERSION >= MPV_MAKE_VERSION(1, 108)
+      // A rapid stop/load may leave a START_FILE event for the old file queued.
+      // Match mpv's stable ID so that event cannot consume the new movie's metadata.
+      presenceIndex = -1;
+      const auto startFile = static_cast<mpv_event_start_file*>(event->data);
+      if (startFile)
+        for (int i = 0; i < m_presenceQueue.size(); ++i)
+          if (m_presenceQueue.at(i).playlistId == startFile->playlist_entry_id)
+          {
+            presenceIndex = i;
+            break;
+          }
+#endif
+      if (presenceIndex >= 0)
+      {
+        const auto media = m_presenceQueue.takeAt(presenceIndex);
+        m_readiness.startFile(true, media.nativeRequestId);
+        m_playbackTimeline.startFile(media.preserveTimestamps, media.music, media.startMs);
+        // Queueing the next episode must not replace the active file's track
+        // selection or codec/refresh-rate metadata before its START_FILE.
+        m_currentAudioStream = media.audioStream;
+        m_currentSubtitleStream = media.subtitleStream;
+        m_pendingExternalAudioStream.clear();
+        m_mediaFrameRate = media.frameRate;
+        m_serverMediaInfo = media.serverMediaInfo;
+        updateVideoConfiguration();
+        emit presenceMediaChanged(media.item, media.url, media.startMs);
+        emit onMetaData(media.item, media.url.adjusted(
+          QUrl::RemovePath | QUrl::RemoveQuery | QUrl::RemoveUserInfo | QUrl::RemoveFragment));
+      }
+      else
+        m_readiness.startFile(false, 0); // stale or unrelated START_FILE cannot resolve a request
       break;
     }
     case MPV_EVENT_END_FILE:
@@ -516,6 +629,9 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       mpv_event_end_file *endFile = (mpv_event_end_file *)event->data;
 
       m_inPlayback = false;
+      m_readiness.invalidate();
+      m_playbackTimeline.reset();
+      m_videoTrackRestore.nextFile();
       m_playbackCanceled = false;
       m_playbackError = "";
 
@@ -545,6 +661,17 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
     case MPV_EVENT_PROPERTY_CHANGE:
     {
       mpv_event_property *prop = (mpv_event_property *)event->data;
+      if (event->reply_userdata >= DiagnosticObservationBase &&
+          event->reply_userdata < DiagnosticObservationBase + DiagnosticPropertyCount)
+      {
+        if (!m_diagnosticObservationEnabled) break; // Ignore queued replies after capture stop.
+        const auto key = QString::fromLatin1(DiagnosticProperties[event->reply_userdata - DiagnosticObservationBase]);
+        if (prop->format == MPV_FORMAT_DOUBLE && prop->data && std::isfinite(*(double*)prop->data))
+          m_diagnosticMetrics.insert(key, *(double*)prop->data);
+        else
+          m_diagnosticMetrics.remove(key);
+        break;
+      }
       if (strcmp(prop->name, "pause") == 0 && prop->format == MPV_FORMAT_FLAG)
       {
         m_paused = !!*(int *)prop->data;
@@ -559,12 +686,14 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       }
       else if (strcmp(prop->name, "playback-time") == 0 && prop->format == MPV_FORMAT_DOUBLE)
       {
-        double pos = *(double*)prop->data;
-        if (fabs(pos - m_lastPositionUpdate) > 0.015)
+        std::int64_t mappedMs = 0;
+        if (m_playbackTimeline.positionMilliseconds(*(double*)prop->data, mappedMs) &&
+            fabs(mappedMs / 1000.0 - m_lastPositionUpdate) > 0.015)
         {
-          quint64 ms = (quint64)(qMax(pos * 1000.0, 0.0));
+          const quint64 ms = static_cast<quint64>(mappedMs);
+          m_diagnosticMetrics.insert("positionMs", QVariant::fromValue(ms));
           emit positionUpdate(ms);
-          m_lastPositionUpdate = pos;
+          m_lastPositionUpdate = mappedMs / 1000.0;
         }
       }
       else if (strcmp(prop->name, "vo-configured") == 0)
@@ -576,7 +705,14 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       else if (strcmp(prop->name, "duration") == 0)
       {
         if (prop->format == MPV_FORMAT_DOUBLE)
-          emit updateDuration(*(double *)prop->data * 1000.0);
+        {
+          std::int64_t durationMs = 0;
+          if (m_playbackTimeline.durationMilliseconds(*(double *)prop->data, durationMs))
+          {
+            m_diagnosticMetrics.insert("durationMs", QVariant::fromValue(qint64(durationMs)));
+            emit updateDuration(durationMs);
+          }
+        }
       }
       else if (strcmp(prop->name, "audio-device-list") == 0)
       {
@@ -593,8 +729,32 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
         // External audio is added asynchronously. Re-apply the requested
         // selection once mpv publishes the new track, and clean up a late
         // track if the user switched back to embedded audio while it loaded.
-        reselectStream(m_currentAudioStream, MediaType::Audio);
+        if (m_inPlayback)
+          reselectStream(m_currentAudioStream, MediaType::Audio);
       }
+      else if (strcmp(prop->name, "vid") == 0)
+      {
+        const auto track = prop->format == MPV_FORMAT_INT64 && prop->data
+          ? *(int64_t*)prop->data : 0;
+        if (m_inPlayback) m_videoTrackRestore.selection(track);
+      }
+      break;
+    }
+    case MPV_EVENT_SEEK:
+      m_readiness.seekEvent();
+      break;
+    case MPV_EVENT_PLAYBACK_RESTART:
+      m_readiness.restartEvent();
+      break;
+    case MPV_EVENT_COMMAND_REPLY:
+    {
+      if (!m_externalAudioRequest.complete(event->reply_userdata))
+        break;
+      m_pendingExternalAudioStream.clear();
+      if (event->error < 0)
+        qWarning() << "Failed to add external audio stream" << mpv_error_string(event->error);
+      else if (m_inPlayback)
+        reselectStream(m_currentAudioStream, MediaType::Audio);
       break;
     }
     case MPV_EVENT_LOG_MESSAGE:
@@ -654,7 +814,11 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       // Used initialize stream selections and to probe codecs.
       if (!strcmp(msg->args[1], "2"))
       {
-        m_pendingExternalAudioStream.clear();
+        if (!preparePlaybackTimeline())
+        {
+          mpv::qt::command(m_mpv, QStringList() << "hook-ack" << resumeId);
+          break;
+        }
         reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
         reselectStream(m_currentAudioStream, MediaType::Audio);
         startCodecsLoading([=] {
@@ -698,7 +862,11 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       }
       if (!strcmp(hook->name, "on_preloaded"))
       {
-        m_pendingExternalAudioStream.clear();
+        if (!preparePlaybackTimeline())
+        {
+          mpv_hook_continue(m_mpv, id);
+          break;
+        }
         reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
         reselectStream(m_currentAudioStream, MediaType::Audio);
         startCodecsLoading([=] {
@@ -717,6 +885,8 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::handleMpvEvents()
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::MpvEvents);
+  JMP_PROFILE_ZONE("Player mpv events");
   // Process all events, until the event queue is empty.
   while (1)
   {
@@ -727,6 +897,19 @@ void PlayerComponent::handleMpvEvents()
   }
   // Once we got all status updates, determine the new canonical state.
   updatePlaybackState();
+  // Events may contain restart, seek and end in the same drain. Publish only
+  // after their final state is known, using a fresh position rather than the
+  // preceding timeupdate cache. A paused player need not transition to playing.
+  if (const auto request = m_readiness.takeSeeking()) emit seekStarted(*request);
+  if (m_readiness.readyPending())
+  {
+    qint64 positionMs = 0;
+    const bool positionAvailable = currentPosition(positionMs);
+    const auto seeking = mpv::qt::get_property(m_mpv, "seeking");
+    const bool seekComplete = seeking.typeId() == QMetaType::Bool && !seeking.toBool();
+    if (const auto request = m_readiness.takeReady(positionAvailable, positionMs, seekComplete, m_paused))
+      emit playbackReady(*request, positionMs, m_paused);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -740,9 +923,18 @@ void PlayerComponent::setVideoOnlyMode(bool enable)
   }
 }
 
+void PlayerComponent::videoUiReady()
+{
+  // Ignore delayed WebChannel calls once native playback has stopped.
+  if (m_windowVisible && m_playbackActive && m_inPlayback)
+    emit videoUiBackgroundReady();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::play()
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Play);
+  JMP_PROFILE_ZONE("Player play");
   QStringList args = (QStringList() << "set" << "pause" << "no");
   mpv::qt::command(m_mpv, args);
 }
@@ -750,6 +942,20 @@ void PlayerComponent::play()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::stop()
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Stop);
+  JMP_PROFILE_ZONE("Player stop");
+  m_presenceQueue.clear();
+  m_readiness.invalidate();
+  m_playbackTimeline.reset();
+  m_videoTrackRestore.nextFile();
+  m_diagnosticMetrics.clear();
+  const auto pendingAudio = m_externalAudioRequest.nextFile();
+  if (pendingAudio) mpv_abort_async_command(m_mpv, pendingAudio);
+  m_currentAudioStream.clear();
+  m_currentSubtitleStream.clear();
+  m_pendingExternalAudioStream.clear();
+  m_inPlayback = false;
+  emit presenceStopped();
   QStringList args("stop");
   mpv::qt::command(m_mpv, args);
 }
@@ -757,6 +963,19 @@ void PlayerComponent::stop()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::clearQueue()
 {
+  // playlist_clear excludes the current item even if START_FILE is still
+  // queued for GUI delivery. Preserve that item's metadata/request identity.
+  QQueue<PresenceMedia> currentMetadata;
+  const auto playlist = mpv::qt::get_property(m_mpv, "playlist").toList();
+  for (const auto& entry : playlist)
+  {
+    const auto item = entry.toMap();
+    if (!item.value("current").toBool()) continue;
+    const qint64 id = item.value("id", -1).toLongLong();
+    for (const auto& media : m_presenceQueue)
+      if (media.playlistId == id) currentMetadata.enqueue(media);
+  }
+  m_presenceQueue = currentMetadata;
   QStringList args("playlist_clear");
   mpv::qt::command(m_mpv, args);
 }
@@ -764,6 +983,8 @@ void PlayerComponent::clearQueue()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::pause()
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Pause);
+  JMP_PROFILE_ZONE("Player pause");
   QStringList args = (QStringList() << "set" << "pause" << "yes");
   mpv::qt::command(m_mpv, args);
 }
@@ -771,9 +992,34 @@ void PlayerComponent::pause()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::seekTo(qint64 ms)
 {
-  double timeSecs = ms / 1000.0;
-  QVariantList args = (QVariantList() << "seek" << timeSecs << "absolute+exact");
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Seek);
+  JMP_PROFILE_ZONE("Player seek");
+  if (ms < 0)
+    return;
+  const auto timeSecs = m_playbackTimeline.seekSeconds(ms);
+  if (!timeSecs) return;
+  m_readiness.beginSeek(0, ms);
+  QVariantList args = (QVariantList() << "seek" << *timeSecs << "absolute+exact");
   mpv::qt::command(m_mpv, args);
+}
+
+bool PlayerComponent::seekToForReady(qint64 ms, double nativeRequestId)
+{
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Seek);
+  JMP_PROFILE_ZONE("Player seek with readiness");
+  if (ms < 0 || !PlaybackValues::isNativeRequestId(nativeRequestId)) return false;
+  const auto seconds = m_playbackTimeline.seekSeconds(ms);
+  if (!seconds) return false;
+  const auto request = static_cast<quint64>(nativeRequestId);
+  if (!m_readiness.beginSeek(request, ms)) return false;
+  const auto result = mpv::qt::command(m_mpv,
+    QVariantList() << "seek" << *seconds << "absolute+exact");
+  if (mpv::qt::get_error(result) < 0)
+  {
+    m_readiness.failedRequest(request);
+    return false;
+  }
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -884,7 +1130,11 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
   if (target == MediaType::Audio)
   {
     if (m_pendingExternalAudioStream != streamName)
+    {
+      const auto pendingAudio = m_externalAudioRequest.cancel();
+      if (pendingAudio) mpv_abort_async_command(m_mpv, pendingAudio);
       m_pendingExternalAudioStream.clear();
+    }
 
     QStringList staleExternalAudioStreamIds;
     auto tracks = mpv::qt::get_property(m_mpv, "track-list");
@@ -932,16 +1182,18 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
         if (m_pendingExternalAudioStream == streamName)
           return;
 
-        // Loading an external audio stream is asynchronous. Let mpv select the
-        // stream when it becomes available instead of immediately falling back
-        // to aid=1 and leaving the external demuxer running in the background.
+        // HTTP audio loading must not block the GUI. Do not auto-select a late
+        // completion after the user has changed tracks: select from track-list
+        // only while this URL is still the active file's requested stream.
         m_pendingExternalAudioStream = streamName;
-        args << "select";
-        qInfo() << "adding and selecting external audio stream";
-        auto result = mpv::qt::command(m_mpv, args);
-        auto error = mpv::qt::get_error(result);
+        args << "auto";
+        const auto requestId = m_externalAudioRequest.begin();
+        qInfo() << "adding external audio stream asynchronously";
+        mpv::qt::node_builder command(args);
+        const int error = mpv_command_node_async(m_mpv, requestId, command.node());
         if (error < 0)
         {
+          m_externalAudioRequest.complete(requestId);
           m_pendingExternalAudioStream.clear();
           qWarning() << "failed to add external audio stream" << mpv_error_string(error);
         }
@@ -1005,14 +1257,28 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::setSubtitleStream(const QString &subtitleStream)
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::SubtitleTrack);
+  JMP_PROFILE_ZONE("Player subtitle track");
   m_currentSubtitleStream = subtitleStream;
+  if (!m_inPlayback)
+  {
+    if (!m_presenceQueue.isEmpty()) m_presenceQueue.head().subtitleStream = subtitleStream;
+    return;
+  }
   reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::setAudioStream(const QString &audioStream)
 {
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::AudioTrack);
+  JMP_PROFILE_ZONE("Player audio track");
   m_currentAudioStream = audioStream;
+  if (!m_inPlayback)
+  {
+    if (!m_presenceQueue.isEmpty()) m_presenceQueue.head().audioStream = audioStream;
+    return;
+  }
   reselectStream(m_currentAudioStream, MediaType::Audio);
 }
 
@@ -1041,27 +1307,95 @@ void PlayerComponent::setSubtitleDelay(qint64 milliseconds)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-void PlayerComponent::setPlaybackRate(int rate)
+bool PlayerComponent::setPlaybackRate(double rate)
 {
-  mpv::qt::set_property(m_mpv, "speed", rate / 1000.0);
+  DesktopDiagnostics::CommandScope scope(DesktopDiagnostics::Command::Rate);
+  JMP_PROFILE_ZONE("Player rate");
+  if (!PlaybackValues::isEffectiveRate(rate))
+  {
+    qWarning() << "Invalid playback rate ignored";
+    return false;
+  }
+  const int error = mpv::qt::set_property(m_mpv, "speed", rate / 1000.0);
+  if (error < 0)
+    qWarning() << "Failed to set playback rate" << mpv_error_string(error);
+  return error >= 0;
+}
+
+void PlayerComponent::setDiagnosticObservation(bool enabled)
+{
+  if (enabled == m_diagnosticObservationEnabled || !m_mpv)
+    return;
+  m_diagnosticObservationEnabled = enabled;
+  for (int index = 0; index < DiagnosticPropertyCount; ++index)
+  {
+    const uint64_t id = DiagnosticObservationBase + index;
+    if (enabled)
+      mpv_observe_property(m_mpv, id, DiagnosticProperties[index], MPV_FORMAT_DOUBLE);
+    else
+    {
+      mpv_unobserve_property(m_mpv, id);
+      m_diagnosticMetrics.remove(QString::fromLatin1(DiagnosticProperties[index]));
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 qint64 PlayerComponent::getPosition()
 {
+  qint64 positionMs = 0;
+  return currentPosition(positionMs) ? positionMs : 0;
+}
+
+bool PlayerComponent::currentPosition(qint64& positionMs)
+{
   QVariant time = mpv::qt::get_property(m_mpv, "playback-time");
-  if (time.canConvert(QMetaType::Double))
-    return time.toDouble();
-  return 0;
+  bool valid = false;
+  const double seconds = time.toDouble(&valid);
+  std::int64_t converted = 0;
+  if (!valid || !m_playbackTimeline.positionMilliseconds(seconds, converted)) return false;
+  positionMs = converted;
+  return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 qint64 PlayerComponent::getDuration()
 {
   QVariant time = mpv::qt::get_property(m_mpv, "duration");
-  if (time.canConvert(QMetaType::Double))
-    return time.toDouble();
-  return 0;
+  bool valid = false;
+  const double seconds = time.toDouble(&valid);
+  std::int64_t converted = 0;
+  return valid && m_playbackTimeline.durationMilliseconds(seconds, converted) ? converted : 0;
+}
+
+bool PlayerComponent::preparePlaybackTimeline()
+{
+  if (!m_playbackTimeline.preservesTimestamps()) return true;
+  const auto generation = m_playbackTimeline.generation();
+  bool valid = false;
+  const double sourceStart = mpv::qt::get_property(m_mpv, "demuxer-start-time").toDouble(&valid);
+  bool prepared = valid && m_playbackTimeline.configure(generation, sourceStart);
+  if (prepared && m_playbackTimeline.mapsMusic())
+  {
+    const auto seconds = m_playbackTimeline.initialSeekSeconds();
+    prepared = seconds && mpv::qt::set_property(m_mpv, "file-local-options/start", QString::number(*seconds, 'f', 6)) >= 0;
+  }
+  if (!prepared)
+  {
+    m_readiness.invalidate();
+    emit error(QStringLiteral("Native stream timestamp is unavailable."));
+    stop();
+    return false;
+  }
+  // Duration may have been observed before the preloaded hook established the
+  // timeline. Publish the current public endpoint once mapping is ready.
+  const qint64 durationMs = getDuration();
+  if (durationMs > 0)
+  {
+    m_diagnosticMetrics.insert("durationMs", durationMs);
+    emit updateDuration(durationMs);
+  }
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1103,7 +1437,7 @@ void PlayerComponent::updateAudioDeviceList()
   QSet<QString> devices;
   for(const QVariant& d : list.toList())
   {
-    Q_ASSERT(d.type() == QVariant::Map);
+    Q_ASSERT(d.typeId() == QMetaType::QVariantMap);
     QVariantMap dmap = d.toMap();
 
     QString device = dmap["name"].toString();
@@ -1410,7 +1744,7 @@ void PlayerComponent::setOtherConfiguration()
 {
   QString otherConfiguration = SettingsComponent::Get().value(SETTINGS_SECTION_OTHER, "other_conf").toString();
   qDebug() << "Parsing other configuration: "+otherConfiguration;
-  QStringList configurationList = otherConfiguration.split(QRegExp("[\r\n]"), Qt::SkipEmptyParts);
+  QStringList configurationList = otherConfiguration.split(QRegularExpression("[\r\n]"), Qt::SkipEmptyParts);
 
   for(const QString& configuration : configurationList)
   {
@@ -1418,8 +1752,8 @@ void PlayerComponent::setOtherConfiguration()
     int configurationLength = configuration.length();
     if (splitIndex > 0 && splitIndex < configurationLength - 1)
     {
-      QString configurationKey = configuration.left(splitIndex).remove(QRegExp("^([\"]+)")).remove(QRegExp("([\"]+)$")); 
-      QString configurationValue = configuration.right(configurationLength - splitIndex - 1).remove(QRegExp("^([\"]+)")).remove(QRegExp("([\"]+)$"));
+      QString configurationKey = configuration.left(splitIndex).remove(QRegularExpression("^([\"]+)")).remove(QRegularExpression("([\"]+)$"));
+      QString configurationValue = configuration.right(configurationLength - splitIndex - 1).remove(QRegularExpression("^([\"]+)")).remove(QRegularExpression("([\"]+)$"));
       mpv::qt::set_property(m_mpv, configurationKey, configurationValue);
     }
   }

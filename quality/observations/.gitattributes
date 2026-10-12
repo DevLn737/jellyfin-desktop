@@ -1,0 +1,4 @@
+*.json text eol=lf
+*.cjs text eol=lf
+qt6113-memory-failed-samples.json -text -eol whitespace=cr-at-eol -diff
+qt6113-memory-failed-gate-report.json -text -eol whitespace=cr-at-eol

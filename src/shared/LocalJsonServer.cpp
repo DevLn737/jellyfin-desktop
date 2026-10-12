@@ -19,14 +19,17 @@ LocalJsonServer::LocalJsonServer(const QString& serverName, QObject* parent) : Q
 /////////////////////////////////////////////////////////////////////////////////////////
 bool LocalJsonServer::listen()
 {
-  while (!m_server->listen(m_serverName))
+  bool listening = m_server->listen(m_serverName);
+#ifdef Q_OS_UNIX
+  // Preserve legacy stale Unix socket cleanup, with one bounded retry.
+  if (!listening && m_server->serverError() == QAbstractSocket::AddressInUseError
+      && QFile(m_serverName).remove())
+    listening = m_server->listen(m_serverName);
+#endif
+  // Windows named pipes are not files. A failed bind must not spin or attempt
+  // to remove another application's endpoint.
+  if (!listening)
   {
-    if (m_server->serverError() == QAbstractSocket::AddressInUseError)
-    {
-      QFile(m_serverName).remove();
-      continue;
-    }
-
     qWarning() << "Failed to listen to local socket:" << m_server->errorString();
     return false;
   }

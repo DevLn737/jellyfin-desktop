@@ -1,10 +1,22 @@
 # Jellyfin Media Player
 
-Desktop client using jellyfin-web with embedded MPV player. Supports Windows, Mac OS,
-and Linux. Media plays within the same window using the jellyfin-web interface unlike
-Jellyfin Desktop. Supports audio passthrough.
+Desktop client using the server-provided jellyfin-web with an embedded MPV player.
+This fork's unified 2.0 update targets Windows x64, Windows 10 1903 and Windows 11.
+It combines Qt6, SyncPlay with independent external tracks, and Discord Rich Presence.
+The executable and existing installation and AppData identities are preserved.
 
-## SyncPlay Windows release
+Build instructions: [Windows toolchain and packaging](bundle/win/README.md).
+Implementation and outstanding release gates: [unified migration](docs/WINDOWS-QT6-MIGRATION.md).
+The development Qt lock is not yet qualified for a public release.
+
+## Discord Rich Presence for Windows
+
+The Windows client includes movie/series posters, titles, year or episode numbers, playback
+status and an elapsed timer to Discord. See [setup, image requirements and tests](DISCORD-RICH-PRESENCE.md).
+Installer, ordinary portable and diagnostic portable artifacts are produced by the
+**Windows Desktop** workflow. Publication requires a version tag and release qualification.
+
+## Previous SyncPlay Windows release
 
 This fork provides the Jellyfin Media Player `1.12.0-syncplay.1` build validated
 by two-client canary acceptance and a four-client production stress session for
@@ -28,6 +40,10 @@ Related Documents:
  - Tip: For help building, look at the GitHub Actions file!
 
 ## Building at a glance (Linux)
+
+The following inherited instructions describe the old Qt5 build. Linux/macOS
+release migration is outside the Windows 2.0 update; use the Windows instructions
+above for the supported build.
 
 To download the latest stable release, get the latest version tag from the [latest releases page](https://github.com/jellyfin/jellyfin-media-player/releases/latest) and append the following to your pull command during the build phase for JMP "--branch $VERSIONTAG --single-branch"
 

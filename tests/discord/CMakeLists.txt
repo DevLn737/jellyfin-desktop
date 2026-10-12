@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.16)
+project(DiscordPresenceTests LANGUAGES CXX)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+find_package(Qt6 6.11 REQUIRED COMPONENTS Core Network Test)
+enable_testing()
+add_executable(discord-presence-tests
+  DiscordPresenceTest.cpp
+  ../../src/discord/DiscordActivity.cpp
+  ../../src/discord/DiscordIpc.cpp
+  ../../src/discord/DiscordIpc.h)
+target_include_directories(discord-presence-tests PRIVATE ../../src/discord ../../src)
+target_link_libraries(discord-presence-tests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+include(../../CMakeModules/DiscordCompileOptions.cmake)
+configure_discord_sources(../../src/discord/DiscordActivity.cpp ../../src/discord/DiscordIpc.cpp)
+if(MSVC)
+  target_compile_options(discord-presence-tests PRIVATE /utf-8)
+endif()
+add_test(NAME discord-presence COMMAND discord-presence-tests)

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "protocolId": "post-worker-quiet-isolated-10000-fixed-v1",
+  "commandsPerPhase": 10000,
+  "pacingMilliseconds": 10,
+  "rounds": 3,
+  "phaseOrder": [
+    "off",
+    "on",
+    "on",
+    "off",
+    "off",
+    "on"
+  ],
+  "attempts": 1,
+  "adaptiveRetries": false,
+  "cpuIncreasePercentagePointsLimit": 2,
+  "p95IncreasePercentLimit": 5,
+  "cpuScope": "owned-packaged-process-tree",
+  "cpuNormalization": "logical-processor-count",
+  "p95Method": "nearest-rank",
+  "qualificationEligible": false,
+  "maxPhaseDurationSeconds": 185,
+  "ownerSha256": "fd85002f4e7d3f41a19a6b587bc31f286eee4474f9e3d16a9dcacf572ee088b3",
+  "driverSha256": "b7ceaa8f7700a4b963194c531baee97a410c2a95eeb65bc1ab658644f32da69e",
+  "pageOrigin": "owned-http-loopback-random-port",
+  "httpHeaders": {
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "require-corp",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Cache-Control": "no-store"
+  },
+  "requireCrossOriginIsolated": true,
+  "requireSecureContext": true,
+  "clockProbeReads": 40000,
+  "maximumPositiveClockStepMilliseconds": 0.02,
+  "clockProbeWindows": "Before and after every phase, outside CPU measurement windows",
+  "securityIsolationBypassFlags": [],
+  "priorObservedStepMicroseconds": 5,
+  "baselineBuildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "reviewedWorkerPatchSha256": "91597d39288c51c87dc35bdd46176e92bb24537162c78ce228e18caa94ec04e0",
+  "retrospectiveCausalAttribution": false,
+  "oldObservationsSuperseded": false,
+  "sourceSha256": "f2dca048ead5e52e760ade46b0362c8ca4b1b93f308c16bdab742430d5562605",
+  "priorObservationSourceSha256s": [
+    {
+      "buildCommit": "67da596aafdb46e6515f9f1d3f3a9dbc6e22f3d9",
+      "summarySha256": "b8e4df7c94f0a3a5d3f88c0cd368a5215ff1c607a448971a331cd2c821befc36",
+      "latencySha256": "78373d27edf60e3b34e0022da8aa7d57d2dcda7190b752501be7138c2f55c5a5",
+      "completed": true,
+      "withinSyntheticThresholds": false,
+      "qualificationEligible": false
+    },
+    {
+      "buildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+      "summarySha256": "e51358a84d092ce9a2b0ca5e1b88b2f6675f2db758a9188f3ab66d1fbafe708e",
+      "latencySha256": "b144bd0cd65d6d493cdb1d96fcc27db4d199f904f729998e65afdd2f3125dda9",
+      "completed": true,
+      "withinSyntheticThresholds": false,
+      "qualificationEligible": false
+    },
+    {
+      "buildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+      "summarySha256": "eddcc510780015758185a7b5bf8a85e5fae87335a331564b6c0ce4085d9ad0ff",
+      "latencySha256": "cc4617e23cd8c191a36db39e424351d92a2887cf8134da5dd4890ad3eaf095ce",
+      "completed": true,
+      "withinSyntheticThresholds": false,
+      "qualificationEligible": false
+    }
+  ],
+  "reviewedSourceFiles": [
+    {
+      "sourceFileCode": 0,
+      "gitSourceSha256": "d7e9ebe8ffe3126de26a570a4193d3588771ec1da5a978826c5e7bb7ea855140",
+      "gitBlobSha1": "29155e436aca6ad1e1b5c804b6c3bdbfcd3eddfa",
+      "workingTreeSha256": "cb65ccfffd8af685fa2e490517d7451624ffd818c6671fa472a2cc078640a29c"
+    },
+    {
+      "sourceFileCode": 1,
+      "gitSourceSha256": "000f0bd624be798e563537d2c44c278ce66cbe8f727030d6985719bfa10c5a93",
+      "gitBlobSha1": "a4362604fda4744bd9d5e499e156bf114fb74e94",
+      "workingTreeSha256": "0fdda0f53b4b21a18bf083e46e00434d4f3bf97afb7dae9e35717cd9ab6d2356"
+    },
+    {
+      "sourceFileCode": 2,
+      "gitSourceSha256": "5dff3319f5455681ccafbce00c62159c4a06c130833bc3a16e556b0d3bf9b6e6",
+      "gitBlobSha1": "a49f7130fb98a2b14e56ed31ed4fbf6bffca953a",
+      "workingTreeSha256": "cf16366b16f4c78cd1695584fc28368e2440078d638dac7e1c9c686088afc5b3"
+    },
+    {
+      "sourceFileCode": 3,
+      "gitSourceSha256": "fcbed0247a46cb8de31c2bd457c2b65c44e8ac6f71ce34d1a40d54d5e298f2c4",
+      "gitBlobSha1": "5d0552ad0564ba91e3c24b310748df12441ce87b",
+      "workingTreeSha256": "e9045982621ff4f4f01daefba4203ff3241f650de74fa6b575f4117b470f9b19"
+    }
+  ]
+}

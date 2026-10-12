@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.16)
+project(PlaybackValueTests LANGUAGES CXX)
+enable_testing()
+add_executable(playback-value-tests PlaybackValueTest.cpp)
+target_compile_features(playback-value-tests PRIVATE cxx_std_17)
+target_include_directories(playback-value-tests PRIVATE ../../src/player ../../src)
+add_test(NAME playback-values COMMAND playback-value-tests)

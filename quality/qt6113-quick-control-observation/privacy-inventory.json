@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "qualificationEligible": false,
+  "allNumericObservationsFinite": true,
+  "localAbsolutePathsPresent": false,
+  "urlsPresent": false,
+  "processIdentifiersPresent": false,
+  "accountOrAuthenticationDataPresent": false,
+  "runtimeLogsOrProfileContentsIncluded": false,
+  "sdkRelativeNamesArePublicArtifactIdentity": true,
+  "originalByteExactReceipts": [
+    {
+      "name": "control-report.original.json",
+      "sha256": "9e8cf5a99c28bbf00507fe243253af5b0a03bc8d65369258d2a133fb778b756b"
+    },
+    {
+      "name": "memory-samples.json",
+      "sha256": "0123f38abac3f5991b9fdeabed54bf41c40834c437478663db7e50dbe846d806"
+    },
+    {
+      "name": "dom-counters.json",
+      "sha256": "3af8cdbf06b9daec5334b6c6db75d7ed3cca5981d39e1a7aa976d14fb8129724"
+    },
+    {
+      "name": "driver-status.json",
+      "sha256": "bb319978f2b2f2913648538679266f741171d5fad7b60c87fee76070aa8aed15"
+    },
+    {
+      "name": "native-visibility.json",
+      "sha256": "76e4bff45fb9f06a116b50b86c56eddde57cc97e4e528e58f49be8b2196ada8b"
+    },
+    {
+      "name": "protocol.original.json",
+      "sha256": "d0a7e8eb6ec862f10b1c496a0b27d4f2a81b06d70bb31798f3ed74559a1633cf"
+    },
+    {
+      "name": "build-provenance.json",
+      "sha256": "a0d11594b3ae758697117f7583ea4a6a48f96b18aba7844b2ab5f0433daf37b0"
+    },
+    {
+      "name": "workload-digest.json",
+      "sha256": "4ecb938a7046b665917d64d1b0fd09662c4947cc35803591bcede3f34512160d"
+    }
+  ],
+  "scan": "Recursive finite-number, forbidden URL/absolute-path and sensitive-field checks; explicit file inventory excludes logs/profile/runtime binaries."
+}

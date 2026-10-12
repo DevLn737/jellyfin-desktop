@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "qualificationEligible": false,
+  "byteIdenticalSvgAndXhr": true,
+  "svgBytes": 173577,
+  "svgSha256": "a3425bd44b7e9c0ce3911dc76e55bd0f12df720f68b44f0c65d561c6e7220919",
+  "stressScriptBytes": 249,
+  "stressScriptSha256": "31a69f32f1743de9b2be398fa2d2a5996bc382669f3dc97e1388a505b49269f2",
+  "desktopDriverSha256": "b199348db6991d726288a6a35c75ad4c58e610d647dda7f6f8f0d044ef0c829a",
+  "controlDriverSha256": "6d977b4d99b4f88feb54bc02f4659c7f49ddfb5e1f960f21ed8fe9d66bde7896"
+}

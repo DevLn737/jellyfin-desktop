@@ -84,8 +84,9 @@
       {
         "value": "useOpenGL",
         "display_name": "Use OpenGL",
-        "help": "Controls display method.",
+        "help": "Retained for configuration compatibility; Qt6 uses OpenGL.",
         "default": false,
+        "hidden": true,
         "platforms": [ "windows" ]
       },
       {
@@ -128,6 +129,21 @@
         "display_name": "Check For Updates",
         "help": "Allows user to disable update check plugin script.",
         "default": true
+      },
+      {
+        "value": "discordRichPresence",
+        "display_name": "Discord Rich Presence",
+        "help": "Share the current movie or episode, poster and playback progress on your Discord profile. Requires the Discord desktop app and activity sharing. Posters require a public HTTPS Jellyfin image endpoint; no Jellyfin token is shared.",
+        "default": true,
+        "platforms": [ "windows" ]
+      },
+      {
+        "value": "discordApplicationId",
+        "display_name": "Discord Application ID",
+        "help": "Public Application ID from the Discord Developer Portal. Its application name should be Jellyfin Desktop. No bot token or Client Secret is needed. Leave empty to disable the connection.",
+        "input_type": "text",
+        "default": "1557831977250463766",
+        "platforms": [ "windows" ]
       },
       {
         "value": "enableInputRepeat",
@@ -431,13 +447,18 @@
         "display_name": "Default Playback Speed",
         "default": 1.0,
         "possible_values": [
+          [ 0.25, "0.25x" ],
           [ 0.5, "0.5x" ],
           [ 0.75, "0.75x" ],
           [ 1.0, "1x" ],
           [ 1.25, "1.25x" ],
           [ 1.5, "1.5x" ],
           [ 1.75, "1.75x" ],
-          [ 2.0, "2x" ]
+          [ 2.0, "2x" ],
+          [ 2.5, "2.5x" ],
+          [ 3.0, "3x" ],
+          [ 4.0, "4x" ],
+          [ 5.0, "5x" ]
         ]
       }
     ]

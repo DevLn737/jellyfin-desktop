@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "qualificationEligible": false,
+  "desktopBuildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "sourceSnapshotIndexSha256": "8f40f8bcc5fbc8db2987a88e0b23a969ba39ac34ccb542b2088222db2ba678d5",
+  "proposedTrackedDestination": "quality/qt6113-quick-control-observation",
+  "files": [
+    {
+      "name": "build-provenance.json",
+      "sha256": "a0d11594b3ae758697117f7583ea4a6a48f96b18aba7844b2ab5f0433daf37b0",
+      "bytes": 29077
+    },
+    {
+      "name": "control-report.original.json",
+      "sha256": "9e8cf5a99c28bbf00507fe243253af5b0a03bc8d65369258d2a133fb778b756b",
+      "bytes": 4221
+    },
+    {
+      "name": "derived-observation.json",
+      "sha256": "c06f9a40e211bea203f7f5ff576f2059fb0880881321cc100a6a46471beb40d8",
+      "bytes": 3232
+    },
+    {
+      "name": "dom-counters.json",
+      "sha256": "3af8cdbf06b9daec5334b6c6db75d7ed3cca5981d39e1a7aa976d14fb8129724",
+      "bytes": 196444
+    },
+    {
+      "name": "driver-status.json",
+      "sha256": "bb319978f2b2f2913648538679266f741171d5fad7b60c87fee76070aa8aed15",
+      "bytes": 671
+    },
+    {
+      "name": "memory-samples.json",
+      "sha256": "0123f38abac3f5991b9fdeabed54bf41c40834c437478663db7e50dbe846d806",
+      "bytes": 73814
+    },
+    {
+      "name": "native-visibility.json",
+      "sha256": "76e4bff45fb9f06a116b50b86c56eddde57cc97e4e528e58f49be8b2196ada8b",
+      "bytes": 357
+    },
+    {
+      "name": "privacy-inventory.json",
+      "sha256": "44a3f881d58a85618bde7bf6f19859e26e5ff856e20092e86470d4907e19da8d",
+      "bytes": 1668
+    },
+    {
+      "name": "protocol.original.json",
+      "sha256": "d0a7e8eb6ec862f10b1c496a0b27d4f2a81b06d70bb31798f3ed74559a1633cf",
+      "bytes": 3224
+    },
+    {
+      "name": "README.md",
+      "sha256": "93c7375fe8cfaffc66c29eabf456470ae11021d10e913f59e91ada59098d7e70",
+      "bytes": 1766
+    },
+    {
+      "name": "source-pins.json",
+      "sha256": "cd7cb6c657bc3c0c519a6ad5430b1333d5c0bc2b5c53517eeb152279635fb292",
+      "bytes": 4881
+    },
+    {
+      "name": "workload-digest.json",
+      "sha256": "4ecb938a7046b665917d64d1b0fd09662c4947cc35803591bcede3f34512160d",
+      "bytes": 504
+    }
+  ]
+}

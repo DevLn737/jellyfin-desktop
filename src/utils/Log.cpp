@@ -3,6 +3,7 @@
 //
 
 #include "Log.h"
+#include "profiling/Trace.h"
 
 #include <QtQml>
 #include <QGuiApplication>
@@ -21,6 +22,7 @@ QHash<QtMsgType, int> messageLevelValue({{QtDebugMsg, 1}, {QtInfoMsg, 2}, {QtWar
 // adapted from https://stackoverflow.com/a/62390212
 static void qtMessageOutput(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
+  JMP_PROFILE_ZONE("Logger write");
   static QMutex mutex;
   QMutexLocker lock(&mutex);
 

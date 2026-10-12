@@ -1,34 +1,31 @@
-set(PROJECT_SOURCE_DIR @PROJECT_SOURCE_DIR@)
-
-execute_process(COMMAND @QTROOT@/bin/windeployqt.exe --verbose 9 --qmldir @SOURCE_ROOT@/src/ui ${CMAKE_INSTALL_PREFIX}/JellyfinMediaPlayer.exe)
-
-# on windows windeployqt doesnt install non qt libraries, let cmake do that
-# include(BundleUtilities)
-
-foreach(d @CMAKE_FIND_ROOT_PATH@)
-  list(APPEND SEARCHDIRS ${d}/bin)
-  list(APPEND SEARCHDIRS ${d}/lib)
-endforeach()
-
-get_filename_component(CEC_DIR @CEC_LIBRARY@ DIRECTORY)
-list(APPEND SEARCHDIRS ${CEC_DIR})
-
-# fixup_bundle("${CMAKE_INSTALL_PREFIX}/JellyfinMediaPlayer.exe" "" "${SEARCHDIRS}") 
-#install(PROGRAMS ${VCREDIST_DIR}/vcredist_msvc2017_x64.exe DESTINATION .)
-file(INSTALL @MPV_LIBRARY@ DESTINATION "${CMAKE_INSTALL_PREFIX}")
-
-if(@DO_ENABLE_ANGLE_DEP@)
-  message(STATUS "Deploying separate ANGLE deps")
-  file(INSTALL @DEPENDENCY_CACHE_DIR@/libEGL.dll @DEPENDENCY_CACHE_DIR@/libGLESv2.dll @DEPENDENCY_CACHE_DIR@/d3dcompiler_47.dll DESTINATION ${CMAKE_INSTALL_PREFIX})
-else()
-  message(STATUS "Not using separate ANGLE deps")
+set(_qt_root [==[@QTROOT@]==])
+set(_mpv_runtime [==[@MPV_RUNTIME@]==])
+if(NOT _mpv_runtime)
+  get_filename_component(_mpv_directory [==[@MPV_LIBRARY@]==] DIRECTORY)
+  set(_mpv_runtime "${_mpv_directory}/libmpv-2.dll")
 endif()
-
+execute_process(COMMAND "${_qt_root}/bin/windeployqt.exe" --release --verbose 0 --no-compiler-runtime
+  --qmldir "@SOURCE_ROOT@/src/ui" "${CMAKE_INSTALL_PREFIX}/JellyfinMediaPlayer.exe"
+  COMMAND_ERROR_IS_FATAL ANY)
+set(_software_gl "${_qt_root}/bin/opengl32sw.dll")
+if(NOT EXISTS "${_software_gl}")
+  set(_software_gl "${_qt_root}/opengl32sw.dll")
+endif()
+file(INSTALL "${_mpv_runtime}" "${_qt_root}/bin/Qt6Xml.dll" "${_software_gl}" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+foreach(_required JellyfinMediaPlayer.exe Qt6Core.dll Qt6Gui.dll Qt6Quick.dll Qt6Qml.dll
+    Qt6WebEngineCore.dll Qt6WebEngineQuick.dll QtWebEngineProcess.exe libmpv-2.dll
+    platforms/qwindows.dll qml/QtWebEngine/qtwebenginequickplugin.dll opengl32sw.dll
+    resources/icudtl.dat resources/v8_context_snapshot.bin resources/qtwebengine_resources.pak
+    resources/qtwebengine_resources_100p.pak resources/qtwebengine_resources_200p.pak)
+  if(NOT EXISTS "${CMAKE_INSTALL_PREFIX}/${_required}")
+    message(FATAL_ERROR "Incomplete Windows deployment: ${_required}")
+  endif()
+endforeach()
+file(INSTALL "@PROJECT_SOURCE_DIR@/build-manifest.json" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 if(@DO_SIGN@)
-  file(GLOB_RECURSE EXES ${CMAKE_INSTALL_PREFIX}/*.exe ${CMAKE_INSTALL_PREFIX}/*.dll)
-  set(ENV{errorlevel} 1)
-  foreach(e ${EXES})
-    message("-- Signing: ${PROJECT_SOURCE_DIR}/scripts/WindowsSign.cmd ${e}")
-    execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/WindowsSign.cmd "${e}" RESULT_VARIABLE RES)
+  file(GLOB_RECURSE _binaries "${CMAKE_INSTALL_PREFIX}/*.exe" "${CMAKE_INSTALL_PREFIX}/*.dll")
+  foreach(_binary IN LISTS _binaries)
+    execute_process(COMMAND "@PROJECT_SOURCE_DIR@/scripts/WindowsSign.cmd" "${_binary}"
+      COMMAND_ERROR_IS_FATAL ANY)
   endforeach()
 endif()

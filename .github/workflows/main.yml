@@ -1,303 +1,122 @@
-name: build
+name: Windows Desktop
 
 on:
   push:
-    branches:
-      - release
-      - prerelease
-      - test
+    branches: [master, main, 'codex/**']
+    tags: ['v[0-9]*']
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
-  build-mac:
-    runs-on: macos-13
+  qualification:
+    runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        brew update
-        brew install ninja mpv qt@5 || true
-    - name: Release build
-      run: |
-        mkdir build
-        sed -i '' 's|await loadScript('\''qrc:///qtwebchannel/qwebchannel.js'\'');|document.body.style.overscrollBehavior = "none";&|g' native/nativeshell.js
-        cd build
-        cmake -GNinja -DQTROOT=/usr/local/opt/qt@5 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=output ..
-        ninja install
-    - name: Fix library paths and create dmg
-      run: |
-        python3 ./scripts/fix-install-names.py ./build/output/Jellyfin\ Media\ Player.app
-        python3 ./scripts/fix-webengine.py ./build/output/Jellyfin\ Media\ Player.app
-        codesign --force --deep -s - ./build/output/Jellyfin\ Media\ Player.app/
-        brew install create-dmg
-        attempts=0
-        while [[ "$attempts" -lt 10 ]]
-        do
-          attempts=$((attempts+1))
-          create-dmg --volname "Jellyfin Media Player" --no-internet-enable "JellyfinMediaPlayer.dmg" "./build/output/Jellyfin Media Player.app" && break || echo "dmg create failed, retrying..."
-          sleep 5
-        done
-        if ! [[ -e JellyfinMediaPlayer.dmg ]]
-        then
-          echo "Failed to create dmg after 10 attempts"
-          exit 1
-        fi
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos
-        path: ${{ github.workspace }}/JellyfinMediaPlayer.dmg
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Validate the locked build and release evidence
+        shell: pwsh
+        run: |
+          python scripts/validate-build-manifest.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/test-release-validation.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF.StartsWith('refs/tags/')) {
+            python scripts/validate-build-manifest.py --release-tag $env:GITHUB_REF_NAME
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
-  build-macarm64:
-    runs-on: macos-14
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        brew update
-        brew install ninja mpv qt@5 || true
-    - name: Release build
-      run: |
-        mkdir build
-        sed -i '' 's|await loadScript('\''qrc:///qtwebchannel/qwebchannel.js'\'');|document.body.style.overscrollBehavior = "none";&|g' native/nativeshell.js
-        cd build
-        cmake -GNinja -DQTROOT=/opt/homebrew/opt/qt@5 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=output ..
-        ninja install
-    - name: Fix library paths and create dmg
-      run: |
-        python3 ./scripts/fix-install-names.py ./build/output/Jellyfin\ Media\ Player.app
-        python3 ./scripts/fix-webengine.py ./build/output/Jellyfin\ Media\ Player.app
-        codesign --force --deep -s - ./build/output/Jellyfin\ Media\ Player.app/
-        brew install create-dmg
-        create-dmg --volname "Jellyfin Media Player" --no-internet-enable "JellyfinMediaPlayer.dmg" "./build/output/Jellyfin Media Player.app"
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-arm64
-        path: ${{ github.workspace }}/JellyfinMediaPlayer.dmg
-
-  build-win64:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Qt 5.15.2
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: "5.15.2"
-        arch: "win64_msvc2019_64"
-        modules: "qtwebengine"
-    - name: Install dependencies
-      run: |
-        mkdir build
-        curl -L https://aka.ms/vs/17/release/vc_redist.x64.exe > vc_redist.x64.exe
-        sed -i 's#C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Redist\\MSVC\\v142\\vcredist_x64.exe#'"$(readlink -f vc_redist.x64.exe | sed 's#/\([a-z]\)/#\1:\\#g' | tr '/' '\\' | sed 's/\\/\\\\/g')#g" bundle/win/Bundle.wxs
-        curl -L https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip > ninja.zip
-        unzip ninja.zip
-        mv ninja.exe build/
-        curl -L https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20240304-git-9ac791c.7z/download > mpv.7z
-        7z x mpv.7z
-        mkdir mpv
-        mv include mpv
-        gendef libmpv-2.dll
-        mv libmpv-2.dll mpv/libmpv-2.dll
-        mv libmpv-2.def mpv.def
-        mv mpv.def libmpv.dll.a mpv/
-        mv mpv build/
-      shell: bash
-    - name: Build
-      run: |
-        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        cd build
-        set PATH=%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin;%CD%
-        cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt5_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll -DCMAKE_INSTALL_PREFIX=output ..
-        lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X64
-        ninja
-        ninja windows_package
-      shell: cmd
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows
-        path: ${{ github.workspace }}/build/JellyfinMediaPlayer-*.exe
-
-  build-win32:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Qt 5.15.2
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: "5.15.2"
-        arch: "win32_msvc2019"
-        modules: "qtwebengine"
-    - name: Install dependencies
-      run: |
-        mkdir build
-        curl -L https://aka.ms/vs/17/release/vc_redist.x86.exe > vc_redist.x86.exe
-        sed -i 's#C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Redist\\MSVC\\v142\\vcredist_x64.exe#'"$(readlink -f vc_redist.x86.exe | sed 's#/\([a-z]\)/#\1:\\#g' | tr '/' '\\' | sed 's/\\/\\\\/g')#g" bundle/win/Bundle.wxs
-        curl -L https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip > ninja.zip
-        unzip ninja.zip
-        mv ninja.exe build/
-        curl -L https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-i686-20240304-git-9ac791c.7z/download > mpv.7z
-        7z x mpv.7z
-        mkdir mpv
-        mv include mpv
-        gendef libmpv-2.dll
-        mv libmpv-2.dll mpv/libmpv-2.dll
-        mv libmpv-2.def mpv.def
-        mv mpv.def libmpv.dll.a mpv/
-        mv mpv build/
-      shell: bash
-    - name: Build
-      run: |
-        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
-        cd build
-        set PATH=%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin;%CD%
-        cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=output -DCMAKE_MAKE_PROGRAM=ninja.exe -DQTROOT=%Qt5_DIR% -DMPV_INCLUDE_DIR=mpv/include -DMPV_LIBRARY=mpv/libmpv-2.dll -DCMAKE_INSTALL_PREFIX=output ..
-        lib /def:mpv\mpv.def /out:mpv\libmpv-2.dll.lib /MACHINE:X86
-        ninja
-        ninja windows_package
-      shell: cmd
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-legacy32
-        path: ${{ github.workspace }}/build/JellyfinMediaPlayer-*.exe
-
-  build-ubuntu:
+  windows:
+    runs-on: windows-2022
     strategy:
+      fail-fast: false
       matrix:
-        tag: [oracular, noble, jammy]
-    runs-on: "ubuntu-latest"
+        variant: [release, diagnostic]
     steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install --yes gnupg debsigs devscripts
-    - name: Docker Build
-      run: |
-        docker build -f deployment/Dockerfile.debian -t builddeb --build-arg TAG=${{ matrix.tag }} --build-arg IMG=ubuntu deployment
-        docker run -v $(pwd)/deployment/dist:/dist -v $(pwd):/jellyfin -e TAG=${{ matrix.tag }} -e IMG=ubuntu builddeb
-        sudo chown --recursive $USER $(pwd)/deployment/dist
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ubuntu-${{ matrix.tag }}
-        path: ${{ github.workspace }}/deployment/dist/*
-    - name: Import repository signing GPG key
-      run: |
-        echo -n "${{ secrets.DEBIAN_SIGNING_KEY }}" | base64 --decode | gpg --batch --yes --import
-    - name: Sign Debian package and source files
-      run: |
-        for file in deployment/dist/*.deb; do
-            debsigs --sign=origin --default-key=${{ secrets.DEBIAN_SIGNING_KEY_ID }} ${file}
-        done
-        debsign -k ${{ secrets.DEBIAN_SIGNING_KEY_ID }} deployment/dist/*.changes
-    - name: Remove repository signing GPG key
-      run: |
-        gpg --batch --yes --delete-secret-keys ${{ secrets.DEBIAN_SIGNING_KEY_ID }}
-    - name: Upload artifacts to repository server
-      uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634 # v0.1.7
-      with:
-        host: "${{ secrets.REPO_HOST }}"
-        username: "${{ secrets.REPO_USER }}"
-        key: "${{ secrets.REPO_KEY }}"
-        source: deployment/dist/*
-        strip_components: 2
-        target: "/srv/incoming/client/jellyfin-media-player/ubuntu/${{ matrix.tag }}"
-    - name: Import artifactsinto reprepro
-      uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
-      with:
-        host: "${{ secrets.REPO_HOST }}"
-        username: "${{ secrets.REPO_USER }}"
-        key: "${{ secrets.REPO_KEY }}"
-        debug: false
-        script_stop: false
-        script: |
-          set -o xtrace
-          COMPONENT="main"
-          sudo reprepro --waitforlock 30 --basedir /srv/ubuntu --component ${COMPONENT} includedeb ${{ matrix.tag }} /srv/incoming/client/jellyfin-media-player/ubuntu/${{ matrix.tag }}/*.deb || exit 1
-          sudo reprepro --waitforlock 30 --basedir /srv/ubuntu --component ${COMPONENT} includedsc ${{ matrix.tag }} /srv/incoming/client/jellyfin-media-player/ubuntu/${{ matrix.tag }}/*.dsc || exit 1
-    - name: Move artifacts into repository
-      uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
-      with:
-        host: "${{ secrets.REPO_HOST }}"
-        username: "${{ secrets.REPO_USER }}"
-        key: "${{ secrets.REPO_KEY }}"
-        debug: false
-        script_stop: false
-        script: |
-          export BASEDIR="/srv/repository/main/client/jellyfin-media-player/ubuntu"
-          sudo mkdir -p ${BASEDIR}/stable/${{ github.ref_name }} || exit 1
-          sudo mv -t ${BASEDIR}/stable/${{ github.ref_name }} /srv/incoming/client/jellyfin-media-player/ubuntu/${{ matrix.tag }}/* || exit 1
-          sudo rm ${BASEDIR}/latest || true
-          sudo ln -sf ${BASEDIR}/stable/${{ github.ref_name }} ${BASEDIR}/latest || exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/dependency-archives
+          key: windows-x64-archives-${{ hashFiles('build-manifest.json') }}
+      - name: Build, test and package Windows x64
+        shell: pwsh
+        run: |
+          $diagnostic = '${{ matrix.variant }}' -eq 'diagnostic'
+          ./scripts/build-windows.ps1 -Diagnostic:$diagnostic
+      - name: Check isolated NativeShell startup and strict CSP
+        if: matrix.variant == 'release'
+        shell: pwsh
+        run: ./scripts/test-native-shell.ps1 -StagePath build/windows/release/portable-stage -ReportDirectory build/windows/release/native-shell-smoke
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-${{ matrix.variant }}
+          path: build/windows/${{ matrix.variant }}/assets/*
+          if-no-files-found: error
+          compression-level: 0
+      - name: Retain diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-${{ matrix.variant }}-logs
+          path: |
+            build/windows/${{ matrix.variant }}/CMakeFiles/CMakeConfigureLog.yaml
+            build/windows/${{ matrix.variant }}/tests/**/Testing/Temporary/LastTest.log
+            build/windows/${{ matrix.variant }}/native-shell-smoke/*.json
+            build/windows/${{ matrix.variant }}/native-shell-smoke/*.stdout
+            build/windows/${{ matrix.variant }}/native-shell-smoke/*.stderr
+            build/windows/${{ matrix.variant }}/tests/render/renderer-report.json
+            build/windows/${{ matrix.variant }}/tests/render/renderer-report.json.failure.png
+            build/windows/${{ matrix.variant }}/windows-runtime-imports.json
+            build/windows/${{ matrix.variant }}/tests/render/runtime-imports.json
+            build/toolchain/wix/extract.log
+          if-no-files-found: ignore
 
-  build-debian:
-    strategy:
-      matrix:
-        tag: [bookworm, trixie]
-    runs-on: "ubuntu-latest"
+  publish:
+    needs: [qualification, windows]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'DevLn737/jellyfin-desktop'
+    runs-on: windows-2022
+    permissions:
+      contents: write
     steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install --yes gnupg debsigs devscripts
-    - name: Docker Build
-      run: |
-        docker build -f deployment/Dockerfile.debian -t builddeb --build-arg TAG=${{ matrix.tag }} --build-arg IMG=debian deployment
-        docker run -v $(pwd)/deployment/dist:/dist -v $(pwd):/jellyfin -e TAG=${{ matrix.tag }} -e IMG=debian builddeb
-        sudo chown --recursive $USER $(pwd)/deployment/dist
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: debian-${{ matrix.tag }}
-        path: ${{ github.workspace }}/deployment/dist/*
-    - name: Import repository signing GPG key
-      run: |
-        echo -n "${{ secrets.DEBIAN_SIGNING_KEY }}" | base64 --decode | gpg --batch --yes --import
-    - name: Sign Debian package and source files
-      run: |
-        for file in deployment/dist/*.deb; do
-            debsigs --sign=origin --default-key=${{ secrets.DEBIAN_SIGNING_KEY_ID }} ${file}
-        done
-        debsign -k ${{ secrets.DEBIAN_SIGNING_KEY_ID }} deployment/dist/*.changes
-    - name: Remove repository signing GPG key
-      run: |
-        gpg --batch --yes --delete-secret-keys ${{ secrets.DEBIAN_SIGNING_KEY_ID }}
-    - name: Upload artifacts to repository server
-      uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634 # v0.1.7
-      with:
-        host: "${{ secrets.REPO_HOST }}"
-        username: "${{ secrets.REPO_USER }}"
-        key: "${{ secrets.REPO_KEY }}"
-        source: deployment/dist/*
-        strip_components: 2
-        target: "/srv/incoming/client/jellyfin-media-player/debian/${{ matrix.tag }}"
-    - name: Import artifactsinto reprepro
-      uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
-      with:
-        host: "${{ secrets.REPO_HOST }}"
-        username: "${{ secrets.REPO_USER }}"
-        key: "${{ secrets.REPO_KEY }}"
-        debug: false
-        script_stop: false
-        script: |
-          set -o xtrace
-          COMPONENT="main"
-          sudo reprepro --waitforlock 30 --basedir /srv/debian --component ${COMPONENT} includedeb ${{ matrix.tag }} /srv/incoming/client/jellyfin-media-player/debian/${{ matrix.tag }}/*.deb || exit 1
-          sudo reprepro --waitforlock 30 --basedir /srv/debian --component ${COMPONENT} includedsc ${{ matrix.tag }} /srv/incoming/client/jellyfin-media-player/debian/${{ matrix.tag }}/*.dsc || exit 1
-    - name: Move artifacts into repository
-      uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
-      with:
-        host: "${{ secrets.REPO_HOST }}"
-        username: "${{ secrets.REPO_USER }}"
-        key: "${{ secrets.REPO_KEY }}"
-        debug: false
-        script_stop: false
-        script: |
-          export BASEDIR="/srv/repository/main/client/jellyfin-media-player/debian"
-          sudo mkdir -p ${BASEDIR}/stable/${{ github.ref_name }} || exit 1
-          sudo mv -t ${BASEDIR}/stable/${{ github.ref_name }} /srv/incoming/client/jellyfin-media-player/debian/${{ matrix.tag }}/* || exit 1
-          sudo rm ${BASEDIR}/latest || true
-          sudo ln -sf ${BASEDIR}/stable/${{ github.ref_name }} ${BASEDIR}/latest || exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: windows-*
+          merge-multiple: true
+          path: release-assets
+      - name: Verify monotonic MSI release version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/check-release-version.py
+      - name: Publish direct installer and portable assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $manifest = Get-Content build-manifest.json -Raw | ConvertFrom-Json
+          if ($env:GITHUB_REF_NAME -ne "v$($manifest.appVersion)") { throw 'Tag and manifest version differ' }
+          $assetFiles = @(Get-ChildItem release-assets -File)
+          $checksums = $assetFiles | Sort-Object Name | ForEach-Object {
+            "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+          }
+          $checksums | Set-Content -LiteralPath release-assets/SHA256SUMS -Encoding ascii
+          $releaseArguments = @('release', 'create', $env:GITHUB_REF_NAME, '--repo', $manifest.releaseRepository,
+            '--verify-tag', '--title', "Desktop $($manifest.appVersion)", '--generate-notes')
+          if ($manifest.appVersion -match '-rc\.') { $releaseArguments += @('--prerelease', '--latest=false') }
+          else { $releaseArguments += '--latest' }
+          $releaseArguments += @(Get-ChildItem release-assets -File | ForEach-Object { $_.FullName })
+          gh @releaseArguments
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

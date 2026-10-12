@@ -35,7 +35,7 @@ class KonvergoWindow : public QQuickWindow
   Q_PROPERTY(QString webUrl READ webUrl NOTIFY webUrlChanged)
 
 public:
-  static void RegisterClass();
+  static void registerQmlTypes();
 
   explicit KonvergoWindow(QWindow* parent = nullptr);
   ~KonvergoWindow() override;
@@ -104,12 +104,14 @@ protected:
 
 private slots:
   void closingWindow();
+  void saveStateBeforeQuit();
   void enableVideoWindow();
   void onVisibilityChanged(QWindow::Visibility visibility);
   void updateMainSectionSettings(const QVariantMap& values);
   void updateWindowState(bool saveGeo = true);
   void updateDebugInfo();
   void playerWindowVisible(bool visible);
+  void refreshVideoBackground();
   void onScreenAdded(QScreen *screen);
   void onScreenRemoved(QScreen *screen);
   void updateCurrentScreen();
@@ -125,6 +127,7 @@ private:
   QScreen* findCurrentScreen();
 
   bool m_debugLayer;
+  bool m_closing = false;
   QTimer* m_infoTimer;
   QString m_debugInfo, m_systemDebugInfo, m_videoInfo;
   int m_ignoreFullscreenSettingsChange;

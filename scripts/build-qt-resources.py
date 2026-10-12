@@ -17,7 +17,7 @@
 import sys
 import os
 import stat
-import io
+from xml.sax.saxutils import escape, quoteattr
 
 if len(sys.argv) < 2:
   sys.exit(1)
@@ -29,13 +29,16 @@ def add_files(virtualpath, filepath):
 
   fstat = os.stat(filepath)
   if stat.S_ISDIR(fstat.st_mode):
-    for item in os.listdir(filepath):
+    for item in sorted(os.listdir(filepath)):
       add_files(os.path.join(virtualpath, item), os.path.join(filepath, item))
   else:
     dirname, fname = os.path.split(virtualpath)
-    result += (('<qresource prefix=\"%s\">\n' +
-                ' <file alias=\"%s\">%s</file>\n' +
-                '</qresource>\n') % (dirname, fname, filepath))
+    # Qt resource names use forward slashes on every host. Escape XML so
+    # Windows checkout paths containing '&' or quotes remain valid for rcc.
+    result += (('<qresource prefix=%s>\n' +
+                ' <file alias=%s>%s</file>\n' +
+                '</qresource>\n') % (quoteattr(dirname.replace('\\', '/')),
+                                     quoteattr(fname), escape(filepath)))
 
 for item in sys.argv[2:]:
   virtualpath, filepath = item.split("=", 1)

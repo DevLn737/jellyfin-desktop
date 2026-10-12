@@ -34,7 +34,7 @@ static QStringList win32BlackListedKeys = { "Media Play",
 static QString keyEventToKeyString(QKeyEvent *kevent)
 {
   // We ignore the KeypadModifier here since it's practically useless
-  QKeySequence modifiers(kevent->modifiers() &= ~Qt::KeypadModifier);
+  QKeySequence modifiers(int(kevent->modifiers() & ~Qt::KeypadModifier));
 
   QKeySequence keySeq(kevent->key());
   QString key = keySeq.toString();

@@ -11,6 +11,9 @@
 
 namespace Paths
 {
+  // Only an explicit marker opts a ZIP into isolated, writable portable data.
+  bool detectAndEnablePortableMode();
+  bool isPortableMode();
   QString resourceDir(const QString& file = QString());
   QString dataDir(const QString& file = QString());
   QString cacheDir(const QString& file = QString());

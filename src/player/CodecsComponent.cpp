@@ -12,6 +12,9 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QResource>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QOperatingSystemVersion>

@@ -1,0 +1,5 @@
+if(WIN32)
+  add_sources(DiscordActivity.cpp DiscordActivity.h)
+  add_sources(DiscordIpc.cpp DiscordIpc.h)
+  add_sources(DiscordComponent.cpp DiscordComponent.h)
+endif()

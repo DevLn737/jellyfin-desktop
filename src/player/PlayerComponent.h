@@ -5,6 +5,7 @@
 #include <QtCore/qglobal.h>
 #include <QVariant>
 #include <QSet>
+#include <QQueue>
 #include <QQuickWindow>
 #include <QTimer>
 #include <QTextStream>
@@ -14,6 +15,10 @@
 #include "ComponentManager.h"
 #include "CodecsComponent.h"
 #include "QtHelper.h"
+#include "ExternalAudioRequest.h"
+#include "VideoTrackRestore.h"
+#include "PlaybackReadiness.h"
+#include "PlaybackTimeline.h"
 
 #include <mpv/client.h>
 
@@ -41,7 +46,9 @@ public:
   // options:
   //  - startMilliseconds: start playback at this time (in ms)
   //  - autoplay: if false, start playback paused; if true, start normally
-  Q_INVOKABLE void queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream);
+  //  - nativeRequestId: optional positive safe JS integer for playbackReady
+  //  - preserveTimestamps: per-file HLS/copy-timestamp original media timeline
+  Q_INVOKABLE bool queueMedia(const QString& url, const QVariantMap& options, const QVariantMap &metadata, const QString& audioStream, const QString& subtitleStream);
 
   // This clears all items queued with queueMedia().
   // It explicitly excludes the currently playing item. The main use of this function
@@ -50,6 +57,7 @@ public:
   Q_INVOKABLE void clearQueue();
 
   Q_INVOKABLE virtual void seekTo(qint64 ms);
+  Q_INVOKABLE bool seekToForReady(qint64 ms, double nativeRequestId);
 
   // Stop playback and clear all queued items.
   Q_INVOKABLE virtual void stop();
@@ -92,6 +100,9 @@ public:
   // only. If no video is running, render a black background only.
   Q_INVOKABLE virtual void setVideoOnlyMode(bool enable);
 
+  // Called after the Web OSD has painted its transparent page background.
+  Q_INVOKABLE void videoUiReady();
+
   // Currently is meant to check for "vc1" and "mpeg2video". Will return whether
   // it can be natively decoded. Will return true for all other codecs,
   // including unknown codec names.
@@ -117,7 +128,8 @@ public:
   // automatically use the whole window. (Same if the rectangle is 0-sized.)
   Q_INVOKABLE void setVideoRectangle(int x, int y, int w, int h);
 
-  Q_INVOKABLE void setPlaybackRate(int rate);
+  // Speed in per-mille units: 1000 = 1x. Returns false if mpv rejects it.
+  Q_INVOKABLE bool setPlaybackRate(double rate);
 
   Q_INVOKABLE qint64 getPosition();
   Q_INVOKABLE qint64 getDuration();
@@ -129,6 +141,8 @@ public:
   virtual void setWindow(QQuickWindow* window);
 
   QString videoInformation() const;
+  QVariantMap diagnosticMetrics() const { return m_diagnosticMetrics; }
+  void setDiagnosticObservation(bool enabled);
 
   static QStringList AudioCodecsAll() { return { "ac3", "dts", "eac3", "dts-hd", "truehd" }; };
   static QStringList AudioCodecsSPDIF() { return { "ac3", "dts" }; };
@@ -164,6 +178,7 @@ private Q_SLOTS:
   void onRefreshRateChange();
   void onCodecsLoadingDone(CodecsFetcher* sender);
   void updateAudioDevice();
+  void onRenderContextRecreated();
 
 Q_SIGNALS:
   // The following signals correspond to the State enum above.
@@ -181,18 +196,26 @@ Q_SIGNALS:
   // false if nothing is loaded, playback is paused, during seeking, or media is being loaded
   void videoPlaybackActive(bool active);
   void windowVisible(bool visible);
+  void videoUiBackgroundReady();
   // emitted as soon as the duration of the current file is known
   void updateDuration(qint64 milliseconds);
 
   // current position in ms should be triggered 2 times a second
   // when position updates
   void positionUpdate(quint64);
+  // Real decode/seek restart, also while paused. IDs correlate only to local
+  // native requests; they are never media/server/session identifiers.
+  void seekStarted(quint64 nativeRequestId);
+  void playbackReady(quint64 nativeRequestId, qint64 positionMs, bool paused);
 
   void onVideoRecangleChanged();
 
   void onMpvEvents();
 
   void onMetaData(const QVariantMap &meta, QUrl baseUrl);
+  // Native presence integration needs the server subpath and initial seek offset.
+  void presenceMediaChanged(const QVariantMap& item, const QUrl& playbackUrl, qint64 positionMs);
+  void presenceStopped();
   
 private:
   // this is the function actually implemented in the backends. the variantmap contains
@@ -222,6 +245,8 @@ private:
   void updateVideoAspectSettings();
   QVariantList findStreamsForURL(const QString &url);
   void reselectStream(const QString &streamSelection, MediaType target);
+  bool currentPosition(qint64& positionMs);
+  bool preparePlaybackTimeline();
 
   mpv::qt::Handle m_mpv;
 
@@ -250,6 +275,27 @@ private:
   QString m_currentSubtitleStream;
   QString m_currentAudioStream;
   QString m_pendingExternalAudioStream;
+  ExternalAudioRequest m_externalAudioRequest;
+  VideoTrackRestore m_videoTrackRestore;
+  PlaybackReadiness m_readiness;
+  PlaybackTimeline m_playbackTimeline;
+  QVariantMap m_diagnosticMetrics;
+  bool m_diagnosticObservationEnabled = false;
+  struct PresenceMedia
+  {
+    QVariantMap item;
+    QUrl url;
+    qint64 startMs;
+    qint64 playlistId;
+    QString audioStream;
+    QString subtitleStream;
+    float frameRate;
+    QVariantMap serverMediaInfo;
+    quint64 nativeRequestId;
+    bool preserveTimestamps;
+    bool music;
+  };
+  QQueue<PresenceMedia> m_presenceQueue;
   QRect m_videoRectangle;
 };
 

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "scope": "hidden-standalone-qtquick-webengine-svg",
+  "initialized": true,
+  "completed": true,
+  "qualificationEligible": false,
+  "forcedGarbageCollection": false,
+  "durationSeconds": 3600,
+  "warmupSeconds": 120,
+  "navigationCount": 61,
+  "operationCount": 3692,
+  "svgRequests": 37447,
+  "dataRequests": 37450,
+  "svgSha256": "a3425bd44b7e9c0ce3911dc76e55bd0f12df720f68b44f0c65d561c6e7220919",
+  "stressScriptSha256": "31a69f32f1743de9b2be398fa2d2a5996bc382669f3dc97e1388a505b49269f2",
+  "documentHidden": 0,
+  "documentHasFocus": 1,
+  "viewportWidth": 0,
+  "viewportHeight": 0,
+  "devicePixelRatio": 1,
+  "elapsedSeconds": 3750.8544773
+}

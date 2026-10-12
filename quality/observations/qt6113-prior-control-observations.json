@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "qualificationEligible": false,
+  "desktopBuildCommit": "6eeebfa3298e68f452b58b47b14bbf0e7f69e97f",
+  "desktopObservationSha256": "e0a24099fbf98d5f24c0efd2ae6a36fd8659298e98740c5d45c525f99798bb7a",
+  "originalWidgets": {
+    "buildProvenanceSha256": "32049248c50b8ee7215a61e7195d4740b6ffce5293073d99024d47d3f8344856",
+    "reportSha256": "9db0998a9ab779a93527999aa47ef8c6c8c3751b23ba9255ab02e12f03d9d226",
+    "completed": false,
+    "sampleCount": 0,
+    "cleanupSucceeded": true,
+    "exitCode": 2,
+    "cause": "Unparenthesized PowerShell concatenated arguments split owned profile; no measurement."
+  },
+  "correctedWidgets": {
+    "buildProvenanceSha256": "634ac8c54a3ec42fc548a3ab9525191d1a1539aa85813f5752050db24fdb9f42",
+    "reportSha256": "93bb57936aa0a8c20c28269fcd41b30962188f3dbe9922f22f0fa91a30d3e240",
+    "driverStatusSha256": "5570feca2058ba021acd9a0acb185cf5d064e6ddf746fbad44533304864c1f7a",
+    "completed": false,
+    "sampleCount": 0,
+    "cleanupSucceeded": false,
+    "observedTuple": {
+      "documentHidden": 1,
+      "documentHasFocus": 0,
+      "viewportWidth": 0,
+      "viewportHeight": 0,
+      "devicePixelRatio": 1.25
+    },
+    "cause": "Pre-measurement equivalence guard aborted. Immediate cleanup flag remained false; later separate owned-runtime check reported zero processes/listeners. Original failure flags are retained."
+  },
+  "sourceFindings": [
+    "Desktop KonvergoWindow inherits QQuickWindow default data forwarding to contentItem. It sets Windowed visibility in its constructor before QML children; zero Chromium viewport does not prove the view is windowless.",
+    "Pinned WebEngine QWebEnginePagePrivate initializationFinished overwrites an early page.setVisible(true) with hidden QWidget isVisible().",
+    "Pinned Quick render delegate is initially unattached before later binding, whereas Widgets delegate is parented during QuickWidget construction. Initial screen-info timing is a possible explanation for observed Chromium DPR, not demonstrated causality.",
+    "A minimal registered QQuickWindow root preserves the actual inherited parenting path, Qt Quick WebEngine layer/focus/profile, and constructor ordering. It retains Qt Quick and is not a Widgets or Quick-free control."
+  ],
+  "sourceEvidence": [
+    {
+      "name": "qquickwebengineview.cpp",
+      "sha256": "c66d61aed5a07ad4493e14430cf1e3a48937742110f92b34dedf3d294b879e74",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    },
+    {
+      "name": "qtwebenginequickglobal.cpp",
+      "sha256": "577543aaed85227f36514b8a164f097c29c0b97216894578ea01e68f17aa76a8",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    },
+    {
+      "name": "qwebenginepage.cpp",
+      "sha256": "6d7a5ae1e68959a3d30b11474292212af7f7a61ba3d729225c7f3d149e2c4262",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    },
+    {
+      "name": "qwebengineview.cpp",
+      "sha256": "a9d660ec7757259a3af644e9e8edbe2cddd855630cfc881d1c577fdcdd06ce94",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    },
+    {
+      "name": "render_widget_host_view_qt.cpp",
+      "sha256": "6ecddecb3e1397a27a1e0440a3f92da23ef71b8118e71614d429c7582fc7aed1",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    },
+    {
+      "name": "render_widget_host_view_qt_delegate_client.cpp",
+      "sha256": "940dd5525b677654a225226da820872785aa19541f08fbea668e82f882997dae",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    },
+    {
+      "name": "render_widget_host_view_qt_delegate_item.cpp",
+      "sha256": "e441b75fbca654b57274156650594925ad618f83b93a22c3951a0e1940ce234b",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    },
+    {
+      "name": "web_contents_view_qt.cpp",
+      "sha256": "baabd8d564d5ec3e7a632d6f84aab33dd7b6602b02726aa0c78ab5d29342bd06",
+      "qtWebEngineCommit": "8c73295524f3ce6a2e10ad2f71141c695376c876"
+    }
+  ],
+  "status": "historical-zero-sample-control-failures-not-rss-results",
+  "currentQuickControlResult": "not-included; separate observation is in progress",
+  "originalEvidenceSha256": "0dc1a95cc9112e1344f0ddf8d12910c74f21102ee9c026551cd79e8c84725c52"
+}

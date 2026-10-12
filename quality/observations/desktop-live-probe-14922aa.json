@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "scope": "owned-full-desktop-live-video-and-animated-transparent-web-composition",
+  "qualificationEligible": false,
+  "forcedGC": false,
+  "serverConnection": false,
+  "authentication": false,
+  "userMedia": false,
+  "syncPlay": false,
+  "initialized": true,
+  "completed": true,
+  "passed": true,
+  "cycles": [
+    {
+      "cycle": 0,
+      "accepted": true,
+      "readyLatencyMs": 325.9000000357628,
+      "readyPositionMs": 30000,
+      "readyPaused": false,
+      "positions": [
+        {
+          "positionMs": 31000,
+          "queryLatencyMs": 0.699999988079071
+        },
+        {
+          "positionMs": 32100,
+          "queryLatencyMs": 1.800000011920929
+        },
+        {
+          "positionMs": 33100,
+          "queryLatencyMs": 0.5
+        },
+        {
+          "positionMs": 34100,
+          "queryLatencyMs": 0.5
+        }
+      ]
+    },
+    {
+      "cycle": 1,
+      "accepted": true,
+      "readyLatencyMs": 100.89999997615814,
+      "readyPositionMs": 30000,
+      "readyPaused": false,
+      "positions": [
+        {
+          "positionMs": 31000,
+          "queryLatencyMs": 0.5
+        },
+        {
+          "positionMs": 32000,
+          "queryLatencyMs": 0.8999999761581421
+        },
+        {
+          "positionMs": 33100,
+          "queryLatencyMs": 0.699999988079071
+        },
+        {
+          "positionMs": 34100,
+          "queryLatencyMs": 0.5
+        }
+      ]
+    },
+    {
+      "cycle": 2,
+      "accepted": true,
+      "readyLatencyMs": 92.70000004768372,
+      "readyPositionMs": 30000,
+      "readyPaused": false,
+      "positions": [
+        {
+          "positionMs": 31000,
+          "queryLatencyMs": 0.3999999761581421
+        },
+        {
+          "positionMs": 32000,
+          "queryLatencyMs": 0.699999988079071
+        },
+        {
+          "positionMs": 33000,
+          "queryLatencyMs": 0.7000000476837158
+        },
+        {
+          "positionMs": 34100,
+          "queryLatencyMs": 0.6000000238418579
+        }
+      ]
+    },
+    {
+      "cycle": 3,
+      "accepted": true,
+      "readyLatencyMs": 119.69999998807907,
+      "readyPositionMs": 30000,
+      "readyPaused": false,
+      "positions": [
+        {
+          "positionMs": 31000,
+          "queryLatencyMs": 0.5
+        },
+        {
+          "positionMs": 32000,
+          "queryLatencyMs": 0.699999988079071
+        },
+        {
+          "positionMs": 33000,
+          "queryLatencyMs": 1
+        },
+        {
+          "positionMs": 34100,
+          "queryLatencyMs": 0.800000011920929
+        }
+      ]
+    }
+  ],
+  "stopLatencyMs": 0.699999988079071,
+  "closeDuringActiveVideoPrepared": true,
+  "initializationRetryCodes": [],
+  "fixtureManifestSha256": "6ed4626072712b2046186b4c6d5cad1f9f9ae2513e75135a5f5b0bc7c4f5fea9",
+  "fixtureBytes": 20516,
+  "elapsedSeconds": 18.974805500000002,
+  "initializationAttempts": 1,
+  "nativeInitialization": {
+    "nativeShell": true,
+    "channel": true,
+    "player": true,
+    "diagnosticsOff": true
+  },
+  "animatedTransparentBlurOverlay": true,
+  "closeLoad": {
+    "accepted": true,
+    "readyLatencyMs": 480.10000002384186,
+    "readyPositionMs": 30000,
+    "readyPaused": false
+  },
+  "closePosition": {
+    "positionMs": 31000,
+    "queryLatencyMs": 0.800000011920929
+  }
+}

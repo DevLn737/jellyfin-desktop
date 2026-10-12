@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "observation": "concurrent",
+  "appVersion": "2.0.0-rc.1",
+  "qtVersion": "6.11.3",
+  "buildCommit": "67da596aafdb46e6515f9f1d3f3a9dbc6e22f3d9",
+  "buildManifestSha256": "af7e6e844bc858191fcce7b88ef3d211dc5fd5d9905c37ff181d64a7431b69fc",
+  "logicalCpuCount": 12,
+  "completed": true,
+  "qualificationEligible": false,
+  "withinSyntheticThresholds": false,
+  "scope": "synthetic-idle-hidden-webchannel-ordinary-build-owned-process-tree",
+  "commandsPerPhase": 1000,
+  "rounds": 3,
+  "requestedPacingMilliseconds": 10,
+  "actualPhaseOrder": [
+    "off",
+    "on",
+    "on",
+    "off",
+    "off",
+    "on"
+  ],
+  "thresholds": {
+    "cpuIncreasePercentagePoints": 2,
+    "p95IncreasePercent": 5
+  },
+  "thresholdDecision": "all-three-pairs-must-pass",
+  "sourceSummarySha256": "b8e4df7c94f0a3a5d3f88c0cd368a5215ff1c607a448971a331cd2c821befc36",
+  "sourceRawSha256": "78373d27edf60e3b34e0022da8aa7d57d2dcda7190b752501be7138c2f55c5a5",
+  "cpuCounterVerificationAvailable": false,
+  "cpuVerification": "paired-deltas-from-reported-phase-percentages-only",
+  "phases": [
+    {
+      "phaseId": 1,
+      "round": 1,
+      "capturing": false,
+      "commandCount": 1000,
+      "cpuPercent": 1.1549944199539985,
+      "cpuWindowSeconds": 11.8371784,
+      "processCount": 2,
+      "commandWindowMilliseconds": 11678.800000011921,
+      "p95Milliseconds": 1.2999999523162842,
+      "cpuCounterVerificationAvailable": false
+    },
+    {
+      "phaseId": 2,
+      "round": 1,
+      "capturing": true,
+      "commandCount": 1000,
+      "cpuPercent": 1.0974229794559243,
+      "cpuWindowSeconds": 11.8649177,
+      "processCount": 2,
+      "commandWindowMilliseconds": 11674.600000023842,
+      "p95Milliseconds": 1.100000023841858,
+      "cpuCounterVerificationAvailable": false
+    },
+    {
+      "phaseId": 3,
+      "round": 2,
+      "capturing": true,
+      "commandCount": 1000,
+      "cpuPercent": 0.9752633192236848,
+      "cpuWindowSeconds": 12.0159856,
+      "processCount": 2,
+      "commandWindowMilliseconds": 11845.199999988079,
+      "p95Milliseconds": 1.5,
+      "cpuCounterVerificationAvailable": false
+    },
+    {
+      "phaseId": 4,
+      "round": 2,
+      "capturing": false,
+      "commandCount": 1000,
+      "cpuPercent": 1.0329649871969027,
+      "cpuWindowSeconds": 11.8489818,
+      "processCount": 2,
+      "commandWindowMilliseconds": 11664.5,
+      "p95Milliseconds": 1.2000000476837158,
+      "cpuCounterVerificationAvailable": false
+    },
+    {
+      "phaseId": 5,
+      "round": 3,
+      "capturing": false,
+      "commandCount": 1000,
+      "cpuPercent": 0.985658874698401,
+      "cpuWindowSeconds": 11.8892553,
+      "processCount": 2,
+      "commandWindowMilliseconds": 11741.800000011921,
+      "p95Milliseconds": 1.300000011920929,
+      "cpuCounterVerificationAvailable": false
+    },
+    {
+      "phaseId": 6,
+      "round": 3,
+      "capturing": true,
+      "commandCount": 1000,
+      "cpuPercent": 1.0947513156045192,
+      "cpuWindowSeconds": 11.8938732,
+      "processCount": 2,
+      "commandWindowMilliseconds": 11703.299999952316,
+      "p95Milliseconds": 1.0999999642372131,
+      "cpuCounterVerificationAvailable": false
+    }
+  ],
+  "comparisons": [
+    {
+      "round": 1,
+      "cpuIncreasePercentagePoints": -0.05757144049807428,
+      "p95IncreasePercent": -15.384610446952319,
+      "withinSyntheticThresholds": true
+    },
+    {
+      "round": 2,
+      "cpuIncreasePercentagePoints": -0.05770166797321785,
+      "p95IncreasePercent": 24.999995032946476,
+      "withinSyntheticThresholds": false
+    },
+    {
+      "round": 3,
+      "cpuIncreasePercentagePoints": 0.10909244090611825,
+      "p95IncreasePercent": -15.38461891151741,
+      "withinSyntheticThresholds": true
+    }
+  ],
+  "descriptiveOnly": {
+    "pooledOffP95Milliseconds": 1.2000000476837158,
+    "pooledOnP95Milliseconds": 1.300000011920929,
+    "pooledP95IncreasePercent": 8.333330021964303,
+    "medianPairCpuIncreasePercentagePoints": -0.05757144049807428,
+    "medianPairP95IncreasePercent": -15.384610446952319,
+    "changesOverallFailure": false
+  },
+  "resolutionObservation": {
+    "gridMilliseconds": 0.1,
+    "maximumResidualMilliseconds": 4.768371586472142e-08,
+    "sampleCount": 6000,
+    "interpretation": "values-consistent-with-tenths-millisecond-quantization",
+    "causalAttributionEstablished": false
+  }
+}

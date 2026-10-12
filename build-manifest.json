@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "2.0.0",
+  "packageVersion": "2.0.7",
+  "releaseRepository": "DevLn737/jellyfin-desktop",
+  "sources": {
+    "forkBaseCommit": "955a60349cfb6837d635af19e8dd192d7218109f",
+    "qtPortCommit": "2cb4a4456fd29b5b62d825ef0e5df93ed6913328"
+  },
+  "windows": {
+    "architecture": "x64",
+    "minimumBuild": 18362,
+    "msvcToolset": "v143",
+    "msvcToolsVersion": "14.44.35207",
+    "windowsSdkVersion": "10.0.26100.0",
+    "runner": "windows-2022"
+  },
+  "qt": {
+    "version": "6.11.3",
+    "architecture": "win64_msvc2022_64",
+    "archives": [
+      {
+        "name": "qtpositioning-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.addons.qtpositioning.win64_msvc2022_64/6.11.3-0-202609240253qtpositioning-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "1ea1565ece50abca764ef536b49bec89d2195a06",
+        "sha256": "cb2c6073690e63383ccc238c7172fb23faf77d183da6e9914f1b29d9f4377400",
+        "bytes": 1077361
+      },
+      {
+        "name": "qtserialport-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.addons.qtserialport.win64_msvc2022_64/6.11.3-0-202609240253qtserialport-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "3529b36cb118f1f1aa1ceb0f53ac6269a2313ccf",
+        "sha256": "f6facf23f9ec8c559d2e423a547eeca9d79543d7da4461416368ebd634ddc29b",
+        "bytes": 155694
+      },
+      {
+        "name": "qtshadertools-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.addons.qtshadertools.win64_msvc2022_64/6.11.3-0-202609240253qtshadertools-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "f2b71cee6d12692f38b1350a51c6b22b2a215408",
+        "sha256": "b62c0637c34273491939f96f0e20f15ff43312c9770a68fcaa85649b8c25eb7f",
+        "bytes": 3287094
+      },
+      {
+        "name": "qtwebchannel-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.addons.qtwebchannel.win64_msvc2022_64/6.11.3-0-202609240253qtwebchannel-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "5df2ba742e1c88aca3ebea7136c0615aefa40f74",
+        "sha256": "458fdb8db4e425cf879c22ce63ac82d0e71f5f2ad28d34af9522039e7139715c",
+        "bytes": 305626
+      },
+      {
+        "name": "qtbase-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.win64_msvc2022_64/6.11.3-0-202609240253qtbase-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "fed33357645f1a562c5c9790fcee23ab16d7d313",
+        "sha256": "3ddf0017b4b67cb56018ed5a6af6a54865a40bdc735111a50e5e169e893558e5",
+        "bytes": 39643659
+      },
+      {
+        "name": "qtsvg-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.win64_msvc2022_64/6.11.3-0-202609240253qtsvg-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "be63361d952491704b4c13d41d3615a28ee58e95",
+        "sha256": "eca8f4cff2f5ba79808b68335e8799b4b875ad62d415c44ac8218048f1720b10",
+        "bytes": 680797
+      },
+      {
+        "name": "qtdeclarative-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.win64_msvc2022_64/6.11.3-0-202609240253qtdeclarative-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "16e7b810685d4bcbfd2ad4b4e84d853b48e964ec",
+        "sha256": "8333fdd95fb619af7f320374055cf473c182950e3bebc88311fcf8b65e99d33c",
+        "bytes": 172649952
+      },
+      {
+        "name": "qttools-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.win64_msvc2022_64/6.11.3-0-202609240253qttools-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "f9e2389d600f141600c0e6ce285f2396da94c57e",
+        "sha256": "476f7919617a89cce9823f4a6d85bb2442ce27345d2e3f1d87326eb2724230c8",
+        "bytes": 27045836
+      },
+      {
+        "name": "qttranslations-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.win64_msvc2022_64/6.11.3-0-202609240253qttranslations-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "038c51f1a9337b9f0202b1c969469dea5deb03ae",
+        "sha256": "a1433e5396e1544c503cc2cdef3548f5b0dd5f93b6a65e79d17df7be9b11ac21",
+        "bytes": 2014437
+      },
+      {
+        "name": "d3dcompiler_47-x64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.win64_msvc2022_64/6.11.3-0-202609240253d3dcompiler_47-x64.7z",
+        "officialSha1": "de9c51f5881bf8e04f4c509964ec62ed04b4854b",
+        "sha256": "88b32a5ca59428d0b229938e61df5aa387bcfdbf230ab7fa19e2d80b177e4fd3",
+        "bytes": 1380117
+      },
+      {
+        "name": "opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/qt.qt6.6113.win64_msvc2022_64/6.11.3-0-202609240253opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
+        "officialSha1": "f87dcab12810b792beee5ab1ed0c28dca0189f9c",
+        "sha256": "e26036c9d0655e4267da26d760fde7a7c6e5856b5e7bd20aaf82773d8f64012c",
+        "bytes": 5474526
+      },
+      {
+        "name": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/extensions/qtwebengine/6113/msvc2022_64/extensions.qtwebengine.6113.win64_msvc2022_64/6.11.3-0-202609240437qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+        "officialSha1": "a19c2dc15864fe042e93adc0e73d42f429a83c1d",
+        "sha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c",
+        "bytes": 251759493
+      }
+    ],
+    "qualification": {
+      "issue": "QTBUG-141377",
+      "qualified": false,
+      "fixRelease": "6.11.3",
+      "releaseEvidenceUrl": "https://qt-project.atlassian.net/rest/api/2/version/16945",
+      "fixEvidenceUrl": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/commit/?id=9b162a9269cb8913c792dd6c22d222330a6fdb03",
+      "memoryReportPath": "quality/qt6113-memory.json",
+      "memoryProtocolPath": "quality/memory-protocol.json",
+      "releaseProofPath": "quality/qt6113-release-proof.json"
+    },
+    "packageSourceEvidence": {
+      "statusAtLock": "prepared-unreleased-internal-only",
+      "observedAtUtc": "2026-10-11T15:58:42Z",
+      "officiallyReleasedAtLock": false,
+      "intendedUse": "internal-fix-and-memory-verification",
+      "releaseMetadata": {
+        "name": "6.11.3",
+        "url": "https://bugreports.qt.io/rest/api/2/version/16945",
+        "sha256": "175ef37e4c8b49bb75071b5f68a44ab305383ee85c4daf148f78c693edac043a",
+        "bytes": 300,
+        "released": false,
+        "releaseDate": "2026-10-13"
+      },
+      "officialMetadata": [
+        {
+          "name": "desktop-msvc2022-x64",
+          "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_6113/qt6_6113_msvc2022_64/Updates.xml",
+          "sha256": "4545b858d3bc07285de11d8cdd0edb2e87753d94a6adf517730440e7bdac21c8",
+          "bytes": 120911
+        },
+        {
+          "name": "webengine-msvc2022-x64",
+          "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/extensions/qtwebengine/6113/msvc2022_64/Updates.xml",
+          "sha256": "edc321ffae6ab81a88bb78fc7ca139ecc713b498344f5df10918147bf97730de",
+          "bytes": 2672
+        },
+        {
+          "name": "webengine-main",
+          "url": "https://download.qt.io/online/qtsdkrepository/windows_x86/extensions/qtwebengine/6113/main/Updates.xml",
+          "sha256": "561314b0bbb0810598ab121833b00746c0862cc423d3ed291fa15345a0a4af2b",
+          "bytes": 939,
+          "advertisedSourceSha1s": [
+            "7886592e2e3ea2fd9a9b126b6a99b9e8d99f02ca"
+          ]
+        }
+      ],
+      "packageVersions": {
+        "qt.qt6.6113.win64_msvc2022_64": "6.11.3-0-202609240253",
+        "extensions.qtwebengine.6113.win64_msvc2022_64": "6.11.3-0-202609240437"
+      },
+      "sourceEvidenceKind": "official-common-main-package-metadata-and-exact-git-parent-ancestry",
+      "sourcePinScope": "The common WebEngine main package advertises the Qt5 source SHA; x64 binary metadata does not advertise a separate source SHA.",
+      "sourcePins": {
+        "qt5": {
+          "commit": "7886592e2e3ea2fd9a9b126b6a99b9e8d99f02ca",
+          "url": "https://code.qt.io/cgit/qt/qt5.git/tree/?id=7886592e2e3ea2fd9a9b126b6a99b9e8d99f02ca"
+        },
+        "qtWebEngine": {
+          "commit": "8c73295524f3ce6a2e10ad2f71141c695376c876",
+          "url": "https://code.qt.io/cgit/qt/qtwebengine.git/tree/src?id=8c73295524f3ce6a2e10ad2f71141c695376c876"
+        },
+        "chromium": {
+          "commit": "7927ce61b5a302a3da8172eefbe260ec17484bcd",
+          "url": "https://code.qt.io/cgit/qt/qtwebengine-chromium.git/plain/chromium/v8/BUILD.gn?id=7927ce61b5a302a3da8172eefbe260ec17484bcd"
+        }
+      },
+      "fixCommits": [
+        {
+          "commit": "62f90830c0750182d2b40be60e2e5f9c2f31c4c9",
+          "mergedAtUtc": "2026-09-14T13:44:35Z",
+          "gerritUrl": "https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/770837",
+          "parentEdgesFromChromiumPin": 35,
+          "writeBarriersChange": "true to is_win"
+        },
+        {
+          "commit": "9b162a9269cb8913c792dd6c22d222330a6fdb03",
+          "mergedAtUtc": "2026-09-21T11:01:53Z",
+          "gerritUrl": "https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/772657",
+          "parentEdgesFromChromiumPin": 30,
+          "writeBarriersChange": "is_win to false",
+          "fixesIssue": "QTBUG-141377"
+        }
+      ],
+      "chromiumRoll": {
+        "commit": "92911e07972dbb8fe151ed62ddb14f44503d720d",
+        "url": "https://code.qt.io/cgit/qt/qtwebengine.git/commit/?id=92911e07972dbb8fe151ed62ddb14f44503d720d"
+      },
+      "ancestryApiUrl": "https://codereview.qt-project.org/projects/qt%2Fqtwebengine-chromium/commits/7927ce61b5a302a3da8172eefbe260ec17484bcd",
+      "sourceBuildSettings": {
+        "v8_disable_write_barriers": false
+      },
+      "runtimePayloads": [
+        {
+          "name": "Qt6Core.dll",
+          "archive": "qtbase-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+          "path": "bin/Qt6Core.dll",
+          "fileVersion": "6.11.3.0",
+          "productVersion": "6.11.3.0",
+          "bytes": 10370872,
+          "sha256": "b20757be279b4e074c89be1f183a40975bf867b9a2a4e0ca4ea34a95fe2bb39e",
+          "archiveSha256": "3ddf0017b4b67cb56018ed5a6af6a54865a40bdc735111a50e5e169e893558e5"
+        },
+        {
+          "name": "Qt6WebEngineCore.dll",
+          "archive": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+          "path": "bin/Qt6WebEngineCore.dll",
+          "fileVersion": "6.11.3.0",
+          "productVersion": "6.11.3.0",
+          "bytes": 203763000,
+          "sha256": "7461c85b35347e86ad563f32bec83b503f5fefdc91898dab25a2db4504ca3b0b",
+          "archiveSha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c"
+        },
+        {
+          "name": "Qt6WebEngineQuick.dll",
+          "archive": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+          "path": "bin/Qt6WebEngineQuick.dll",
+          "fileVersion": "6.11.3.0",
+          "productVersion": "6.11.3.0",
+          "bytes": 686904,
+          "sha256": "ff3c4e088c9e8d4a953b550224d185c85e9d6c745f342560c14f9430fe66b0ac",
+          "archiveSha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c"
+        },
+        {
+          "name": "QtWebEngineProcess.exe",
+          "archive": "qtwebengine-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+          "path": "bin/QtWebEngineProcess.exe",
+          "fileVersion": "6.11.3.0",
+          "productVersion": "6.11.3.0",
+          "bytes": 802104,
+          "sha256": "e6590c760fd9792081b627df71704c15acda4b19d581eb3efce921cda93b608f",
+          "archiveSha256": "d77346ed46dd42e173f1ca2682c896309645ee90adaf8f85911af6905ff5c17c"
+        }
+      ],
+      "verificationLimit": "Official metadata and exact source ancestry identify both fixes; DLL versions and archive hashes identify downloaded binaries. This is not an independent compiled-code audit, an official release assertion, or a passing runtime memory report.",
+      "evidenceDocument": "docs/qt6113-package-evidence.md"
+    }
+  },
+  "tools": {
+    "vulkanRuntime": {
+      "version": "1.4.363.0",
+      "commit": "fa218055ff4948b159f31d43f800c808a13d51df",
+      "name": "VulkanRT-X64-1.4.363.0-Components.zip",
+      "url": "https://sdk.lunarg.com/sdk/download/1.4.363.0/windows/VulkanRT-X64-1.4.363.0-Components.zip",
+      "sha256": "a25a927aa8b9f0371048f1861cf88ac3b9bc9b1fb332c42d897c8ab32695769a",
+      "bytes": 18211191,
+      "runtimeDll": {
+        "name": "vulkan-1.dll",
+        "path": "VulkanRT-X64-1.4.363.0-Components/x64/vulkan-1.dll",
+        "sha256": "e1fcfc9489beefa6a6d9d11d6c7517f6a2b7f16e0d3fb8f4103bee0210f314a3",
+        "bytes": 1729464
+      },
+      "license": {
+        "name": "VulkanRT-License.txt",
+        "path": "VulkanRT-X64-1.4.363.0-Components/VulkanRT-License.txt",
+        "sha256": "404deb98dabf3e54bf9070d59676b31d69a3da2f9f6e56bdf09ad315c04c718c",
+        "bytes": 4008
+      }
+    },
+    "node": {
+      "version": "24.21.0",
+      "name": "node-v24.21.0-win-x64.zip",
+      "url": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip",
+      "sha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
+      "bytes": 37618919
+    },
+    "cmake": {
+      "version": "3.31.6",
+      "name": "cmake-3.31.6-windows-x86_64.zip",
+      "url": "https://github.com/Kitware/CMake/releases/download/v3.31.6/cmake-3.31.6-windows-x86_64.zip",
+      "sha256": "d163cd3ab4959b0a53fa8988f2ddbd2e6c501658201e6a154386bad9dbe4f836",
+      "bytes": 46473549
+    },
+    "ninja": {
+      "version": "1.13.2",
+      "name": "ninja-win.zip",
+      "url": "https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip",
+      "sha256": "07fc8261b42b20e71d1720b39068c2e14ffcee6396b76fb7a795fb460b78dc65",
+      "bytes": 291570
+    },
+    "wix": {
+      "version": "7.0.0",
+      "name": "wix-cli-x64.msi",
+      "url": "https://github.com/wixtoolset/wix/releases/download/v7.0.0/wix-cli-x64.msi",
+      "sha256": "16ff3857255e0ffa118d90e6d3a20e47499e55cda109853b5aac4700735f0293",
+      "bytes": 12365824
+    },
+    "vcRedist": {
+      "name": "VC_redist.x64.exe",
+      "url": "https://download.visualstudio.microsoft.com/download/pr/bd1c8d9d-ba95-4eee-bc6e-df1fcc876373/CC0FF0EB1DC3F5188AE6300FAEF32BF5BEEBA4BDD6E8E445A9184072096B713B/VC_redist.x64.exe",
+      "sha256": "cc0ff0eb1dc3f5188ae6300faef32bf5beeba4bdd6e8e445a9184072096b713b",
+      "bytes": 25635768,
+      "version": "14.44.35211.0",
+      "runtimeDlls": {
+        "concrt140.dll": "2405355f0a58067b258f8df33c327e3a3d716eaac5a3a5aebb757842d85bd376",
+        "msvcp140.dll": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9",
+        "msvcp140_1.dll": "bfad5aef4c63a669e3c140655cdfdf395b6c979b400a447bd5dcb65ed8826c3d",
+        "msvcp140_2.dll": "3ea06f0ee098b4823cb79599df3780e7f23cce52c19aac31d2a0d47efe33a5e9",
+        "msvcp140_atomic_wait.dll": "640b2aefced484d0368eea5bdd06addd0658a3a70a49256e560d6923b404a479",
+        "msvcp140_codecvt_ids.dll": "f2069a52880ec885ee7f0511186100eb7fada0411a2b4948fafea7735b878a18",
+        "vccorlib140.dll": "19839407c3fdbc824e5bce189bf68ddf8097f12ec28b757797ffa0415c144ddd",
+        "vcruntime140.dll": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066",
+        "vcruntime140_1.dll": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f",
+        "vcruntime140_threads.dll": "219915cf20822f34d5e7c1fdd4e21ae7f3396881096c51036225fb8f84b47afa"
+      }
+    }
+  },
+  "mpv": {
+    "commit": "accb7b2821ecf0cb04cf3579ccd98bc8f751f61f",
+    "version": "20261011-git-accb7b2821",
+    "architecture": "x86_64",
+    "name": "mpv-dev-x86_64-20261011-git-accb7b2821.7z",
+    "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261011/mpv-dev-x86_64-20261011-git-accb7b2821.7z",
+    "sha256": "cf63b4ce66e03e5e70acf2648cbc3177656c77c5b9583e16d83efc58801182b7",
+    "bytes": 31547972
+  },
+  "tracy": {
+    "tag": "v0.14.1",
+    "commit": "30997d5ca6bb632cc10807a1da8a6d3de0aeeb3c",
+    "version": "0.14.1",
+    "name": "tracy-0.14.1.tar.gz",
+    "url": "https://github.com/wolfpld/tracy/archive/refs/tags/v0.14.1.tar.gz",
+    "sha256": "bf4af567e9c7524d07f3caa745fad02fb33bd5694f11910750382d1efbb251c1",
+    "bytes": 6173646
+  },
+  "wix": {
+    "eulaId": "wix7",
+    "extensions": [
+      {
+        "id": "WixToolset.Util.wixext",
+        "version": "7.0.0",
+        "name": "wixtoolset.util.wixext.7.0.0.nupkg",
+        "url": "https://api.nuget.org/v3-flatcontainer/wixtoolset.util.wixext/7.0.0/wixtoolset.util.wixext.7.0.0.nupkg",
+        "sha256": "6431ef896ddaff08d21221e67de98a3597fa94fb0557372cb96feb4edae0c23e",
+        "bytes": 924539
+      },
+      {
+        "id": "WixToolset.BootstrapperApplications.wixext",
+        "version": "7.0.0",
+        "name": "wixtoolset.bootstrapperapplications.wixext.7.0.0.nupkg",
+        "url": "https://api.nuget.org/v3-flatcontainer/wixtoolset.bootstrapperapplications.wixext/7.0.0/wixtoolset.bootstrapperapplications.wixext.7.0.0.nupkg",
+        "sha256": "95b28b2e3035ec3a171c408d2e25921297ea3cc65c76e75e14317b796e2a8a9b",
+        "bytes": 1714156
+      }
+    ]
+  }
+}

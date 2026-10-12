@@ -1,6 +1,5 @@
 #include <QObject>
 #include <QtQml>
-#include <qqmlwebchannel.h>
 #include <QDebug>
 
 #include "ComponentManager.h"
@@ -12,6 +11,10 @@
 #include "system/SystemComponent.h"
 #include "settings/SettingsComponent.h"
 #include "taskbar/TaskbarComponent.h"
+#include "diagnostics/DiagnosticsComponent.h"
+#ifdef Q_OS_WIN
+#include "discord/DiscordComponent.h"
+#endif
 
 #if KONVERGO_OPENELEC
 #include "system/openelec/OESystemComponent.h"
@@ -56,8 +59,12 @@ void ComponentManager::initialize()
   registerComponent(&SystemComponent::Get());
   registerComponent(&DisplayComponent::Get());
   registerComponent(&PlayerComponent::Get());
+  registerComponent(&DiagnosticsComponent::Get());
   registerComponent(&PowerComponent::Get());
   registerComponent(&TaskbarComponent::Get());
+#ifdef Q_OS_WIN
+  registerComponent(&DiscordComponent::Get());
+#endif
 
 #if KONVERGO_OPENELEC
   registerComponent(&OESystemComponent::Get());

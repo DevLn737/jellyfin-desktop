@@ -46,14 +46,25 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
 - void updateSubtitleSettings()
 - void updateVideoSettings()
 - bool load(str url, dict options, dict metadata, str audioStream="", str subtitleStream="")
-    - options: dict { int startMilliseconds, bool autoplay }
+    - options: dict { int startMilliseconds, bool autoplay, optional int nativeRequestId,
+      optional bool preserveTimestamps }
+    - true means the load was queued; wait for playbackReady for decode readiness
+    - nativeRequestId: client-local positive safe integer (1..9007199254740991),
+      unrelated to server, media or session identifiers
+    - preserveTimestamps: per-file original timestamps and absolute start time;
+      used for server HLS/copytimestamps transcoding, not ordinary direct TS
+      - music maps the probed stream origin at the native boundary; video keeps
+        original decoder timestamps and independent external-track alignment
+      - positions, readiness and duration endpoint share that original timeline
     - metadata: dict { bool interlaced, float frameRate, str type }
         - type can be "video" or "music"
     - audioStream: "#" + index from mkv, or pass external url
     - subtitleStream: "#" + index from mkv, or pass external url
-- void queueMedia(str url, dict options, dict metadata, str audioStream, str subtitleStream)
+- bool queueMedia(str url, dict options, dict metadata, str audioStream, str subtitleStream)
 - void clearQueue()
 - void seekTo(int ms)
+- bool seekToForReady(int ms, int nativeRequestId) - seek with a client-local
+  readiness correlation ID; true acknowledges the seek command, not readiness
 - void stop()
 - void streamSwitch()
 - void pause()
@@ -69,8 +80,13 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
     - subtitleStream: "#" + index from mkv, or pass external url
 - void setAudioDelay(int ms)
 - void setSubtitleDelay(int ms)
-- void setPlaybackRate(int rate) - 1000 = normal speed
-- int getPosition()
+- bool setPlaybackRate(double rate) - integer thousandths, 1000 = normal speed;
+  finite values 200..5000 are accepted, otherwise false. JavaScript player base
+  rates are 0.25..5 and SyncPlay corrections are 0.2..5. Callers must process the
+  asynchronous native acknowledgement.
+- qint64 getPosition() - milliseconds, including fractional mpv seconds rounded
+  to the nearest millisecond; invalid/negative values return zero
+- qint64 getDuration() - milliseconds; invalid/negative values return zero
 - void setVideoOnlyMode(bool enable) - hides webview
 - bool checkCodecSupport(str codec) - can check for vc1 and mpeg2video
 - list[codecdriver] installedCodecDrivers()
@@ -88,13 +104,38 @@ player/PlayerComponent - [header](https://github.com/plexinc/plex-media-player/b
 - stateChanged(state newState, state oldState)
 - videoPlaybackActive(bool active) - true if the video (or music) is actually playing
 - windowVisible(bool visible)
-- updateDuration(int ms) - duration of the file
-- positionUpdate(int ms) - emitted twice a second
+- updateDuration(qint64 ms) - duration of the file
+- positionUpdate(quint64 ms) - emitted twice a second
+- seekStarted(int nativeRequestId) - mpv reports a seek beginning, including while
+  paused; loading alone need not produce this event
+- playbackReady(int nativeRequestId, qint64 positionMs, bool paused) - actual
+  mpv playback restart, after draining its events and sampling the new position;
+  emitted for the matching active file only, including paused load/seek
 - onVideoRecangleChanged()
 - onMpvEvents()
 ## types:
 - codecdriver: see src/player/CodecsComponent.h > struct CodecDriver
 - state: enum { finished, canceled, error, paused, playing, buffering }
+
+# diagnostics
+
+`window.api.diagnostics` is available after `window.apiPromise`. Calls use the
+same asynchronous WebChannel convention as the other components.
+
+- `startCapture()` starts a new local capture and clears the previous session.
+- `stopCapture()` stops collection and preserves the retained report.
+- `saveReport()` opens the system file dialog and exports JSON on a worker.
+- `clearCapture()` stops capture and discards the retained session.
+- `capturing` is a read-only property; `captureChanged(bool)` reports changes.
+- `reportSaved(bool)` reports write completion without exposing the file path.
+- `ping()` and `recordWebChannelLatency(double durationMs)` measure a round trip
+  while capturing; they do not persist arbitrary messages.
+- `recordSyncPlayEvent(string event, map metrics)` accepts only fixed event names
+  and finite numeric allowlisted fields. Unknown fields and text are discarded.
+
+Collection is off at every launch, retains the last ten minutes in at most
+16 MiB, and ends automatically after fifteen minutes. Details and the numeric
+event mapping are in [DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
 # power
 power/PowerComponent - [header](https://github.com/plexinc/plex-media-player/blob/master/src/power/PowerComponent.h), [implementation](https://github.com/plexinc/plex-media-player/blob/master/src/power/PowerComponent.cpp)
 ## funcs:

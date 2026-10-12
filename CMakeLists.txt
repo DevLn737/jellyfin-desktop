@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.31.6 FATAL_ERROR)
 
 # use a toolchain file if any for Embedded
 if (EXISTS "${CMAKE_SOURCE_DIR}/toolchain.cmake")
@@ -41,12 +41,20 @@ endmacro()
 set_policy(CMP0020 NEW)
 set_policy(CMP0017 NEW)
 set_policy(CMP0058 NEW)
-set_policy(CMP0026 OLD)
+set_policy(CMP0026 NEW)
 set_policy(CMP0071 NEW)
 set_policy(CMP0072 NEW)
-set_policy(CMP0148 OLD)
 
 include(utils)
+include(BuildManifest)
+find_package(Git REQUIRED)
+execute_process(COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  OUTPUT_VARIABLE JMP_BUILD_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+execute_process(COMMAND "${GIT_EXECUTABLE}" status --porcelain WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  OUTPUT_VARIABLE JMP_DIRTY_TREE OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+if(JMP_DIRTY_TREE)
+  string(APPEND JMP_BUILD_COMMIT "-dirty")
+endif()
 include(CompilerFlags)
 include(DependencyConfiguration)
 include(QtConfiguration)
@@ -66,9 +74,11 @@ elseif(UNIX AND (NOT APPLE))
   include(LinuxConfiguration)
 endif(APPLE)
 
-if (Qt5_POSITION_INDEPENDENT_CODE)
+if (Qt6_POSITION_INDEPENDENT_CODE)
   SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif(Qt5_POSITION_INDEPENDENT_CODE)
+endif()
+
+include(ProfilingConfiguration)
 
 add_subdirectory(external)
 add_subdirectory(src)
