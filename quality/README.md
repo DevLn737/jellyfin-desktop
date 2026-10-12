@@ -12,6 +12,18 @@ snapshots were not attested at launch. These observations establish a controlled
 rapid-memory reproduction and a software comparison, not release qualification.
 See [the client correction and scope](../docs/windows-playback-composition-fix.md).
 
+The [rc.3 development record](observations/desktop-development-14922aa.json)
+binds nine passing selected build/package/runtime checks to clean `14922aa`.
+The separate [full Desktop observation](observations/desktop-live-14922aa.json)
+and [native phase values](observations/desktop-live-probe-14922aa.json) passed
+on that exact normal executable: correct composed video/overlay pixels,
+559,517,696-byte parent peak and 485.22 ms active-video close with exit zero and
+no remaining owned children before cleanup. Its
+[old-executable baseline](observations/desktop-live-baseline-33a3722.json)
+failed the same controlled private-memory ceiling. Current-source hour-long
+memory and diagnostics-overhead qualification remain not run; aggregate checks,
+ready RC, release qualification and user acceptance remain false.
+
 | Area | Required evidence |
 | --- | --- |
 | Playback | Direct Play, remux/transcode, hardware decode/fallback, passthrough, audio/subtitle selection, fullscreen, DPI and multiple monitors |

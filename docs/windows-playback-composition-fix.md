@@ -57,3 +57,30 @@ renderer test alone did not cover these paths.
 These changes do not qualify QTBUG-141377, the hour-long memory protocol,
 diagnostics overhead or the final user acceptance. Qt release qualification
 remains false. Server/Web implementations, contracts and deployments are unchanged.
+
+## Final development build check
+
+The complete normal and diagnostic pipelines on clean
+`14922aa8efa49b91e7ecfcd880275abd71fba563` passed, including package binding,
+runtime import closure, NativeShell/CSP, six shutdown cases and matching
+diagnostic EXE/PDB identity. The diagnostic listener bound only
+`127.0.0.1:8086`; an ordinary launch exposed no DevTools port. Both push and PR
+CI runs succeeded. Installer/portable/diagnostic/symbols assets and SHA256 sums
+are under `build/desktop-qt6-development/14922aa`.
+
+The same tracked live Desktop protocol first reproduced the old executable's
+memory ceiling failure, then passed on the exact packaged rc.3 executable.
+Four load/play cycles, native stop, an additional active load and three sparse
+composed-window samples passed. Parent private memory peaked at 559,517,696
+bytes; separately verified children peaked at 21,291,008 bytes. Native stop
+took 0.70 ms; native X-close during video took 485.22 ms and exited with code
+zero. No owned child remained before cleanup. AMD OpenGL and five observed
+`d3d11va-copy` decoder activations were retained.
+
+Three transient mpv startup/close frame-stall warnings remain in this full
+Desktop observation; composed pixels and playback progressed. The standalone
+paused startup comparison passed with both renderers and did not reproduce
+those warnings. Neither result is proof that all native-thread stalls are fixed.
+The earlier failed investigation attempts remain retained; no failure was
+converted into passing evidence. The short observation does not replace the
+hour-long or diagnostics-overhead protocols.

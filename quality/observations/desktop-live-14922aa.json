@@ -1,0 +1,614 @@
+{
+  "schemaVersion": 1,
+  "scope": "owned-full-desktop-live-video-and-animated-transparent-web-composition",
+  "qualificationEligible": false,
+  "forcedGC": false,
+  "oneHourMemoryQualification": false,
+  "performanceQualification": false,
+  "authentication": false,
+  "serverConnection": false,
+  "userMedia": false,
+  "syncPlay": false,
+  "appVersion": "2.0.0-rc.3",
+  "packageVersion": "2.0.3",
+  "sourceCommit": "14922aa8efa49b91e7ecfcd880275abd71fba563",
+  "embeddedSourceCommitVerified": true,
+  "manifestSha256": "6cc466c74babb81a08cbbf4e59a3ff127d88a94c5a704db0214af17547bf2dfe",
+  "exeSha256": "e275adfb91b26abf35b9779f5311614de3ada90126b94b3a365abe38bac65109",
+  "ownerScriptSha256": "b5af470ee8da32ae02ddb5f2140516f8922b8543a0d6bf013fb450f06a3fc347",
+  "driverScriptSha256": "5c4803bb835e87758930efb7dc0cabe34fc4fbe82c3aabca4a9f5c5bef85009d",
+  "fixtureManifestSha256": "6ed4626072712b2046186b4c6d5cad1f9f9ae2513e75135a5f5b0bc7c4f5fea9",
+  "fixtureBytes": 20516,
+  "ownPortableProfile": true,
+  "showWithoutActivation": true,
+  "webEngineGpuOptIn": false,
+  "sampledParentPrivateLimitBytes": 2147483648,
+  "sampledChildrenPrivateLimitBytes": 2147483648,
+  "sampleIntervalMilliseconds": 250,
+  "deadlineSeconds": 55,
+  "closeLimitMilliseconds": 2000,
+  "closeTimeoutMilliseconds": 10000,
+  "nativeChildExitGraceMilliseconds": 500,
+  "orphanedOwnedChildrenBeforeCleanup": 0,
+  "completed": true,
+  "passed": true,
+  "failureCode": null,
+  "probeExitCode": 0,
+  "applicationExitCode": 0,
+  "samples": [
+    {
+      "parentRssBytes": 210366464,
+      "childCount": 1,
+      "parentPrivateBytes": 318701568,
+      "childrenRssBytes": 55218176,
+      "elapsedSeconds": 0.1976612,
+      "childrenPrivateBytes": 16195584
+    },
+    {
+      "parentRssBytes": 280719360,
+      "childCount": 1,
+      "parentPrivateBytes": 435576832,
+      "childrenRssBytes": 55218176,
+      "elapsedSeconds": 0.4722467,
+      "childrenPrivateBytes": 16195584
+    },
+    {
+      "parentRssBytes": 324157440,
+      "childCount": 1,
+      "parentPrivateBytes": 526983168,
+      "childrenRssBytes": 55218176,
+      "elapsedSeconds": 0.7408558,
+      "childrenPrivateBytes": 16195584
+    },
+    {
+      "parentRssBytes": 340353024,
+      "childCount": 1,
+      "parentPrivateBytes": 559022080,
+      "childrenRssBytes": 55218176,
+      "elapsedSeconds": 1.0068615,
+      "childrenPrivateBytes": 16195584
+    },
+    {
+      "parentRssBytes": 341614592,
+      "childCount": 1,
+      "parentPrivateBytes": 559185920,
+      "childrenRssBytes": 88133632,
+      "elapsedSeconds": 1.3568398,
+      "childrenPrivateBytes": 21278720
+    },
+    {
+      "parentRssBytes": 342147072,
+      "childCount": 1,
+      "parentPrivateBytes": 559185920,
+      "childrenRssBytes": 88133632,
+      "elapsedSeconds": 1.614869,
+      "childrenPrivateBytes": 21278720
+    },
+    {
+      "parentRssBytes": 342740992,
+      "childCount": 1,
+      "parentPrivateBytes": 559190016,
+      "childrenRssBytes": 88133632,
+      "elapsedSeconds": 1.8829837,
+      "childrenPrivateBytes": 21278720
+    },
+    {
+      "parentRssBytes": 343400448,
+      "childCount": 1,
+      "parentPrivateBytes": 559194112,
+      "childrenRssBytes": 88133632,
+      "elapsedSeconds": 2.1497672,
+      "childrenPrivateBytes": 21278720
+    },
+    {
+      "parentRssBytes": 344510464,
+      "childCount": 1,
+      "parentPrivateBytes": 559517696,
+      "childrenRssBytes": 88092672,
+      "elapsedSeconds": 2.5141442,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 345100288,
+      "childCount": 1,
+      "parentPrivateBytes": 559517696,
+      "childrenRssBytes": 88092672,
+      "elapsedSeconds": 2.7761698,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 345759744,
+      "childCount": 1,
+      "parentPrivateBytes": 559517696,
+      "childrenRssBytes": 88092672,
+      "elapsedSeconds": 3.0394535,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 346349568,
+      "childCount": 1,
+      "parentPrivateBytes": 559517696,
+      "childrenRssBytes": 88092672,
+      "elapsedSeconds": 3.305133,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 347201536,
+      "childCount": 1,
+      "parentPrivateBytes": 559517696,
+      "childrenRssBytes": 88096768,
+      "elapsedSeconds": 3.6598091,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 347611136,
+      "childCount": 1,
+      "parentPrivateBytes": 559517696,
+      "childrenRssBytes": 88096768,
+      "elapsedSeconds": 3.9137046,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 347877376,
+      "childCount": 1,
+      "parentPrivateBytes": 552767488,
+      "childrenRssBytes": 88096768,
+      "elapsedSeconds": 4.1791516,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 348143616,
+      "childCount": 1,
+      "parentPrivateBytes": 552767488,
+      "childrenRssBytes": 88096768,
+      "elapsedSeconds": 4.4419056,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 348467200,
+      "childCount": 1,
+      "parentPrivateBytes": 520224768,
+      "childrenRssBytes": 88100864,
+      "elapsedSeconds": 4.7820233,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 327954432,
+      "childCount": 1,
+      "parentPrivateBytes": 502386688,
+      "childrenRssBytes": 88100864,
+      "elapsedSeconds": 5.0382082,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 358232064,
+      "childCount": 1,
+      "parentPrivateBytes": 521752576,
+      "childrenRssBytes": 88100864,
+      "elapsedSeconds": 5.3038709,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 358297600,
+      "childCount": 1,
+      "parentPrivateBytes": 521752576,
+      "childrenRssBytes": 88100864,
+      "elapsedSeconds": 5.571283,
+      "childrenPrivateBytes": 21225472
+    },
+    {
+      "parentRssBytes": 358297600,
+      "childCount": 1,
+      "parentPrivateBytes": 521752576,
+      "childrenRssBytes": 82681856,
+      "elapsedSeconds": 5.9289401,
+      "childrenPrivateBytes": 21241856
+    },
+    {
+      "parentRssBytes": 358297600,
+      "childCount": 1,
+      "parentPrivateBytes": 521752576,
+      "childrenRssBytes": 82681856,
+      "elapsedSeconds": 6.1974319,
+      "childrenPrivateBytes": 21241856
+    },
+    {
+      "parentRssBytes": 354611200,
+      "childCount": 1,
+      "parentPrivateBytes": 521912320,
+      "childrenRssBytes": 82681856,
+      "elapsedSeconds": 6.5872701,
+      "childrenPrivateBytes": 21241856
+    },
+    {
+      "parentRssBytes": 354611200,
+      "childCount": 1,
+      "parentPrivateBytes": 521912320,
+      "childrenRssBytes": 82681856,
+      "elapsedSeconds": 6.8537142,
+      "childrenPrivateBytes": 21241856
+    },
+    {
+      "parentRssBytes": 354615296,
+      "childCount": 1,
+      "parentPrivateBytes": 521912320,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 7.2134719,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 354615296,
+      "childCount": 1,
+      "parentPrivateBytes": 521912320,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 7.4785345,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 354615296,
+      "childCount": 1,
+      "parentPrivateBytes": 521912320,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 7.743335,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 354615296,
+      "childCount": 1,
+      "parentPrivateBytes": 521912320,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 8.010565,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 354615296,
+      "childCount": 1,
+      "parentPrivateBytes": 521588736,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 8.3583816,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 354865152,
+      "childCount": 1,
+      "parentPrivateBytes": 521908224,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 8.6224486,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 354934784,
+      "childCount": 1,
+      "parentPrivateBytes": 521908224,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 8.8901794,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 354934784,
+      "childCount": 1,
+      "parentPrivateBytes": 521908224,
+      "childrenRssBytes": 82706432,
+      "elapsedSeconds": 9.1576606,
+      "childrenPrivateBytes": 21266432
+    },
+    {
+      "parentRssBytes": 355237888,
+      "childCount": 1,
+      "parentPrivateBytes": 522330112,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 9.5081448,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355471360,
+      "childCount": 1,
+      "parentPrivateBytes": 522563584,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 9.7692696,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355536896,
+      "childCount": 1,
+      "parentPrivateBytes": 522563584,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 10.0369774,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355553280,
+      "childCount": 1,
+      "parentPrivateBytes": 522563584,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 10.4406855,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355725312,
+      "childCount": 1,
+      "parentPrivateBytes": 523845632,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 10.7917952,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355725312,
+      "childCount": 1,
+      "parentPrivateBytes": 523845632,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 11.0469301,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355725312,
+      "childCount": 1,
+      "parentPrivateBytes": 523845632,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 11.3139334,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355729408,
+      "childCount": 1,
+      "parentPrivateBytes": 523845632,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 11.5801895,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355729408,
+      "childCount": 1,
+      "parentPrivateBytes": 523845632,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 11.9463021,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355708928,
+      "childCount": 1,
+      "parentPrivateBytes": 523706368,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 12.2061322,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355708928,
+      "childCount": 1,
+      "parentPrivateBytes": 523706368,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 12.4705771,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355708928,
+      "childCount": 1,
+      "parentPrivateBytes": 523706368,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 12.7347464,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355708928,
+      "childCount": 1,
+      "parentPrivateBytes": 523706368,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 13.0904962,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355708928,
+      "childCount": 1,
+      "parentPrivateBytes": 523706368,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 13.3477119,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355504128,
+      "childCount": 1,
+      "parentPrivateBytes": 523800576,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 13.6147865,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355512320,
+      "childCount": 1,
+      "parentPrivateBytes": 523800576,
+      "childrenRssBytes": 82808832,
+      "elapsedSeconds": 13.8795124,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355516416,
+      "childCount": 1,
+      "parentPrivateBytes": 523800576,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 14.2313971,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355606528,
+      "childCount": 1,
+      "parentPrivateBytes": 523960320,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 14.6144133,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355782656,
+      "childCount": 1,
+      "parentPrivateBytes": 524120064,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 14.8804992,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355790848,
+      "childCount": 1,
+      "parentPrivateBytes": 524120064,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 15.1450881,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355794944,
+      "childCount": 1,
+      "parentPrivateBytes": 524120064,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 15.4896707,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355803136,
+      "childCount": 1,
+      "parentPrivateBytes": 524120064,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 15.7565479,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355807232,
+      "childCount": 1,
+      "parentPrivateBytes": 524120064,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 16.025064,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355811328,
+      "childCount": 1,
+      "parentPrivateBytes": 524120064,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 16.2896281,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355799040,
+      "childCount": 1,
+      "parentPrivateBytes": 523665408,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 16.6622954,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 355803136,
+      "childCount": 1,
+      "parentPrivateBytes": 523665408,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 16.9298264,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 348741632,
+      "childCount": 1,
+      "parentPrivateBytes": 514744320,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 17.1950497,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 348102656,
+      "childCount": 1,
+      "parentPrivateBytes": 514101248,
+      "childrenRssBytes": 82825216,
+      "elapsedSeconds": 17.4619093,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 336130048,
+      "childCount": 1,
+      "parentPrivateBytes": 499879936,
+      "childrenRssBytes": 82837504,
+      "elapsedSeconds": 17.8119769,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 343539712,
+      "childCount": 1,
+      "parentPrivateBytes": 506396672,
+      "childrenRssBytes": 82837504,
+      "elapsedSeconds": 18.0721457,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 343777280,
+      "childCount": 1,
+      "parentPrivateBytes": 506716160,
+      "childrenRssBytes": 82837504,
+      "elapsedSeconds": 18.3374671,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 343777280,
+      "childCount": 1,
+      "parentPrivateBytes": 506716160,
+      "childrenRssBytes": 82837504,
+      "elapsedSeconds": 18.6032487,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 343785472,
+      "childCount": 1,
+      "parentPrivateBytes": 506716160,
+      "childrenRssBytes": 82837504,
+      "elapsedSeconds": 18.958182,
+      "childrenPrivateBytes": 21291008
+    },
+    {
+      "parentRssBytes": 343961600,
+      "childCount": 1,
+      "parentPrivateBytes": 506716160,
+      "childrenRssBytes": 82837504,
+      "elapsedSeconds": 19.2265186,
+      "childrenPrivateBytes": 21291008
+    }
+  ],
+  "pixels": [
+    {
+      "blue": true,
+      "printSucceeded": true,
+      "width": 1920,
+      "red": true,
+      "cyan": true,
+      "elapsedSeconds": 6.3269811,
+      "height": 1009
+    },
+    {
+      "blue": true,
+      "printSucceeded": true,
+      "width": 1920,
+      "red": true,
+      "cyan": true,
+      "elapsedSeconds": 10.1811282,
+      "height": 1009
+    },
+    {
+      "blue": true,
+      "printSucceeded": true,
+      "width": 1920,
+      "red": true,
+      "cyan": true,
+      "elapsedSeconds": 14.3618145,
+      "height": 1009
+    }
+  ],
+  "close": {
+    "elapsedMs": 485.2246,
+    "graceful": true,
+    "requested": true,
+    "duringActiveVideo": true
+  },
+  "nativeChildExitGraceElapsedMs": 10.2154,
+  "remainingKnownOwnedChildren": 0,
+  "remainingOwnedListeners": 0,
+  "elapsedSeconds": 21.7287735,
+  "peakParentPrivateBytes": 559517696.0,
+  "peakChildrenPrivateBytes": 21291008.0,
+  "renderStuckWarningCount": 3,
+  "swapMissingWarningCount": 0,
+  "geometrySaveCount": 5,
+  "probeReportSha256": "12bd8960b1329c6cf2fda18da2c5095ea1ab6013493d3565f3ad54f6807b41fe",
+  "originalRawReportSha256": "554f46f1f7d5c75c8172c2089f2292b5e6bbe6d131fbcf732bc5bd346b882829"
+}

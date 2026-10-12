@@ -65,7 +65,21 @@ for internal verification and the Windows toolchain. The release qualification
 remains false. Local successful builds and
 automated checks are development evidence, not final user acceptance.
 
-The current rc.2 development packages were built from clean source
+The current rc.3 development packages were built from clean source
+`14922aa8efa49b91e7ecfcd880275abd71fba563`, manifest SHA256
+`6cc466c74babb81a08cbbf4e59a3ff127d88a94c5a704db0214af17547bf2dfe`.
+Nine selected build/package/runtime checks passed. The separate full Desktop
+video/animated-overlay regression passed on the exact normal executable:
+parent private peak 559,517,696 bytes and active-video close 485.22 ms, exit zero,
+with no remaining owned children before cleanup. See the
+[rc.3 package record](../quality/observations/desktop-development-14922aa.json)
+and [live observation](../quality/observations/desktop-live-14922aa.json).
+[Push CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38191171545)
+and [PR CI](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38191174432)
+passed. Current-source full-hour memory and diagnostics-overhead qualification
+have not run; final qualification and user acceptance remain false.
+
+The retained rc.2 development packages were built from clean source
 `33a3722039541cfd510999a4c55cb1600c4f8d52`, manifest SHA256
 `c02f654aafa032db7baa698531dc5cce04399c6538bbdeec1b133660ff9a3d74`.
 Both complete local pipelines, native/Node/Python regressions, production
