@@ -229,13 +229,14 @@ async function createApi() {
             // even a small animation. Retain size/style containment, but avoid
             // those independent layout/paint boundaries in the Desktop view.
             // This is local to the software client; GPU rendering keeps Web CSS.
-            const style = document.createElement('style');
-            style.id = 'jmp-software-card-containment';
-            style.textContent = `
+            // A constructed sheet also works on servers with style-src 'self',
+            // without weakening their CSP or fetching a local file remotely.
+            const style = new CSSStyleSheet();
+            style.replaceSync(`
                 .card, .cardScalable, .cardIndicators { contain: style !important; }
                 .cardPadder, .cardImageContainer { contain: size style !important; }
-            `;
-            document.head.appendChild(style);
+            `);
+            document.adoptedStyleSheets = [...document.adoptedStyleSheets, style];
         }
 
         if (typeof window.QWebChannel !== 'function') {
