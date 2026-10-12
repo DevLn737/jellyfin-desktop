@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "accepted": true,
+  "acceptedBy": "user",
+  "acceptedDate": "2026-10-13",
+  "acceptanceStatement": "Принимаю текущую версию как релизную.",
+  "acceptanceScope": "Owner acceptance of the delivered Windows RC6. Detailed qualification measurements were not supplied.",
+  "buildCommit": "cac8ac6201401ae10fb81a47f828fcf6f5cf5c5a",
+  "appVersion": "2.0.0-rc.6",
+  "qtVersion": "6.11.3",
+  "buildManifestSha256": "59507c23341cb23bd16fcc02642c1e48a40f4d1712e2481f8cbd72d056497cc5",
+  "installerSha256": "88a00fb5be819413c660b8fd62be2b01442609df5ce6008f4674e32927c93b60",
+  "nativeAcceptancePerformed": true,
+  "nativeAcceptanceScope": "User used the Windows installer and explicitly accepted the current version after the playback/menu fixes. This does not assert every checklist case was exercised.",
+  "apiRevision": "desktop-handoff-12.2-syncplay.1-r1",
+  "serverCommit": "494362e6b354385a00b7ae879814e2908c23f725",
+  "webCommit": "b2a97d40c6898726b030b0233a0c9dc89734d3e3",
+  "contractBindingScope": "Pinned build compatibility target; no new live server measurement is implied.",
+  "syncPlay": {
+    "composition": null,
+    "correctionEnabled": null,
+    "coldSecondClient": null,
+    "mixedClientCases": [],
+    "driftSamples": [],
+    "status": "not-reported"
+  },
+  "technicalQualificationComplete": false,
+  "missingEvidence": [
+    "current-source-long-duration-qt-memory",
+    "mixed-native-web-syncplay-drift",
+    "diagnostics-overhead",
+    "clean-windows-installation"
+  ],
+  "stablePromotion": {
+    "appVersion": "2.0.0",
+    "packageVersion": "2.0.7",
+    "applicationChanges": "none",
+    "publication": "draft-pending-technical-qualification"
+  }
+}

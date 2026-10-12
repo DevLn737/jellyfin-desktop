@@ -203,6 +203,9 @@ class ReleaseValidationTest(unittest.TestCase):
 
     def test_version_promotion_and_result_transition_preserve_all_other_fields(self):
         tested = self.prepared_manifest()
+        # The promotion fixture must remain an RC even when the repository's
+        # actual manifest has already been promoted to a stable version.
+        tested["appVersion"] = "2.0.0-rc.6"
         stable = copy.deepcopy(tested)
         stable.update(appVersion="2.0.0", packageVersion=self.next_package_version(tested))
         stable["qt"]["qualification"]["qualified"] = True

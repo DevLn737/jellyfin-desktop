@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "appVersion": "2.0.0-rc.6",
-  "packageVersion": "2.0.6",
+  "appVersion": "2.0.0",
+  "packageVersion": "2.0.7",
   "releaseRepository": "DevLn737/jellyfin-desktop",
   "sources": {
     "forkBaseCommit": "955a60349cfb6837d635af19e8dd192d7218109f",

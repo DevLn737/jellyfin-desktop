@@ -1,5 +1,14 @@
 # Single final Windows acceptance
 
+On 2026-10-13 the owner accepted Windows RC6 (`cac8ac6`) as the release
+version. The exact acceptance and artifact identity are recorded in
+[desktop-acceptance.json](desktop-acceptance.json). Stable `2.0.0` promotes
+that application source unchanged, with MSI/Burn package version `2.0.7`.
+This owner acceptance does not supply numerical mixed-client SyncPlay drift,
+current-source long-duration Qt memory or diagnostics-overhead reports.
+Those technical qualifications remain unasserted; the stable GitHub release
+is prepared as a draft. See [the release notes](../docs/release-2.0.0.md).
+
 This file is a checklist, not a passing report. The user tests one complete
 qualified candidate after migration and Server/Web contract integration.
 
