@@ -100,6 +100,9 @@ public:
   // only. If no video is running, render a black background only.
   Q_INVOKABLE virtual void setVideoOnlyMode(bool enable);
 
+  // Called after the Web OSD has painted its transparent page background.
+  Q_INVOKABLE void videoUiReady();
+
   // Currently is meant to check for "vc1" and "mpeg2video". Will return whether
   // it can be natively decoded. Will return true for all other codecs,
   // including unknown codec names.
@@ -193,6 +196,7 @@ Q_SIGNALS:
   // false if nothing is loaded, playback is paused, during seeking, or media is being loaded
   void videoPlaybackActive(bool active);
   void windowVisible(bool visible);
+  void videoUiBackgroundReady();
   // emitted as soon as the duration of the current file is known
   void updateDuration(qint64 milliseconds);
 

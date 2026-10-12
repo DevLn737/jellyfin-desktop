@@ -60,6 +60,7 @@ private:
   bool m_visible = false;
   bool m_playbackActive = false;
   bool m_failed = false;
+  bool m_hasSamplerObjects = false;
   bool m_hasFrame = false;
   bool m_hiddenFrameRendered = false;
 };

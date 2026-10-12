@@ -3,6 +3,7 @@
 #include <QOffscreenSurface>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QOpenGLExtraFunctions>
 #include <QQuickRenderControl>
 #include <QQuickGraphicsDevice>
 #include <QQuickRenderTarget>
@@ -196,6 +197,12 @@ int main(int argc, char** argv)
     surface.setFormat(context.format()); surface.create();
     require(surface.isValid() && context.makeCurrent(&surface), "Offscreen surface/context unavailable");
     auto* gl = context.functions();
+    auto* extra = context.extraFunctions();
+    const auto actualFormat = context.format();
+    const bool samplerSupported = (context.isOpenGLES() && actualFormat.majorVersion() >= 3)
+      || actualFormat.majorVersion() > 3
+      || (actualFormat.majorVersion() == 3 && actualFormat.minorVersion() >= 3)
+      || context.hasExtension(QByteArrayLiteral("GL_ARB_sampler_objects"));
     report["glRenderer"] = QString::fromLatin1(reinterpret_cast<const char*>(gl->glGetString(GL_RENDERER)));
     report["glVersion"] = QString::fromLatin1(reinterpret_cast<const char*>(gl->glGetString(GL_VERSION)));
     QQuickRenderControl control;
@@ -246,6 +253,23 @@ Item {
     require(bool(overlay), "Qt overlay component unavailable: " + component.errorString());
     qobject_cast<QQuickItem*>(overlay.get())->setParentItem(window.contentItem());
     QImage image;
+    int inheritedStateCase = 0, inheritedStateHookCalls = 0;
+    GLuint inheritedSampler = 0;
+    // Attach before the first sync creates the native renderer. This signal
+    // handler runs immediately before its composite slot, after Qt records the
+    // main-pass clear. Qt's external-command API does not reset these states.
+    QObject::connect(&window, &QQuickWindow::beforeRenderPassRecording, &window, [&] {
+      if (inheritedStateCase == 0) return;
+      ++inheritedStateHookCalls;
+      if (inheritedStateCase == 1)
+      {
+        gl->glEnable(GL_CULL_FACE);
+        gl->glCullFace(GL_BACK);
+        gl->glFrontFace(GL_CW);
+      }
+      else if (inheritedStateCase == 2)
+        extra->glBindSampler(0, inheritedSampler);
+    }, Qt::DirectConnection);
     auto render = [&] {
       require(!window.isVisible() && !window.isExposed(), "Offscreen window unexpectedly exposed");
       require(context.makeCurrent(&surface), "makeCurrent failed");
@@ -302,6 +326,60 @@ Item {
       return s.restarts > 0 && s.paused && !s.seeking && std::abs(s.position - 30) < 0.2
         && s.video != "no" && !s.video.isEmpty() && s.vo == "libmpv" && pixels();
     });
+    QJsonArray inheritedCases;
+    Cleanup inheritedStateCleanup {[&] {
+      inheritedStateCase = 0;
+      context.makeCurrent(&surface);
+      gl->glDisable(GL_CULL_FACE);
+      gl->glFrontFace(GL_CCW);
+      if (inheritedSampler)
+      {
+        extra->glBindSampler(0, 0);
+        extra->glDeleteSamplers(1, &inheritedSampler);
+      }
+    }};
+    if (samplerSupported)
+    {
+      extra->glGenSamplers(1, &inheritedSampler);
+      require(inheritedSampler != 0, "Inherited sampler control could not allocate a sampler");
+      // A sampler object overrides the FBO texture's own filters. Requesting
+      // unavailable mip levels must not make the native quad black: native
+      // composition selects its own sampler, while Qt's overlay stays intact.
+      extra->glSamplerParameteri(inheritedSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+      extra->glSamplerParameteri(inheritedSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      extra->glSamplerParameterf(inheritedSampler, GL_TEXTURE_MIN_LOD, 10);
+      extra->glSamplerParameterf(inheritedSampler, GL_TEXTURE_MAX_LOD, 10);
+    }
+    const auto* stateControlFbo = RendererTestAccess::fbo(item);
+    for (const int which : {1, 2})
+    {
+      if (which == 2 && !samplerSupported)
+      {
+        checks.append(QJsonObject {{"name", "inherited-sampler-state"}, {"supported", false}});
+        continue;
+      }
+      inheritedStateCase = which;
+      const int callsBefore = inheritedStateHookCalls;
+      render();
+      const QString name = which == 1 ? "inherited-culling-state" : "inherited-sampler-state";
+      const auto red = image.pixelColor(70, 40), cyan = image.pixelColor(70, 75);
+      const auto blue = image.pixelColor(24, 28), green = image.pixelColor(8, 132);
+      const bool passed = pixels() && inheritedStateHookCalls == callsBefore + 1
+        && RendererTestAccess::fbo(item) == stateControlFbo;
+      inheritedCases.append(QJsonObject {{"name", name}, {"passed", passed},
+        {"injectionCount", inheritedStateHookCalls - callsBefore},
+        {"redRGB", QJsonArray {red.red(), red.green(), red.blue()}},
+        {"cyanRGB", QJsonArray {cyan.red(), cyan.green(), cyan.blue()}},
+        {"blueRGB", QJsonArray {blue.red(), blue.green(), blue.blue()}},
+        {"greenRGB", QJsonArray {green.red(), green.green(), green.blue()}}});
+      report["inheritedStateCases"] = inheritedCases;
+      require(passed, "Native video/QML composition depends on " + name);
+      checks.append(QJsonObject {{"name", name}, {"passed", true}});
+      inheritedStateCase = 0;
+      gl->glDisable(GL_CULL_FACE);
+      gl->glFrontFace(GL_CCW);
+      if (samplerSupported) extra->glBindSampler(0, 0);
+    }
     const int restarts = controller.snapshot().restarts;
     controller.command({"seek", "32", "absolute+exact"});
     wait("paused-original-seek-32-and-composite", [&](const Snapshot& s) {

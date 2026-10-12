@@ -31,7 +31,24 @@ function ownedSocket(value, port) {
 }
 
 function validatePosition(value) {
-    return typeof value === 'number' && Number.isFinite(value) && value >= 29900 && value <= 37000;
+    return typeof value === 'number' && Number.isFinite(value) && value >= 29900 && value <= 43000;
+}
+
+const compositionPhases = ['detail', 'overlay-first', 'tooltip-first', 'tooltip-moved', 'tooltip-cleared', 'overlay-later'];
+function compositionVerdict(phase, pixels) {
+    if (!pixels.windowFound || !pixels.clientRectRead || !pixels.nativeVisible || pixels.nativeMinimized || !pixels.nativeMaximized ||
+        !pixels.printSucceeded || !Number.isInteger(pixels.width) || pixels.width < 100 ||
+        !Number.isInteger(pixels.height) || pixels.height < 100) return false;
+    if (phase === 'detail') return pixels.detailPurple === true;
+    if (!compositionPhases.includes(phase) || !pixels.red || !pixels.cyan || !pixels.blue || pixels.greenCount < 3) return false;
+    if (phase === 'tooltip-first') return pixels.tooltipAYellowFraction >= 0.7 && pixels.tooltipBCyanFraction >= 0.9;
+    if (phase === 'tooltip-moved') return pixels.tooltipACyanFraction >= 0.9 && pixels.tooltipBYellowFraction >= 0.7;
+    return pixels.tooltipACyanFraction >= 0.9 && pixels.tooltipBCyanFraction >= 0.9;
+}
+
+function markerAdvanced(first, last) {
+    return Number.isFinite(first.greenX) && Number.isFinite(last.greenX) &&
+        Math.abs(last.greenX - first.greenX) >= first.width * 0.02;
 }
 
 async function initializeNative(getWindow = () => window, appearanceMs = 3000, totalMs = 6000) {
@@ -145,6 +162,27 @@ if (process.argv[2] === '--self-test') {
     await assert.rejects(initializeOwnedPage(async () => {
         throw Object.assign(Error('cdp-error'), { protocolError: { code: -32602, message: 'Invalid parameters' } });
     }, async () => {}, root, () => 7, () => {}, 100), /cdp-error/);
+    const pixels = { windowFound:true, clientRectRead:true, nativeVisible:true,nativeMinimized:false,nativeMaximized:true,
+        printSucceeded:true, width:640, height:480, detailPurple:true, red:true, cyan:true,
+        blue:true, greenCount:25, greenX:30, tooltipAYellowFraction:1, tooltipBYellowFraction:1,
+        tooltipACyanFraction:1, tooltipBCyanFraction:1 };
+    for (const phase of compositionPhases) assert.ok(compositionVerdict(phase, {...pixels,
+        tooltipACyanFraction:phase==='tooltip-first'?0:1,tooltipBCyanFraction:phase==='tooltip-moved'?0:1,
+        tooltipAYellowFraction:phase==='tooltip-first'?1:0,tooltipBYellowFraction:phase==='tooltip-moved'?1:0}));
+    assert.ok(!compositionVerdict('detail',{...pixels,nativeVisible:false}));
+    assert.ok(!compositionVerdict('detail',{...pixels,windowFound:false}));
+    assert.ok(!compositionVerdict('detail',{...pixels,nativeMinimized:true}));
+    assert.ok(!compositionVerdict('detail',{...pixels,nativeMaximized:false}));
+    assert.ok(!compositionVerdict('tooltip-first',{...pixels,tooltipBCyanFraction:0}));
+    assert.ok(!compositionVerdict('overlay-first', {...pixels, red:false, cyan:false}));
+    assert.ok(!compositionVerdict('overlay-first', {...pixels, greenCount:0}));
+    assert.ok(!compositionVerdict('tooltip-first', {...pixels, tooltipAYellowFraction:0}));
+    assert.ok(!compositionVerdict('tooltip-moved', {...pixels, tooltipACyanFraction:0.2}));
+    assert.ok(!compositionVerdict('tooltip-cleared', {...pixels, tooltipBCyanFraction:0.5}));
+    assert.ok(!compositionVerdict('detail', {...pixels, detailPurple:false}));
+    assert.ok(!compositionVerdict('unknown', pixels));
+    assert.ok(markerAdvanced(pixels, {...pixels, greenX:60}));
+    assert.ok(!markerAdvanced(pixels, {...pixels, greenX:30}));
     console.log('Live playback ownership, original-PTS and bounded CDP initialization guards passed; no app launched.');
 } else {
     const [rootArgument, reportPathArgument, portArgument] = process.argv.slice(2);
@@ -152,10 +190,10 @@ if (process.argv[2] === '--self-test') {
     const root = path.resolve(rootArgument), reportPath = path.resolve(reportPathArgument);
     const port = Number(portArgument);
     if (port < 1024 || port > 65535 || fs.existsSync(reportPath)) throw Error('Invalid port or reused driver report');
-    const fixtureRoot = path.join(root, 'data', 'hls-video-30');
+    const fixtureRoot = path.join(root, 'data', 'hls-composition-30');
     const fixtureNames = new Set(['index.m3u8', 'segment-000.ts', 'segment-001.ts', 'segment-002.ts']);
     const report = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         scope: 'owned-full-desktop-live-video-and-animated-transparent-web-composition',
         qualificationEligible: false,
         forcedGC: false,
@@ -166,7 +204,7 @@ if (process.argv[2] === '--self-test') {
         initialized: false,
         completed: false,
         passed: false,
-        cycles: [],
+        cycles: [], compositionCaptures: [],
         stopLatencyMs: null,
         closeDuringActiveVideoPrepared: false
     };
@@ -255,12 +293,69 @@ if (process.argv[2] === '--self-test') {
         report.initializationAttempts = initialized.attempts;
         report.initialized = true;
         report.nativeInitialization = initialization;
-        failureCode = 'transparent-overlay';
+        save();
+        const nativeReadyPath=path.join(path.dirname(reportPath),'native-ready-request.json');
+        const nativeResponsePath=path.join(path.dirname(reportPath),'native-ready-response.json');
+        fs.writeFileSync(nativeReadyPath+'.tmp',JSON.stringify({ready:true})+'\n');fs.renameSync(nativeReadyPath+'.tmp',nativeReadyPath);
+        const nativeReadyDeadline=Date.now()+6000;
+        while(!fs.existsSync(nativeResponsePath)&&Date.now()<nativeReadyDeadline)await wait(50);
+        assert.ok(fs.existsSync(nativeResponsePath),'owned-native-exposure-after-initialization');
+        const nativeGeometry=JSON.parse(fs.readFileSync(nativeResponsePath,'utf8'));
+        assert.ok(nativeGeometry.found&&nativeGeometry.visible&&!nativeGeometry.minimized&&nativeGeometry.maximized&&nativeGeometry.clientRectRead);
+        assert.ok(Number.isInteger(nativeGeometry.width)&&nativeGeometry.width>=100&&Number.isInteger(nativeGeometry.height)&&nativeGeometry.height>=100);
+        report.nativeWindow=nativeGeometry;save();
+        const geometryExpression = `(()=>({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,
+            a:[Math.round(innerWidth*.35),Math.round(innerHeight*.70),Math.round(innerWidth*.12),Math.round(innerHeight*.08)],
+            b:[Math.round(innerWidth*.68),Math.round(innerHeight*.70),Math.round(innerWidth*.12),Math.round(innerHeight*.08)]}))()`;
+        const geometryDeadline=Date.now()+4000;
+        let geometry,previousGeometry,stableSince=0;
+        do {
+            geometry=await evaluate(geometryExpression);
+            const key=JSON.stringify(geometry);
+            if(key!==previousGeometry){previousGeometry=key;stableSince=Date.now();}
+            if(Date.now()-stableSince>=600&&Math.abs(geometry.width*geometry.dpr-nativeGeometry.width)<=2&&
+                Math.abs(geometry.height*geometry.dpr-nativeGeometry.height)<=2)break;
+            await wait(100);
+        }while(Date.now()<geometryDeadline);
+        assert.ok(Date.now()-stableSince>=600,'owned-viewport-not-settled');
+        assert.ok(Math.abs(geometry.width*geometry.dpr-nativeGeometry.width)<=2&&
+            Math.abs(geometry.height*geometry.dpr-nativeGeometry.height)<=2,'owned-native-css-viewport-mismatch');
+        assert.ok(geometry.width >= 300 && geometry.height >= 200 && Number.isFinite(geometry.dpr) && geometry.dpr > 0 && geometry.dpr <= 8);
+        report.viewport=geometry;
+        save();
+        let captureSequence = 0;
+        async function capture(phase) {
+            failureCode = 'composition-' + phase;
+            assert.equal(phase, compositionPhases[captureSequence]);
+            const requestPath = path.join(path.dirname(reportPath), 'capture-request.json');
+            const responsePath = path.join(path.dirname(reportPath), 'capture-response.json');
+            const request = {sequence:++captureSequence,phase,geometry};
+            fs.writeFileSync(requestPath+'.tmp',JSON.stringify(request)+'\n');fs.renameSync(requestPath+'.tmp',requestPath);
+            const deadline = Date.now()+4000;
+            while (Date.now()<deadline) {
+                if (fs.existsSync(responsePath)) {
+                    const response=JSON.parse(fs.readFileSync(responsePath,'utf8'));
+                    if (response.sequence===request.sequence) {
+                        assert.equal(response.phase,phase);
+                        report.compositionCaptures.push(response);save();
+                        assert.ok(compositionVerdict(phase,response.pixels),'composition-pixels-'+phase);
+                        return response.pixels;
+                    }
+                }
+                await wait(50);
+            }
+            throw Error('composition-capture-timeout');
+        }
+        failureCode = 'opaque-detail';
         assert.equal(await evaluate(`(async()=>{
-            const api=await window.apiPromise;
-            await new Promise(resolve=>api.settings.setValue('main','fullscreen',true,resolve));
-            await new Promise(resolve=>setTimeout(resolve,250));
-            await new Promise(resolve=>api.settings.setValue('main','fullscreen',false,resolve));
+            document.documentElement.style.background='#b000b0';document.body.style.background='#b000b0';
+            document.body.style.margin='0';
+            document.body.innerHTML='<div style="position:fixed;inset:0;background:#b000b0"><div style="position:absolute;left:40%;top:38%;width:20%;height:18%;background:#ffff00">Synthetic opaque detail page</div></div>';
+            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return true;
+        })()`),true);
+        await wait(300);await capture('detail');
+        async function showTransparentOverlay() {
+            assert.equal(await evaluate(`(async()=>{
             document.documentElement.style.background='transparent';
             document.body.style.background='transparent';document.body.style.margin='0';
             document.body.innerHTML='<div style="position:fixed;left:10px;top:10px;width:30px;height:30px;background:blue"></div>';
@@ -268,10 +363,12 @@ if (process.argv[2] === '--self-test') {
             style.textContent='@keyframes probe {0%{transform:translateX(0)}100%{transform:translateX(120px)}} .probe{position:fixed;bottom:20px;left:20px;width:300px;height:60px;border-radius:10px;background:rgba(0,0,0,.35);backdrop-filter:blur(12px);box-shadow:0 0 20px rgba(0,0,0,.5);animation:probe 1s infinite alternate linear;color:white}';
             document.head.appendChild(style);const overlay=document.createElement('div');
             overlay.className='probe';overlay.textContent='Synthetic video overlay';document.body.appendChild(overlay);
+            await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+            (await window.apiPromise).player.videoUiReady();
             return getComputedStyle(overlay).backdropFilter==='blur(12px)'&&getComputedStyle(overlay).animationName==='probe';
-        })()`), true);
-        report.animatedTransparentBlurOverlay = true;
-        save();
+            })()`), true);
+            report.animatedTransparentBlurOverlay = true;save();
+        }
         const url = pathToFileURL(path.join(fixtureRoot, 'index.m3u8')).href;
         async function load(cycle) {
             const result = await evaluate(`(async()=>{
@@ -313,6 +410,27 @@ if (process.argv[2] === '--self-test') {
             failureCode = 'video-cycle';
             const value = { cycle, ...await load(cycle), positions: [] };
             report.cycles.push(value);
+            if (cycle===0) {
+                await showTransparentOverlay();await wait(350);
+                const first=await capture('overlay-first');
+                report.compositionFirstPosition=await position();
+                const tooltip = async (rect, remove=false) => evaluate(`(async()=>{
+                    let t=document.getElementById('composition-tooltip');
+                    if(${remove}){t?.remove();}else{
+                        if(!t){t=document.createElement('div');t.id='composition-tooltip';document.body.appendChild(t);}
+                        const r=${JSON.stringify(rect)};t.style.cssText='position:fixed;z-index:100;background:#ffff00;box-shadow:0 0 6px #ffff00;left:'+r[0]+'px;top:'+r[1]+'px;width:'+r[2]+'px;height:'+r[3]+'px';
+                    }
+                    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return true;
+                })()`);
+                await tooltip(geometry.a);await wait(350);await capture('tooltip-first');
+                await tooltip(geometry.b);await wait(350);await capture('tooltip-moved');
+                await tooltip(geometry.b,true);await wait(350);await capture('tooltip-cleared');
+                await wait(700);const last=await capture('overlay-later');
+                report.compositionLastPosition=await position();
+                assert.ok(markerAdvanced(first,last),'native-video-marker-did-not-advance');
+                assert.ok(report.compositionLastPosition.positionMs>report.compositionFirstPosition.positionMs+500);
+                report.compositionPassed=true;save();
+            }
             for (let tick = 0; tick < 4; ++tick) {
                 await wait(1000);
                 value.positions.push(await position());

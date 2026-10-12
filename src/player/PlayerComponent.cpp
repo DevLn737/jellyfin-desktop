@@ -916,6 +916,13 @@ void PlayerComponent::setVideoOnlyMode(bool enable)
   }
 }
 
+void PlayerComponent::videoUiReady()
+{
+  // Ignore delayed WebChannel calls once native playback has stopped.
+  if (m_windowVisible && m_playbackActive && m_inPlayback)
+    emit videoUiBackgroundReady();
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::play()
 {

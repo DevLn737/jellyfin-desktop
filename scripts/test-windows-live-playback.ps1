@@ -5,7 +5,8 @@ param(
     [string]$NodePath,
     [ValidatePattern('^[a-f0-9]{40}$')][string]$SourceCommit,
     [ValidateRange(1024,65535)][int]$DevToolsPort = 9224,
-    [switch]$WebEngineGpu
+    [switch]$WebEngineGpu,
+    [ValidateSet('auto','1')][string]$ScaleFactor = 'auto'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -53,7 +54,7 @@ if ($SourceCommit) {
     $embeddedSourceVerified = $true
     $exeBytes = $null; $ascii = $null; $wide = $null
 }
-$fixtureRoot = Join-Path $sourceRoot 'tests/playback/fixtures/hls-video-30'
+$fixtureRoot = Join-Path $sourceRoot 'tests/playback/fixtures/hls-composition-30'
 $fixtureInfoPath = Join-Path $fixtureRoot 'fixture-info.json'
 $fixtureInfo = Get-Content -LiteralPath $fixtureInfoPath -Raw | ConvertFrom-Json
 $allowedFixtureNames = @('index.m3u8','segment-000.ts','segment-001.ts','segment-002.ts')
@@ -80,7 +81,7 @@ Write-Json @{version=$settingsVersion;sections=@{
     system=@{systemname='Owned synthetic playback regression'}
 }} (Join-Path $appRoot 'data/jellyfinmediaplayer.conf')
 [IO.File]::WriteAllText((Join-Path $appRoot 'data/mpv.conf'),"ao=null`nloop-file=inf`n",[Text.Encoding]::ASCII)
-Copy-Item -LiteralPath $fixtureRoot -Destination (Join-Path $appRoot 'data/hls-video-30') -Recurse
+Copy-Item -LiteralPath $fixtureRoot -Destination (Join-Path $appRoot 'data/hls-composition-30') -Recurse
 
 if (-not ('JmpLivePlaybackWindow' -as [type])) {
     # PowerShell 7 forwards Bitmap/Color to Drawing.Common/Primitives, with
@@ -99,8 +100,10 @@ public static class JmpLivePlaybackWindow {
     public delegate bool EnumProc(IntPtr hwnd, IntPtr parameter);
     [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
     public sealed class Pixels {
-        public bool PrintSucceeded, Red, Cyan, Blue;
+        public bool PrintSucceeded, Red, Cyan, Blue, DetailPurple, WindowFound, ClientRectRead, NativeVisible, NativeMinimized, NativeMaximized;
         public int Width, Height;
+        public int GreenCount;
+        public double GreenX, TooltipACyanFraction, TooltipBCyanFraction, TooltipAYellowFraction, TooltipBYellowFraction;
     }
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc callback, IntPtr parameter);
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
@@ -109,31 +112,92 @@ public static class JmpLivePlaybackWindow {
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd, uint message, IntPtr wparam, IntPtr lparam);
     [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr hwnd, out Rect rectangle);
     [DllImport("user32.dll")] static extern bool PrintWindow(IntPtr hwnd, IntPtr dc, uint flags);
+    [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll")] static extern bool IsIconic(IntPtr hwnd);
+    [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr hwnd);
     public static IntPtr Find(uint wantedPid) {
-        IntPtr result=IntPtr.Zero;
+        IntPtr result=IntPtr.Zero;long largestArea=-1;
         EnumWindows((hwnd,p)=> {
             uint pid; GetWindowThreadProcessId(hwnd,out pid);
             var title=new StringBuilder(256); GetWindowText(hwnd,title,256);
-            if(pid==wantedPid && title.ToString()=="Jellyfin Media Player") { result=hwnd;return false; }
+            if(pid==wantedPid && title.ToString()=="Jellyfin Media Player") {
+                Rect rect;if(GetClientRect(hwnd,out rect)) {
+                    long area=(long)Math.Max(0,rect.Right-rect.Left)*Math.Max(0,rect.Bottom-rect.Top);
+                    // Qt also owns tiny helper HWNDs with the application title.
+                    // Select the main client area, never the first enumeration hit.
+                    if(area>largestArea){largestArea=area;result=hwnd;}
+                }
+            }
             return true;
         },IntPtr.Zero);
         return result;
     }
-    public static Pixels Capture(IntPtr hwnd,string path) {
+    static bool Cyan(Color c) {return c.R<70&&c.G>180&&c.B>180;}
+    static bool Yellow(Color c) {return c.R>180&&c.G>180&&c.B<70;}
+    static bool Purple(Color c) {return c.R>120&&c.G<70&&c.B>120;}
+    static double Fraction(Bitmap bitmap,int[] rect,bool cyan) {
+        int count=0,matched=0,margin=cyan?8:0;
+        for(int y=Math.Max(0,rect[1]-margin);y<Math.Min(bitmap.Height,rect[1]+rect[3]+margin);y+=4)
+            for(int x=Math.Max(0,rect[0]-margin);x<Math.Min(bitmap.Width,rect[0]+rect[2]+margin);x+=4) {
+                ++count;var c=bitmap.GetPixel(x,y);if(cyan?Cyan(c):Yellow(c))++matched;
+            }
+        return count==0?0:(double)matched/count;
+    }
+    public static Pixels Classify(Bitmap bitmap,int[] a,int[] b,double scale=1) {
+        var result=new Pixels();result.Width=bitmap.Width;result.Height=bitmap.Height;
+        // The moving marker occupies the upper red band; sample below it.
+        var red=bitmap.GetPixel(bitmap.Width/5,2*bitmap.Height/5);
+        var cyan=bitmap.GetPixel(bitmap.Width/5,3*bitmap.Height/4);
+        var blue=bitmap.GetPixel((int)Math.Round(25*scale),(int)Math.Round(25*scale));
+        result.Red=red.R>180&&red.G<70&&red.B<70;
+        result.Cyan=Cyan(cyan);result.Blue=blue.R<70&&blue.G<70&&blue.B>180;
+        result.DetailPurple=Purple(red)&&Purple(cyan);
+        result.TooltipACyanFraction=Fraction(bitmap,a,true);result.TooltipBCyanFraction=Fraction(bitmap,b,true);
+        result.TooltipAYellowFraction=Fraction(bitmap,a,false);result.TooltipBYellowFraction=Fraction(bitmap,b,false);
+        long greenX=0;
+        for(int y=0;y<bitmap.Height/2;y+=4)for(int x=0;x<bitmap.Width;x+=4) {
+            var c=bitmap.GetPixel(x,y);
+            if(c.R<70&&c.G>180&&c.B<70){++result.GreenCount;greenX+=x;}
+        }
+        result.GreenX=result.GreenCount==0?-1:(double)greenX/result.GreenCount;
+        return result;
+    }
+    static int[] ScaleRect(int[] rect,double x,double y) {
+        return new[]{(int)Math.Round(rect[0]*x),(int)Math.Round(rect[1]*y),(int)Math.Round(rect[2]*x),(int)Math.Round(rect[3]*y)};
+    }
+    public static Pixels Capture(uint wantedPid,string path,int[] a,int[] b,int cssWidth,int cssHeight) {
+        var prior=SetThreadDpiAwarenessContext(new IntPtr(-4));
+        try {return CapturePhysical(Find(wantedPid),path,a,b,cssWidth,cssHeight);}
+        finally {if(prior!=IntPtr.Zero)SetThreadDpiAwarenessContext(prior);}
+    }
+    public static Pixels State(uint wantedPid) {
+        var prior=SetThreadDpiAwarenessContext(new IntPtr(-4));
+        try {
+            var result=new Pixels();var hwnd=Find(wantedPid);result.WindowFound=hwnd!=IntPtr.Zero;
+            if(!result.WindowFound)return result;
+            result.NativeVisible=IsWindowVisible(hwnd);result.NativeMinimized=IsIconic(hwnd);result.NativeMaximized=IsZoomed(hwnd);Rect rect;
+            result.ClientRectRead=GetClientRect(hwnd,out rect);result.Width=rect.Right;result.Height=rect.Bottom;return result;
+        }finally{if(prior!=IntPtr.Zero)SetThreadDpiAwarenessContext(prior);}
+    }
+    static Pixels CapturePhysical(IntPtr hwnd,string path,int[] a,int[] b,int cssWidth,int cssHeight) {
         var result=new Pixels(); Rect rect;
-        if(hwnd==IntPtr.Zero || !GetClientRect(hwnd,out rect) || rect.Right<100 || rect.Bottom<100) return result;
+        result.WindowFound=hwnd!=IntPtr.Zero;
+        if(!result.WindowFound)return result;
+        result.NativeVisible=IsWindowVisible(hwnd);result.NativeMinimized=IsIconic(hwnd);result.NativeMaximized=IsZoomed(hwnd);
+        result.ClientRectRead=GetClientRect(hwnd,out rect);
         result.Width=rect.Right;result.Height=rect.Bottom;
+        if(!result.ClientRectRead || rect.Right<100 || rect.Bottom<100)return result;
         using(var bitmap=new Bitmap(rect.Right,rect.Bottom,PixelFormat.Format32bppArgb)) {
             using(var graphics=Graphics.FromImage(bitmap)) {
                 var dc=graphics.GetHdc();
                 try { result.PrintSucceeded=PrintWindow(hwnd,dc,3); } finally { graphics.ReleaseHdc(dc); }
             }
-            var red=bitmap.GetPixel(rect.Right/2,rect.Bottom/4);
-            var cyan=bitmap.GetPixel(rect.Right/2,3*rect.Bottom/4);
-            var blue=bitmap.GetPixel(25,25);
-            result.Red=red.R>180&&red.G<70&&red.B<70;
-            result.Cyan=cyan.R<70&&cyan.G>180&&cyan.B>180;
-            result.Blue=blue.R<70&&blue.G<70&&blue.B>180;
+            double sx=(double)rect.Right/cssWidth,sy=(double)rect.Bottom/cssHeight;
+            bool printed=result.PrintSucceeded,visible=result.NativeVisible,minimized=result.NativeMinimized,maximized=result.NativeMaximized;
+            result=Classify(bitmap,ScaleRect(a,sx,sy),ScaleRect(b,sx,sy),sx);
+            result.PrintSucceeded=printed;result.WindowFound=true;result.ClientRectRead=true;
+            result.NativeVisible=visible;result.NativeMinimized=minimized;result.NativeMaximized=maximized;
             bitmap.Save(path,ImageFormat.Png);
         }
         return result;
@@ -143,7 +207,7 @@ public static class JmpLivePlaybackWindow {
 }
 
 $outcome = [ordered]@{
-    schemaVersion=1;scope='owned-full-desktop-live-video-and-animated-transparent-web-composition'
+    schemaVersion=2;scope='owned-full-desktop-opaque-to-transparent-tooltip-cleanup-and-moving-video-composition'
     qualificationEligible=$false;forcedGC=$false;oneHourMemoryQualification=$false;performanceQualification=$false
     authentication=$false;serverConnection=$false;userMedia=$false;syncPlay=$false
     appVersion=$manifest.appVersion;packageVersion=$manifest.packageVersion;sourceCommit=$SourceCommit
@@ -151,11 +215,13 @@ $outcome = [ordered]@{
     exeSha256=(Sha256 $sourceExe);ownerScriptSha256=(Sha256 $PSCommandPath)
     driverScriptSha256=(Sha256 (Join-Path $PSScriptRoot 'live-playback-probe.mjs'))
     fixtureManifestSha256=(Sha256 $fixtureInfoPath);fixtureBytes=$fixtureInfo.generatedMediaBytes
-    ownPortableProfile=$true;showWithoutActivation=$true;webEngineGpuOptIn=$WebEngineGpu.IsPresent
+    ownPortableProfile=$true;showWithoutActivation=$false;nativeMaximizeBeforeComposition=$true;webEngineGpuOptIn=$WebEngineGpu.IsPresent
+    scaleFactor=$ScaleFactor
     sampledParentPrivateLimitBytes=2147483648;sampledChildrenPrivateLimitBytes=2147483648
     sampleIntervalMilliseconds=250;deadlineSeconds=55;closeLimitMilliseconds=2000;closeTimeoutMilliseconds=10000
     nativeChildExitGraceMilliseconds=500;orphanedOwnedChildrenBeforeCleanup=0
     completed=$false;passed=$false;failureCode=$null;probeExitCode=$null;applicationExitCode=$null
+    capturePhaseOrder=@('detail','overlay-first','tooltip-first','tooltip-moved','tooltip-cleared','overlay-later')
     samples=@();pixels=@();close=@{requested=$false;graceful=$false;duringActiveVideo=$false;elapsedMs=$null}
 }
 $savedEnvironment=@{}
@@ -220,12 +286,31 @@ function Count-KnownOwnedChildren {
     return $count
 }
 
+function Assert-CaptureGeometry($Geometry) {
+    foreach ($value in @($Geometry.width,$Geometry.height)) {
+        if ($value -isnot [ValueType] -or $value -lt 100 -or $value -gt 8192 -or [Math]::Floor($value) -ne $value) {
+            throw 'Invalid owned capture viewport.'
+        }
+    }
+    if ($Geometry.dpr -isnot [ValueType] -or $Geometry.dpr -le 0 -or $Geometry.dpr -gt 8) { throw 'Invalid owned viewport DPR.' }
+    foreach ($rect in @($Geometry.a,$Geometry.b)) {
+        if ($rect.Count -ne 4) { throw 'Invalid tooltip rectangle.' }
+        foreach ($value in $rect) {
+            if ($value -isnot [ValueType] -or $value -lt 0 -or [Math]::Floor($value) -ne $value) { throw 'Invalid tooltip coordinate.' }
+        }
+        if ($rect[2] -lt 8 -or $rect[3] -lt 8 -or $rect[0]+$rect[2] -gt $Geometry.width -or $rect[1]+$rect[3] -gt $Geometry.height) {
+            throw 'Tooltip rectangle escapes the owned client viewport.'
+        }
+    }
+}
+
 try {
     $env:PATH=@($appRoot,$env:SystemRoot,(Join-Path $env:SystemRoot 'System32')) -join [IO.Path]::PathSeparator
     foreach ($name in @('QTWEBENGINE_CHROMIUM_FLAGS','QTWEBENGINE_REMOTE_DEBUGGING','QT_OPENGL','QT_SCALE_FACTOR','QSG_RENDER_LOOP','QSG_RHI_BACKEND','QSG_INFO')) {
         [Environment]::SetEnvironmentVariable($name,$null,'Process')
     }
-    $arguments=@('--webengine-devtools',"--webengine-devtools-port=$DevToolsPort",'--desktop','--windowed','--terminal','--scale-factor=1')
+    $arguments=@('--webengine-devtools',"--webengine-devtools-port=$DevToolsPort",'--desktop','--windowed','--terminal')
+    if ($ScaleFactor -ne 'auto') { $arguments+="--scale-factor=$ScaleFactor" }
     # Default exercises the application's own production WebEngine policy.
     # This explicit frozen ablation is unsuitable for an old binary lacking it.
     if ($WebEngineGpu) { $arguments+='--webengine-gpu' }
@@ -244,6 +329,26 @@ try {
     } while ([DateTime]::UtcNow -lt $startupDeadline)
     if ($window -eq [IntPtr]::Zero) { throw 'Owned exact-title window did not appear.' }
     $null=[JmpLivePlaybackWindow]::ShowWindow($window,4)
+    # First ShowWindow can honor STARTUPINFO SW_HIDE instead of its argument.
+    # Establish the ordinary maximized user window before the opaque detail
+    # phase. This is not a Qt fullscreen transition or a rendering reset.
+    $visibilityDeadline=[DateTime]::UtcNow.AddSeconds(6)
+    do {
+        $application.Refresh()
+        if($application.HasExited){throw 'Owned app exited before native exposure.'}
+        $window=[JmpLivePlaybackWindow]::Find($application.Id)
+        $null=[JmpLivePlaybackWindow]::ShowWindow($window,3)
+        Start-Sleep -Milliseconds 100
+        $nativeState=[JmpLivePlaybackWindow]::State($application.Id)
+        $outcome.initialNativeWindow=@{found=$nativeState.WindowFound;visible=$nativeState.NativeVisible;
+            minimized=$nativeState.NativeMinimized;clientRectRead=$nativeState.ClientRectRead;width=$nativeState.Width;height=$nativeState.Height}
+        if($nativeState.WindowFound -and $nativeState.NativeVisible -and -not $nativeState.NativeMinimized -and
+            $nativeState.ClientRectRead -and $nativeState.Width -ge 100 -and $nativeState.Height -ge 100){break}
+    }while([DateTime]::UtcNow -lt $visibilityDeadline)
+    if(-not $nativeState.WindowFound -or -not $nativeState.NativeVisible -or $nativeState.NativeMinimized -or
+        -not $nativeState.ClientRectRead -or $nativeState.Width -lt 100 -or $nativeState.Height -lt 100){
+        $failureCode='owned-native-exposure';throw 'Owned native window did not become visible with a valid client area.'
+    }
     $probeArguments=@(
         ('"'+(Join-Path $PSScriptRoot 'live-playback-probe.mjs')+'"'),
         ('"'+$appRoot+'"'),
@@ -254,7 +359,7 @@ try {
         -RedirectStandardOutput (Join-Path $reportRoot 'probe.stdout') -RedirectStandardError (Join-Path $reportRoot 'probe.stderr')
     $null=$probe.Handle # Cache the handle before PowerShell's process-exit race.
     $failureCode='owned-playback';$samplingClock=[Diagnostics.Stopwatch]::StartNew()
-    $nextChild=0.0;$captureTimes=@(6.0,10.0,14.0);$nextCapture=0
+    $nextChild=0.0;$nativeReadyResponseSent=$false
     while ($clock.Elapsed.TotalSeconds -lt 55) {
         $application.Refresh();$probe.Refresh()
         if ($application.HasExited) { throw 'Owned app exited during playback.' }
@@ -268,12 +373,63 @@ try {
         if ($sample.parentPrivateBytes -gt 2147483648 -or $sample.childrenPrivateBytes -gt 2147483648) {
             $memoryGuard=$true;$failureCode='owned-private-memory-ceiling';throw 'Owned private memory ceiling exceeded.'
         }
-        if ($nextCapture -lt $captureTimes.Count -and $samplingClock.Elapsed.TotalSeconds -ge $captureTimes[$nextCapture]) {
-            $capture=[JmpLivePlaybackWindow]::Capture([JmpLivePlaybackWindow]::Find($application.Id),
-                (Join-Path $reportRoot ('frame-'+$nextCapture+'.png')))
-            $pixels.Add(@{elapsedSeconds=$samplingClock.Elapsed.TotalSeconds;width=$capture.Width;height=$capture.Height;
-                printSucceeded=$capture.PrintSucceeded;red=$capture.Red;cyan=$capture.Cyan;blue=$capture.Blue})
-            ++$nextCapture
+        # Startup settings/Qt can resize the window after the first native
+        # exposure. Maximize once the actual injected bridge has initialized,
+        # before any detail/video phase; no fullscreen transition is involved.
+        if(-not $nativeReadyResponseSent -and (Test-Path -LiteralPath (Join-Path $reportRoot 'native-ready-request.json'))){
+            $readyRequest=Get-Content -LiteralPath (Join-Path $reportRoot 'native-ready-request.json') -Raw | ConvertFrom-Json
+            if($readyRequest.ready -ne $true){throw 'Invalid owned native readiness request.'}
+            $application.Refresh()
+            if($application.HasExited -or $application.StartTime.ToUniversalTime().Ticks -ne $appBirthTicks -or
+                -not [string]::Equals($application.Path,(Join-Path $appRoot 'JellyfinMediaPlayer.exe'),[StringComparison]::OrdinalIgnoreCase)){
+                throw 'Owned exposure process identity changed.'
+            }
+            $window=[JmpLivePlaybackWindow]::Find($application.Id)
+            $null=[JmpLivePlaybackWindow]::ShowWindow($window,3)
+            $nativeState=[JmpLivePlaybackWindow]::State($application.Id)
+            if($nativeState.WindowFound -and $nativeState.NativeVisible -and -not $nativeState.NativeMinimized -and
+                $nativeState.NativeMaximized -and $nativeState.ClientRectRead -and $nativeState.Width -ge 100 -and $nativeState.Height -ge 100){
+                $outcome.compositionNativeWindow=@{found=$nativeState.WindowFound;visible=$nativeState.NativeVisible;
+                    minimized=$nativeState.NativeMinimized;maximized=$nativeState.NativeMaximized;clientRectRead=$nativeState.ClientRectRead;
+                    width=$nativeState.Width;height=$nativeState.Height}
+                $readyPath=Join-Path $reportRoot 'native-ready-response.json'
+                Write-Json $outcome.compositionNativeWindow ($readyPath+'.tmp')
+                Move-Item -LiteralPath ($readyPath+'.tmp') -Destination $readyPath -Force
+                $nativeReadyResponseSent=$true
+            }
+        }
+        $requestPath=Join-Path $reportRoot 'capture-request.json'
+        if (Test-Path -LiteralPath $requestPath) {
+            $request=Get-Content -LiteralPath $requestPath -Raw | ConvertFrom-Json
+            if ($request.sequence -gt $pixels.Count) {
+            $failureCode='owned-composition-capture'
+            if ($request.sequence -ne $pixels.Count+1 -or $pixels.Count -ge $outcome.capturePhaseOrder.Count -or
+                $request.phase -cne $outcome.capturePhaseOrder[$pixels.Count]) { throw 'Capture phase order or sequence changed.' }
+            Assert-CaptureGeometry $request.geometry
+            $application.Refresh()
+            if ($application.HasExited -or $application.StartTime.ToUniversalTime().Ticks -ne $appBirthTicks -or
+                -not [string]::Equals($application.Path,(Join-Path $appRoot 'JellyfinMediaPlayer.exe'),[StringComparison]::OrdinalIgnoreCase)) { throw 'Owned capture process identity changed.' }
+            $capture=[JmpLivePlaybackWindow]::Capture($application.Id,
+                (Join-Path $reportRoot ('frame-'+$request.sequence+'-'+$request.phase+'.png')),[int[]]$request.geometry.a,[int[]]$request.geometry.b,
+                [int]$request.geometry.width,[int]$request.geometry.height)
+            $values=@{width=$capture.Width;height=$capture.Height;printSucceeded=$capture.PrintSucceeded;
+                red=$capture.Red;cyan=$capture.Cyan;blue=$capture.Blue;detailPurple=$capture.DetailPurple;
+                greenCount=$capture.GreenCount;greenX=$capture.GreenX;tooltipACyanFraction=$capture.TooltipACyanFraction;
+                tooltipBCyanFraction=$capture.TooltipBCyanFraction;tooltipAYellowFraction=$capture.TooltipAYellowFraction;
+                tooltipBYellowFraction=$capture.TooltipBYellowFraction;windowFound=$capture.WindowFound;clientRectRead=$capture.ClientRectRead;
+                cssWidth=$request.geometry.width;cssHeight=$request.geometry.height;domDpr=$request.geometry.dpr;
+                nativeVisible=$capture.NativeVisible;nativeMinimized=$capture.NativeMinimized;nativeMaximized=$capture.NativeMaximized}
+            $response=@{sequence=$request.sequence;phase=$request.phase;elapsedSeconds=$samplingClock.Elapsed.TotalSeconds;pixels=$values}
+            $pixels.Add($response)
+            $responsePath=Join-Path $reportRoot 'capture-response.json'
+            Write-Json $response ($responsePath+'.tmp')
+            Move-Item -LiteralPath ($responsePath+'.tmp') -Destination $responsePath -Force
+            if ([Math]::Abs($capture.Width-$request.geometry.width*$request.geometry.dpr) -gt 2 -or
+                [Math]::Abs($capture.Height-$request.geometry.height*$request.geometry.dpr) -gt 2) {
+                throw 'Actual window pixels and synthetic CSS viewport do not match.'
+            }
+            $failureCode='owned-playback'
+            }
         }
         if ($probe.HasExited) { break }
         Start-Sleep -Milliseconds 250
@@ -283,15 +439,15 @@ try {
     $probe.WaitForExit();$outcome.probeExitCode=$probe.ExitCode
     if ($probe.ExitCode -ne 0) { $failureCode='owned-probe-failed';throw 'Owned playback driver failed.' }
     $driver=Get-Content -LiteralPath (Join-Path $reportRoot 'probe.json') -Raw | ConvertFrom-Json
-    if (-not $driver.completed -or -not $driver.passed -or -not $driver.closeDuringActiveVideoPrepared) {
+    if (-not $driver.completed -or -not $driver.passed -or -not $driver.compositionPassed -or -not $driver.closeDuringActiveVideoPrepared) {
         $failureCode='owned-driver-incomplete';throw 'Owned driver did not establish active playback for close.'
     }
     $listeners=@(Get-NetTCPConnection -LocalPort $DevToolsPort -State Listen -ErrorAction SilentlyContinue)
     if ($listeners.Count -ne 1 -or $listeners[0].OwningProcess -ne $application.Id -or $listeners[0].LocalAddress -ne '127.0.0.1') {
         $failureCode='owned-debugger-binding';throw 'Debugger binding does not belong solely to the owned localhost app.'
     }
-    if ($pixels.Count -ne 3 -or @($pixels | Where-Object { -not $_.printSucceeded -or -not $_.red -or -not $_.cyan -or -not $_.blue }).Count) {
-        $failureCode='owned-composed-pixels';throw 'Sparse window captures did not verify the composed video and blue overlay.'
+    if ($pixels.Count -ne 6 -or $driver.compositionCaptures.Count -ne 6) {
+        $failureCode='owned-composed-pixels';throw 'All acknowledged composition capture phases are required.'
     }
     $outcome.completed=$true;$outcome.close.duringActiveVideo=$true
 } catch {
@@ -302,6 +458,11 @@ try {
         try { $probe.Refresh();if (-not $probe.HasExited) { $probe.Kill();$null=$probe.WaitForExit(3000) } } catch {}
     }
     if ($application) {
+        # A Node launch/setup failure can happen before periodic child sampling.
+        # Register current verified descendants while the root birth is still
+        # alive, so the existing bounded cleanup also covers that failure path.
+        try { $null=Read-OwnedChildren }
+        catch { if (-not $failure) { $failure=$_;$outcome.failureCode='owned-child-inventory' } }
         try {
             $application.Refresh()
             if (-not $application.HasExited) {

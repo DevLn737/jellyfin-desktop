@@ -1,5 +1,41 @@
 # Windows playback and shutdown regression
 
+## RC4: retained opaque WebEngine background
+
+RC3's synthetic overlay check missed the real Web client's transition from an
+opaque detail page to the transparent video OSD. In the failing transition,
+WebEngine's public background property was already transparent, but its software
+compositor image remained opaque RGB (16,16,16). Hiding WebEngine revealed the
+correct native frame. A Web-only screenshot was transparent, so that screenshot
+alone was not a valid check of the composed application window.
+
+The client now notifies native code once, after OSD navigation and two animation
+frames (also for the miniplayer). Native code changes the background to black
+and back to transparent in the same GUI callback. Qt's setter otherwise skips
+an unchanged value and leaves Chromium's retained content background untouched.
+Delayed navigation/paint callbacks are discarded after stop, file replacement
+or dialog destruction. Native calls after stop and during window shutdown are
+also ignored. No periodic reset or private Qt API is used.
+
+The native compositor additionally disables inherited face culling and unbinds
+an inherited sampler before drawing the video texture. Renderer tests poison
+both states, including a sampler LOD that would otherwise sample a missing mip.
+
+The initial production-code check used the actual served Jellyfin Web OSD,
+local synthetic media, and an isolated copy of the existing browser profile.
+Remote writes and WebSockets were blocked. Native video remained visible under
+the OSD; actual slider bubbles appeared and their old rectangles returned to
+the exact baseline after movement/dismissal. Active-window close took 470 ms.
+The original browser profile was unchanged; cloned credentials, raw logs and
+screenshots were removed after extracting numeric results. This is a bounded
+regression check, not the hour-long memory or multi-client SyncPlay acceptance.
+
+The tracked synthetic composition check now requires a moving native marker,
+an opaque-page transition, and tooltip movement/removal. It checks pixels from
+the composed native window instead of accepting DOM transparency as success.
+
+## Earlier RC3 memory and shutdown correction
+
 The rc.2 installed executable and six main Qt/mpv DLLs matched the packaged
 `33a3722039541cfd510999a4c55cb1600c4f8d52` build. The reported rapid memory growth
 was reproduced on Windows 11 with an AMD Radeon RX 9060 XT, using a fresh,

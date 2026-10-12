@@ -137,11 +137,20 @@
             /**
              * @private
              */
-            this.onNavigatedToOsd = () => {
+            this.onNavigatedToOsd = (options) => {
+                if (!this._started || this._currentPlayOptions !== options) return;
                 const dlg = this._videoDialog;
-                if (dlg) {
-                    dlg.style.zIndex = 'unset';
-                }
+                if (!dlg) return;
+                dlg.style.zIndex = 'unset';
+                // Let the new transparent page paint before resetting Qt's
+                // retained content background. Cancel a late route completion
+                // when playback stops, switches files, or destroys the dialog.
+                window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+                    if (this._started && this._currentPlayOptions === options &&
+                        this._videoDialog === dlg && dlg?.isConnected) {
+                        window.api.player.videoUiReady?.();
+                    }
+                }));
             };
 
             /**
@@ -158,11 +167,12 @@
 
                     this.setPlaybackRate(this.getPlaybackRate());
 
-                    if (this._currentPlayOptions?.fullscreen) {
-                        this.appRouter.showVideoOsd().then(this.onNavigatedToOsd);
+                    const options = this._currentPlayOptions;
+                    if (options?.fullscreen) {
+                        this.appRouter.showVideoOsd().then(() => this.onNavigatedToOsd(options));
                     } else {
                         this.setTransparency('backdrop');
-                        if (this._videoDialog) this._videoDialog.style.zIndex = 'unset';
+                        this.onNavigatedToOsd(options);
                     }
 
                     // Need to override default style.

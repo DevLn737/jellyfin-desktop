@@ -43,10 +43,11 @@ try {
     Invoke-Checked 'python' @('scripts/test-windows-runtime-validation.py')
     & (Join-Path $PSScriptRoot 'test-build-assets.ps1')
     & (Join-Path $PSScriptRoot 'test-diagnostic-symbols-validation.ps1')
-    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js', 'test-find-webclient.js')) {
+    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-video-ui-background.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js', 'test-find-webclient.js')) {
         Invoke-Checked 'node' @("scripts/$test")
     }
     Invoke-Checked 'node' @('scripts/live-playback-probe.mjs', '--self-test')
+    & (Join-Path $PSScriptRoot 'test-live-playback-composition.ps1')
     $configure = @('-S', $sourceRoot, '-B', $nativeBuildDirectory, '-G', 'Ninja',
         '-DCMAKE_BUILD_TYPE=RelWithDebInfo', "-DCMAKE_MAKE_PROGRAM=$($state.ninjaExe)",
         "-DCMAKE_INSTALL_PREFIX=$nativeBuildDirectory/output", "-DQTROOT=$($state.qtRoot)",

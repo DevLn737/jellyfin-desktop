@@ -1,0 +1,3 @@
+*.ts binary
+*.m3u8 text eol=lf
+*.json text eol=lf

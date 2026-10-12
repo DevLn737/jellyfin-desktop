@@ -113,6 +113,8 @@ KonvergoWindow::KonvergoWindow(QWindow* parent) :
 
   connect(&PlayerComponent::Get(), &PlayerComponent::windowVisible,
           this, &KonvergoWindow::playerWindowVisible, Qt::QueuedConnection);
+  connect(&PlayerComponent::Get(), &PlayerComponent::videoUiBackgroundReady,
+          this, &KonvergoWindow::refreshVideoBackground);
 
   // this is using old syntax because ... reasons. QQuickCloseEvent is not public class
   connect(this, SIGNAL(closing(QQuickCloseEvent*)), this, SLOT(closingWindow()));
@@ -345,6 +347,23 @@ void KonvergoWindow::playerWindowVisible(bool visible)
     SystemComponent::Get().setCursorVisibility(false);
   }
 #endif
+}
+
+void KonvergoWindow::refreshVideoBackground()
+{
+  if (m_closing)
+    return;
+  auto* web = findChild<QQuickItem*>(QStringLiteral("web"));
+  if (!web)
+    return;
+
+  // The opaque page preceding the OSD can overwrite Chromium's content
+  // background after windowVisible has already made the QML property clear.
+  // Setting transparent again is a no-op in QQuickWebEngineView. Change the
+  // value once, after the transparent OSD has painted, to update both the
+  // default and content backgrounds. Both setters run in one GUI callback.
+  web->setProperty("backgroundColor", QColor(Qt::black));
+  web->setProperty("backgroundColor", QColor(Qt::transparent));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

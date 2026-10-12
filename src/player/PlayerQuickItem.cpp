@@ -3,6 +3,7 @@
 #include "utils/Utils.h"
 
 #include <QOpenGLContext>
+#include <QOpenGLExtraFunctions>
 #include <QOpenGLFunctions>
 #include <QQuickOpenGLUtils>
 #include <QRunnable>
@@ -111,6 +112,12 @@ bool PlayerRenderer::init()
 
   auto* context = QOpenGLContext::currentContext();
   const bool core = context->format().profile() == QSurfaceFormat::CoreProfile;
+  const auto format = context->format();
+  m_hasSamplerObjects = context->isOpenGLES()
+    ? format.majorVersion() >= 3
+    : format.majorVersion() > 3
+      || (format.majorVersion() == 3 && format.minorVersion() >= 3)
+      || context->hasExtension(QByteArrayLiteral("GL_ARB_sampler_objects"));
   const QByteArray vertex = core
     ? "#version 150\nin vec2 position; in vec2 uv; out vec2 texCoord; uniform vec4 rect; void main() { texCoord=uv; gl_Position=vec4(rect.xy+position*rect.zw,0.0,1.0); }"
     : "attribute vec2 position; attribute vec2 uv; varying vec2 texCoord; uniform vec4 rect; void main() { texCoord=uv; gl_Position=vec4(rect.xy+position*rect.zw,0.0,1.0); }";
@@ -243,6 +250,12 @@ void PlayerRenderer::composite()
   gl->glDisable(GL_STENCIL_TEST);
   gl->glDisable(GL_SCISSOR_TEST);
   gl->glDisable(GL_BLEND);
+  // Qt's GL reset does not reset culling or GL 3 sampler objects. A sampler
+  // from the preceding Qt pass can require mipmaps/LOD that the single-level
+  // video FBO does not have; a clockwise front face can cull the whole quad.
+  gl->glDisable(GL_CULL_FACE);
+  if (m_hasSamplerObjects)
+    QOpenGLContext::currentContext()->extraFunctions()->glBindSampler(0, 0);
   gl->glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   m_program.bind();
   m_program.setUniformValue("video", 0);
