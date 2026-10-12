@@ -120,3 +120,35 @@ those warnings. Neither result is proof that all native-thread stalls are fixed.
 The earlier failed investigation attempts remain retained; no failure was
 converted into passing evidence. The short observation does not replace the
 hour-long or diagnostics-overhead protocols.
+
+
+## RC5 interface frame pacing
+
+Two independent stalls reproduced with RC4's software WebEngine and native
+OpenGL video on the same Windows machine:
+
+- During playback, libmpv's default timing offset scheduled rendering early,
+  then waited inside Qt Quick's render callback. A six-second actual Web OSD
+  animation had 283 frames and a 50 ms p95 frame interval; native WebChannel
+  round trips had a 49.6 ms p95. Setting `video-timing-offset=0`, as documented
+  by the pinned `mpv/render.h`, yielded 361 frames, a 16.7 ms p95 frame interval
+  and 3.4 ms p95 round trips. This becomes an initialization default, before
+  user mpv configuration. Normal audio synchronization remains enabled; the
+  renderer does not force early presentation with `BLOCK_FOR_TARGET_TIME=0`.
+- Before playback, an actual home page with 98 cards spent about 4.6 seconds
+  per six-second observation in Chromium's PaintArtifactCompositor Layerize
+  phase. Script/layout work was negligible. Removing blur, layer hints or
+  adding a root layer did not solve it. Removing only paint containment did
+  not solve it either. Removing nested layout/paint containment on card
+  wrappers, while retaining size/style containment, changed 210 frames to
+  362 and the p95 interval from 33.4 to 16.8 ms. All 98 card rectangles were
+  unchanged. The override is injected by the Desktop NativeShell only when
+  its effective Chromium mode is software; GPU mode retains original Web CSS.
+
+These are controlled comparisons, not guarantees of 60 FPS on every machine.
+The observations use a private cloned browser profile, read-only server GETs,
+blocked server writes/WebSockets, and local synthetic video. Raw captures,
+logs and cloned credentials are removed; original profile hashes are checked.
+Some investigative runs failed geometry or end-of-loop lifecycle assertions;
+those are not accepted as full playback passes. They remain separate from
+final packaged-executable checks. Server/Web files and deployment are untouched.

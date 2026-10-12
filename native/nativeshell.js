@@ -223,6 +223,21 @@ async function createApi() {
             document.addEventListener('DOMContentLoaded', resolve);
         });
 
+        if (jmpInfo.softwareWebEngine) {
+            // Hundreds of nested card containment boundaries make Chromium's
+            // software PaintArtifactCompositor spend a frame budget layerizing
+            // even a small animation. Retain size/style containment, but avoid
+            // those independent layout/paint boundaries in the Desktop view.
+            // This is local to the software client; GPU rendering keeps Web CSS.
+            const style = document.createElement('style');
+            style.id = 'jmp-software-card-containment';
+            style.textContent = `
+                .card, .cardScalable, .cardIndicators { contain: style !important; }
+                .cardPadder, .cardImageContainer { contain: size style !important; }
+            `;
+            document.head.appendChild(style);
+        }
+
         if (typeof window.QWebChannel !== 'function') {
             await loadScript('qrc:///qtwebchannel/qwebchannel.js');
         }

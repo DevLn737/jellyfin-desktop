@@ -105,6 +105,13 @@ bool PlayerComponent::componentInitialize()
   mpv::qt::set_property(m_mpv, "config", "yes");
   mpv::qt::set_property(m_mpv, "config-dir", Paths::dataDir());
 
+  // libmpv otherwise queues frames early and waits up to 50 ms inside render().
+  // That stalls Qt Quick's shared video/Web UI render thread. Ask mpv to notify
+  // us at presentation time instead, retaining audio/video synchronization
+  // without sleeping in the scenegraph callback (see mpv/render.h).
+  if (mpv_set_option_string(m_mpv, "video-timing-offset", "0") < 0)
+    throw FatalException(tr("Failed to configure native video timing."));
+
   mpv_set_wakeup_callback(m_mpv, wakeup_cb, this);
 
   // Disable native OSD if mpv_command_string() is used.

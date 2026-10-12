@@ -241,6 +241,8 @@ int main(int argc, char *argv[])
 
     QtWebEngineQuick::initialize();
     QApplication app(newArgc, newArgv);
+    app.setProperty("softwareWebEngine", ApplicationScope::chromiumArguments(chromiumFlags)
+      .contains(QStringLiteral("--disable-gpu")));
     app.setApplicationName("Jellyfin Media Player");
 
 #if defined(Q_OS_WIN)

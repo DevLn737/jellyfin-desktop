@@ -366,6 +366,7 @@ QString SystemComponent::getNativeShellScript()
   }
   QJsonObject clientData;
   clientData.insert("appVersion", Version::GetVersionString());
+  clientData.insert("softwareWebEngine", QCoreApplication::instance()->property("softwareWebEngine").toBool());
   clientData.insert("deviceName", QJsonValue::fromVariant(SettingsComponent::Get().getClientName()));
   clientData.insert("scriptPath", QJsonValue::fromVariant("file:///" + path));
   QString defaultMode = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "layout").toString();
