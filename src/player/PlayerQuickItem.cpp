@@ -168,13 +168,27 @@ void PlayerRenderer::prepare()
     emit fatalError(tr("Could not initialize the OpenGL video renderer."));
     return;
   }
-  // Consume update notifications on the render thread. Do not use the flags to
-  // skip rendering: geometry changes and paused playback still need redraws.
-  mpv_render_context_update(m_mpvGL);
+  // Consume notifications even before vo-configured makes the item visible.
+  // mpv may be waiting for that first frame while the GUI has not yet received
+  // its visibility event. Leaving it queued here delays startup until timeout.
+  const auto updates = mpv_render_context_update(m_mpvGL);
   setPlaybackActive(m_playbackActive);
   if (!m_visible)
   {
     m_hasFrame = false;
+    if (updates & MPV_RENDER_UPDATE_FRAME)
+    {
+      int skip = 1;
+      int block = 0;
+      mpv_render_param params[] {
+        {MPV_RENDER_PARAM_SKIP_RENDERING, &skip},
+        {MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &block},
+        {MPV_RENDER_PARAM_INVALID, nullptr}
+      };
+      // A skipped frame still needs a swap acknowledgement. Visible rendering
+      // retains mpv's normal audio/video timing and redraws paused frames.
+      m_hiddenFrameRendered = mpv_render_context_render(m_mpvGL, params) >= 0;
+    }
     return;
   }
 
@@ -258,8 +272,11 @@ void PlayerRenderer::swap()
 {
   JMP_PROFILE_ZONE("Renderer frame swapped");
   JMP_PROFILE_FRAME();
-  if (m_mpvGL && m_hasFrame)
+  if (m_mpvGL && (m_hasFrame || m_hiddenFrameRendered))
+  {
     mpv_render_context_report_swap(m_mpvGL);
+    m_hiddenFrameRendered = false;
+  }
 }
 
 void PlayerRenderer::setPlaybackActive(bool active)

@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QString>
 #include <QStringList>
+#include <algorithm>
 #include <optional>
 
 namespace ApplicationScope
@@ -62,16 +63,21 @@ inline QStringList chromiumArguments(const QString& text)
   return result;
 }
 
-inline bool isRemoteDebuggingArgument(const QString& argument)
+inline QString chromiumSwitchName(const QString& argument)
 {
   const int separator = argument.indexOf('=');
   QString name = (separator < 0 ? argument : argument.left(separator)).trimmed();
   if (name.startsWith("--")) name.remove(0, 2);
   else if (name.startsWith('-') || name.startsWith('/')) name.remove(0, 1);
-  else return false;
-  return name.compare("remote-debugging-port", Qt::CaseInsensitive) == 0
-    || name.compare("remote-debugging-address", Qt::CaseInsensitive) == 0
-    || name.compare("remote-debugging-pipe", Qt::CaseInsensitive) == 0;
+  else return {};
+  return name.toLower();
+}
+
+inline bool isRemoteDebuggingArgument(const QString& argument)
+{
+  const QString name = chromiumSwitchName(argument);
+  return name == "remote-debugging-port" || name == "remote-debugging-address"
+    || name == "remote-debugging-pipe";
 }
 
 inline QString encodeChromiumArguments(const QStringList& arguments)
@@ -106,7 +112,48 @@ inline QString withoutRemoteDebugging(const QString& text)
   return encodeChromiumArguments(retained);
 }
 
-inline QString chromiumLaunchFlags(const QString& inherited, const QStringList& defaults, bool disableGpu)
+inline std::optional<bool> webEngineSoftwareRendering(bool disableGpu, bool gpuOptIn,
+                                                      bool platformDefaultsToSoftware)
+{
+  if (disableGpu && gpuOptIn) return {};
+  if (gpuOptIn) return false;
+  return disableGpu || platformDefaultsToSoftware;
+}
+
+inline QStringList selectChromiumGpuMode(const QStringList& arguments, bool software, bool gpuOptIn)
+{
+  QStringList retained;
+  for (qsizetype index = 0; index < arguments.size(); ++index)
+  {
+    const QString& argument = arguments[index];
+    const QString name = chromiumSwitchName(argument);
+    const bool backendValue = name == "use-gl" || name == "use-angle" || name == "use-vulkan"
+      || name == "gpu-preferences";
+    const bool incompatible = backendValue || name == "enable-gpu" || name == "enable-gpu-compositing"
+      || name == "enable-gpu-rasterization" || name == "force-gpu-rasterization"
+      || name == "enable-accelerated-2d-canvas" || name == "ignore-gpu-blocklist"
+      || name == "disable-software-rasterizer";
+    if ((software && incompatible) || ((software || gpuOptIn) && name == "disable-gpu"))
+    {
+      // Qt checks a custom --use-gl before --disable-gpu. Consume its value
+      // too, using the same quoting grammar as WebEngine's environment parser.
+      const int separator = argument.indexOf('=');
+      if (backendValue && (separator < 0 || argument.mid(separator + 1).isEmpty()))
+      {
+        if (index + 1 < arguments.size() && arguments[index + 1] == "=") ++index;
+        if (index + 1 < arguments.size() && !arguments[index + 1].startsWith('-')
+            && !arguments[index + 1].startsWith('/')) ++index;
+      }
+      continue;
+    }
+    retained.append(argument);
+  }
+  if (software) retained.append("--disable-gpu");
+  return retained;
+}
+
+inline QString chromiumLaunchFlags(const QString& inherited, const QStringList& defaults,
+                                   bool disableGpu, bool gpuOptIn = false)
 {
   QStringList arguments = chromiumArguments(withoutRemoteDebugging(inherited));
   for (const QString& flag : defaults)
@@ -130,7 +177,8 @@ inline QString chromiumLaunchFlags(const QString& inherited, const QStringList& 
     }
     else if (!arguments.contains(flag)) arguments.append(flag);
   }
-  if (disableGpu && !arguments.contains("--disable-gpu")) arguments.append("--disable-gpu");
-  return encodeChromiumArguments(arguments);
+  const bool software = disableGpu || (!gpuOptIn && std::any_of(arguments.begin(), arguments.end(),
+    [](const QString& argument) { return chromiumSwitchName(argument) == "disable-gpu"; }));
+  return encodeChromiumArguments(selectChromiumGpuMode(arguments, software, gpuOptIn));
 }
 }

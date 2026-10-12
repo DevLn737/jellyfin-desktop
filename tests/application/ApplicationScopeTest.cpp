@@ -54,17 +54,67 @@ int main(int argc, char** argv)
   check(ApplicationScope::withoutRemoteDebugging("--remote-debugging-port --disable-gpu") == "--disable-gpu", "missing debugger value consumed the next legitimate flag");
   check(ApplicationScope::chromiumArguments("  --a=\"b c\" x\"y\" \"\" z\tq  ")
       == QStringList({"--a=b c", "xy", "", "z\tq"}), "Chromium environment quote grammar differs from Qt");
-  const QStringList defaults = {"--enable-gpu-rasterization", "--disable-features=MediaSessionService"};
+  check(ApplicationScope::webEngineSoftwareRendering(false, false, true) == true,
+    "Windows/Linux default did not select software WebEngine");
+  check(ApplicationScope::webEngineSoftwareRendering(false, false, false) == false,
+    "other platform WebEngine default changed");
+  check(ApplicationScope::webEngineSoftwareRendering(true, false, false) == true,
+    "explicit software mode was ignored");
+  check(ApplicationScope::webEngineSoftwareRendering(false, true, true) == false &&
+    ApplicationScope::webEngineSoftwareRendering(false, true, false) == false,
+    "diagnostic GPU opt-in did not override the platform default");
+  check(!ApplicationScope::webEngineSoftwareRendering(true, true, true) &&
+    !ApplicationScope::webEngineSoftwareRendering(true, true, false),
+    "contradictory CLI graphics modes were accepted");
+  const QStringList defaults = {"--disable-features=MediaSessionService"};
   const QStringList normal = ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags("", defaults, false));
   check(normal == defaults, "default Chromium switches were lost");
   const QStringList fallback = ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
     "\"--remote-debugging-port=9222\" --disable-features=One,Two --proxy-pac-url=\"C:\\Two Words\\proxy.pac\"", defaults, true));
   check(fallback == QStringList({"--disable-features=One,Two,MediaSessionService", "--proxy-pac-url=C:\\Two Words\\proxy.pac",
-    "--enable-gpu-rasterization", "--disable-gpu"}), "GPU fallback lost inherited flags or default feature merge");
+    "--disable-gpu"}), "GPU fallback lost inherited flags or default feature merge");
   check(ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
     "--disable-features=One,MediaSessionService<Trial:param/value --disable-gpu", defaults, true))
-    == QStringList({"--disable-features=One,MediaSessionService<Trial:param/value", "--disable-gpu", "--enable-gpu-rasterization"}),
+    == QStringList({"--disable-features=One,MediaSessionService<Trial:param/value", "--disable-gpu"}),
     "feature parameters changed or GPU/default features duplicated");
-  std::puts("portable socket identity and strict DevTools port checks passed");
+  const QStringList softwareRetained = {"--proxy-pac-url=C:\\Two Words\\proxy.pac",
+    "--disable-features=One,Two,MediaSessionService", "--enable-features=Example<Trial:param/value",
+    "--disable-gpu-rasterization", "--disable-gpu"};
+  for (const QString graphics : {
+       QStringLiteral("--use-gl=angle --use-angle=gl --use-vulkan=native --enable-gpu-rasterization"),
+       QStringLiteral("\"--use-gl=angle\" --use-angle \"d3d11\" --use-vulkan=native --force-gpu-rasterization"),
+       QStringLiteral("--use-gl = angle --use-angle= gl --use-vulkan native --gpu-preferences=opaque"),
+       QStringLiteral("-USE-GL=angle /use-angle=gl --enable-gpu --enable-gpu-compositing --ignore-gpu-blocklist"),
+       QStringLiteral("--use-\"gl\"=angle --use-angle=gl --disable-software-rasterizer --enable-accelerated-2d-canvas --disable-gpu --disable-gpu=1")})
+  {
+    const QString launch = ApplicationScope::chromiumLaunchFlags(graphics + QStringLiteral(
+      " --proxy-pac-url=\"C:\\Two Words\\proxy.pac\" --disable-features=One,Two"
+      " --enable-features=Example<Trial:param/value --disable-gpu-rasterization"
+      " \"--remote-debugging-port=9222\""), defaults, true);
+    check(ApplicationScope::chromiumArguments(launch) == softwareRetained,
+      "software WebEngine retained a competing GPU backend or changed unrelated arguments");
+  }
+  check(ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
+    "--use-gl --disable-features=One", defaults, true))
+    == QStringList({"--disable-features=One,MediaSessionService", "--disable-gpu"}),
+    "missing GPU backend value consumed a legitimate following switch");
+  check(ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
+    "--use-gl=angle --disable-gpu --use-angle=d3d11", defaults, false, true))
+    == QStringList({"--use-gl=angle", "--use-angle=d3d11", "--disable-features=MediaSessionService"}),
+    "explicit diagnostic GPU opt-in retained inherited software mode or lost backend flags");
+  check(ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
+    "--disable-gpu --use-gl=angle --enable-gpu-rasterization", defaults, false))
+    == QStringList({"--disable-features=MediaSessionService", "--disable-gpu"}),
+    "inherited software mode did not normalize competing hardware switches");
+  check(ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
+    "--use-angle=d3d11 --enable-gpu-rasterization", defaults, false))
+    == QStringList({"--use-angle=d3d11", "--enable-gpu-rasterization", "--disable-features=MediaSessionService"}),
+    "automatic mode changed other platforms' explicit environment choices");
+  const QStringList legacyLinux = {"--disable-features=MediaSessionService", "--disable-gpu"};
+  check(ApplicationScope::chromiumArguments(ApplicationScope::chromiumLaunchFlags(
+    "--use-gl=angle", legacyLinux, false))
+    == QStringList({"--disable-features=MediaSessionService", "--disable-gpu"}),
+    "Linux software default lost normalization");
+  std::puts("portable IPC, strict DevTools and reliable WebEngine graphics mode checks passed");
   return 0;
 }

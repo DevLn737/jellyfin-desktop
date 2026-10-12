@@ -3,6 +3,15 @@
 This file is a checklist, not a passing report. The user tests one complete
 qualified candidate after migration and Server/Web contract integration.
 
+The [rc.2 composition investigation](observations/desktop-composition-baseline-33a3722.json)
+retains seven short historical observations from the exact installed executable.
+Case codes are: 1 GPU Web/video, 2 moving Hi10/Web, 3 idle animated Web,
+4 idle Web with native renderer uninitialized, 5 disabled GPU rasterization,
+6 experimental ANGLE GL, and 7 software WebEngine. Earlier harness-source
+snapshots were not attested at launch. These observations establish a controlled
+rapid-memory reproduction and a software comparison, not release qualification.
+See [the client correction and scope](../docs/windows-playback-composition-fix.md).
+
 | Area | Required evidence |
 | --- | --- |
 | Playback | Direct Play, remux/transcode, hardware decode/fallback, passthrough, audio/subtitle selection, fullscreen, DPI and multiple monitors |
@@ -126,7 +135,7 @@ point limit. P95 differences are +1.28205%, **+13.26531%** and +1.53062%; pair2
 fails the unchanged 5% limit. Overall synthetic thresholds remain false and
 the observation is ineligible for release qualification or user acceptance.
 
-The [current rc.2 development package record](observations/desktop-development-33a3722.json)
+The [retained rc.2 development package record](observations/desktop-development-33a3722.json)
 binds the packages to clean `33a3722` and manifest `c02f654a...ff9a3d74`.
 Both build pipelines, actual Qt chooser/NativeShell/CSP/reload, renderer, imports,
 Tracy and package/PDB checks passed. The

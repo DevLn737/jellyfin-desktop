@@ -104,6 +104,7 @@ protected:
 
 private slots:
   void closingWindow();
+  void saveStateBeforeQuit();
   void enableVideoWindow();
   void onVisibilityChanged(QWindow::Visibility visibility);
   void updateMainSectionSettings(const QVariantMap& values);
@@ -125,6 +126,7 @@ private:
   QScreen* findCurrentScreen();
 
   bool m_debugLayer;
+  bool m_closing = false;
   QTimer* m_infoTimer;
   QString m_debugInfo, m_systemDebugInfo, m_videoInfo;
   int m_ignoreFullscreenSettingsChange;

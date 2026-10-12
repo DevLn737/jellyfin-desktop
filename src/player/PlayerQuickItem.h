@@ -61,6 +61,7 @@ private:
   bool m_playbackActive = false;
   bool m_failed = false;
   bool m_hasFrame = false;
+  bool m_hiddenFrameRendered = false;
 };
 
 class PlayerQuickItem : public QQuickItem

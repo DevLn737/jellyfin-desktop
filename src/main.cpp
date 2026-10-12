@@ -107,11 +107,7 @@ void ShowLicenseInfo()
 
 /////////////////////////////////////////////////////////////////////////////////////////
 QStringList g_qtFlags = {
-  "--enable-gpu-rasterization",
-  "--disable-features=MediaSessionService",
-#ifdef Q_OS_LINUX
-  "--disable-gpu"
-#endif
+  "--disable-features=MediaSessionService"
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -130,6 +126,7 @@ int main(int argc, char *argv[])
                        {"fullscreen",              "Start in fullscreen"},
                        {"terminal",                "Log to terminal"},
                        {"disable-gpu",             "Disable QtWebEngine gpu accel"},
+                       {"webengine-gpu",            "Opt in to WebEngine GPU rendering for this diagnostic launch"},
                        {"force-external-webclient","Use webclient provided by server"}});
 
     auto scaleOption = QCommandLineOption("scale-factor", "Set to a integer or default auto which controls" \
@@ -185,6 +182,19 @@ int main(int argc, char *argv[])
       parser.process(arguments);
     }
 
+#if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
+    constexpr bool webEngineDefaultsToSoftware = true;
+#else
+    constexpr bool webEngineDefaultsToSoftware = false;
+#endif
+    const auto softwareWebEngine = ApplicationScope::webEngineSoftwareRendering(
+      parser.isSet("disable-gpu"), parser.isSet("webengine-gpu"), webEngineDefaultsToSoftware);
+    if (!softwareWebEngine)
+    {
+      qCritical("--disable-gpu and --webengine-gpu cannot be used together.");
+      return EXIT_FAILURE;
+    }
+
     if (parser.isSet(devPortOption) && !parser.isSet(devOption))
     {
       qCritical("--webengine-devtools-port requires --webengine-devtools.");
@@ -216,8 +226,13 @@ int main(int argc, char *argv[])
 
     // An inherited Chromium flag must not override the explicit localhost-only
     // diagnostic launch or silently open a debugger on an ordinary launch.
+    // Windows Qt Quick OpenGL / Chromium D3D11 interop showed rapid memory
+    // growth with an animated transparent Web overlay. Use software WebEngine
+    // by default there; Qt Quick OpenGL and native mpv hardware decoding remain
+    // independent. Linux retains its existing software WebEngine default.
     const QString chromiumFlags = ApplicationScope::chromiumLaunchFlags(
-      QString::fromUtf8(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS")), g_qtFlags, parser.isSet("disable-gpu"));
+      QString::fromUtf8(qgetenv("QTWEBENGINE_CHROMIUM_FLAGS")), g_qtFlags,
+      *softwareWebEngine, parser.isSet("webengine-gpu"));
     qputenv("QTWEBENGINE_CHROMIUM_FLAGS", chromiumFlags.toUtf8());
     if (parser.isSet(devOption))
       qputenv("QTWEBENGINE_REMOTE_DEBUGGING", QString("127.0.0.1:%1").arg(*devPort).toUtf8());

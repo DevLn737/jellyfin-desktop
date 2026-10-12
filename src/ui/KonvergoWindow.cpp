@@ -117,7 +117,7 @@ KonvergoWindow::KonvergoWindow(QWindow* parent) :
   // this is using old syntax because ... reasons. QQuickCloseEvent is not public class
   connect(this, SIGNAL(closing(QQuickCloseEvent*)), this, SLOT(closingWindow()));
 
-  connect(qApp, &QCoreApplication::aboutToQuit, this, &KonvergoWindow::closingWindow);
+  connect(qApp, &QCoreApplication::aboutToQuit, this, &KonvergoWindow::saveStateBeforeQuit);
 
 #ifdef Q_OS_MAC
   m_osxPresentationOptions = 0;
@@ -140,10 +140,25 @@ KonvergoWindow::KonvergoWindow(QWindow* parent) :
 /////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::closingWindow()
 {
+  if (m_closing)
+    return;
+
+  saveStateBeforeQuit();
+  qApp->quit();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+void KonvergoWindow::saveStateBeforeQuit()
+{
+  if (m_closing)
+    return;
+
+  // Set this before persistence: settings callbacks may re-enter the close path.
+  // aboutToQuit must never request another quit and re-enter this shutdown path.
+  m_closing = true;
+  m_infoTimer->stop();
   if (!SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "fullscreen").toBool())
     saveGeometry();
-
-  qApp->quit();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -335,6 +350,9 @@ void KonvergoWindow::playerWindowVisible(bool visible)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::updateMainSectionSettings(const QVariantMap& values)
 {
+  if (m_closing)
+    return;
+
   // update mouse visibility if needed
   if (values.find("disablemouse") != values.end())
   {
@@ -367,8 +385,11 @@ void KonvergoWindow::updateMainSectionSettings(const QVariantMap& values)
     {
       if (oldDesktopMode != newDesktopMode)
       {
-        QTimer::singleShot(0, [this, newDesktopMode]
+        QTimer::singleShot(0, this, [this, newDesktopMode]
         {
+          if (m_closing)
+            return;
+
           PlayerComponent::Get().stop();
           m_webDesktopMode = newDesktopMode;
           emit webDesktopModeChanged();
@@ -391,6 +412,9 @@ void KonvergoWindow::updateMainSectionSettings(const QVariantMap& values)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::updateForcedScreen()
 {
+  if (m_closing)
+    return;
+
   QString screenName = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceFSScreen").toString();
 
   if (screenName.isEmpty())
@@ -413,6 +437,9 @@ void KonvergoWindow::updateForcedScreen()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::updateWindowState(bool saveGeo)
 {
+  if (m_closing)
+    return;
+
   if (SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "fullscreen").toBool() || SystemComponent::Get().isOpenELEC() || SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceAlwaysFS").toBool())
   {
     // if we were go from windowed to fullscreen
@@ -424,7 +451,7 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
 
     // When fullscreening explicitly, we might have to move the window to a
     // different screen, as Qt will fullscreen to the current screen.
-    QTimer::singleShot(200, [=]
+    QTimer::singleShot(200, this, [this]
     {
       updateForcedScreen();
     });
@@ -472,6 +499,9 @@ QScreen* KonvergoWindow::findCurrentScreen()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::onVisibilityChanged(QWindow::Visibility visibility)
 {
+  if (m_closing)
+    return;
+
   qDebug() << "QWindow visibility set to" << visibility;
 
   if (visibility == QWindow::Windowed && SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceAlwaysFS").toBool())
@@ -633,6 +663,9 @@ QString KonvergoWindow::webUrl()
 /////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::updateScreens()
 {
+  if (m_closing)
+    return;
+
   QScreen* windowScreen = findCurrentScreen();
   QString screenName = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceFSScreen").toString();
 
@@ -686,9 +719,12 @@ void KonvergoWindow::updateScreens()
 /////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::onScreenAdded(QScreen *screen)
 {
+  if (m_closing)
+    return;
+
   updateScreens();
   // The timer is out of fear for chaotic mid-change states.
-  QTimer::singleShot(200, [this]
+  QTimer::singleShot(200, this, [this]
   {
     updateForcedScreen();
   });
@@ -703,6 +739,9 @@ void KonvergoWindow::onScreenRemoved(QScreen *screen)
 /////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::updateCurrentScreen()
 {
+  if (m_closing)
+    return;
+
   QScreen* current = findCurrentScreen();
   QString currentName = current ? current->name() : "";
   if (currentName != m_currentScreenName)

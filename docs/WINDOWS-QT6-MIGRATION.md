@@ -8,6 +8,11 @@ the earlier tree reset in place. The target integration branch is `master`.
 
 ## Implemented client changes
 
+- The rc.3 Windows Web interface uses software WebEngine by default to avoid
+  reproduced rapid GPU-composition memory growth. Native video retains Qt Quick
+  OpenGL and mpv hardware decoding. Shutdown saves state and requests quit once;
+  hidden first native frames are consumed without blocking visibility delivery.
+  See [the playback/composition investigation](windows-playback-composition-fix.md).
 - Qt6/C++17, explicit persistent WebEngine profile and profile-level NativeShell,
   updated QML Controls/WebEngine APIs, native Windows taskbar integration.
 - The rc.2 server chooser checks only the public API, acknowledges the saved

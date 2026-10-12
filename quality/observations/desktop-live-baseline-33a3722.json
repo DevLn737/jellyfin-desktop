@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "scope": "owned-full-desktop-live-video-and-animated-transparent-web-composition",
+  "qualificationEligible": false,
+  "forcedGC": false,
+  "oneHourMemoryQualification": false,
+  "performanceQualification": false,
+  "authentication": false,
+  "serverConnection": false,
+  "userMedia": false,
+  "syncPlay": false,
+  "appVersion": "2.0.0-rc.2",
+  "packageVersion": "2.0.2",
+  "sourceCommit": "33a3722039541cfd510999a4c55cb1600c4f8d52",
+  "embeddedSourceCommitVerified": true,
+  "manifestSha256": "c02f654aafa032db7baa698531dc5cce04399c6538bbdeec1b133660ff9a3d74",
+  "exeSha256": "8764abf87bb9c921a323bf964d16e1678ab192e0b5b09735cf18879b52a7be58",
+  "ownerScriptSha256": "b5af470ee8da32ae02ddb5f2140516f8922b8543a0d6bf013fb450f06a3fc347",
+  "driverScriptSha256": "5c4803bb835e87758930efb7dc0cabe34fc4fbe82c3aabca4a9f5c5bef85009d",
+  "fixtureManifestSha256": "6ed4626072712b2046186b4c6d5cad1f9f9ae2513e75135a5f5b0bc7c4f5fea9",
+  "fixtureBytes": 20516,
+  "ownPortableProfile": true,
+  "showWithoutActivation": true,
+  "webEngineGpuOptIn": false,
+  "sampledParentPrivateLimitBytes": 2147483648,
+  "sampledChildrenPrivateLimitBytes": 2147483648,
+  "sampleIntervalMilliseconds": 250,
+  "deadlineSeconds": 55,
+  "closeLimitMilliseconds": 2000,
+  "closeTimeoutMilliseconds": 10000,
+  "nativeChildExitGraceMilliseconds": 500,
+  "orphanedOwnedChildrenBeforeCleanup": 0,
+  "completed": false,
+  "passed": false,
+  "failureCode": "owned-private-memory-ceiling",
+  "probeExitCode": null,
+  "applicationExitCode": -1,
+  "samples": [
+    {
+      "childCount": 1,
+      "elapsedSeconds": 0.238462,
+      "parentPrivateBytes": 350937088,
+      "childrenRssBytes": 66801664,
+      "parentRssBytes": 237948928,
+      "childrenPrivateBytes": 19161088
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 0.5023251,
+      "parentPrivateBytes": 549425152,
+      "childrenRssBytes": 66801664,
+      "parentRssBytes": 334417920,
+      "childrenPrivateBytes": 19161088
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 0.766713,
+      "parentPrivateBytes": 704126976,
+      "childrenRssBytes": 66801664,
+      "parentRssBytes": 388259840,
+      "childrenPrivateBytes": 19161088
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 1.0307999,
+      "parentPrivateBytes": 916590592,
+      "childrenRssBytes": 66801664,
+      "parentRssBytes": 411701248,
+      "childrenPrivateBytes": 19161088
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 1.3842716,
+      "parentPrivateBytes": 1184391168,
+      "childrenRssBytes": 81084416,
+      "parentRssBytes": 433766400,
+      "childrenPrivateBytes": 21086208
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 1.6443967,
+      "parentPrivateBytes": 1368911872,
+      "childrenRssBytes": 81084416,
+      "parentRssBytes": 434556928,
+      "childrenPrivateBytes": 21086208
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 1.9082124,
+      "parentPrivateBytes": 1440079872,
+      "childrenRssBytes": 81084416,
+      "parentRssBytes": 435294208,
+      "childrenPrivateBytes": 21086208
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 2.1740405,
+      "parentPrivateBytes": 1550852096,
+      "childrenRssBytes": 81084416,
+      "parentRssBytes": 436465664,
+      "childrenPrivateBytes": 21086208
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 2.5118462,
+      "parentPrivateBytes": 1677045760,
+      "childrenRssBytes": 80494592,
+      "parentRssBytes": 436858880,
+      "childrenPrivateBytes": 20951040
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 2.7744569,
+      "parentPrivateBytes": 1787498496,
+      "childrenRssBytes": 80494592,
+      "parentRssBytes": 437694464,
+      "childrenPrivateBytes": 20951040
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 3.0287065,
+      "parentPrivateBytes": 1882120192,
+      "childrenRssBytes": 80494592,
+      "parentRssBytes": 438251520,
+      "childrenPrivateBytes": 20951040
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 3.2969958,
+      "parentPrivateBytes": 1992892416,
+      "childrenRssBytes": 80494592,
+      "parentRssBytes": 439349248,
+      "childrenPrivateBytes": 20951040
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 3.6392771,
+      "parentPrivateBytes": 2134831104,
+      "childrenRssBytes": 80498688,
+      "parentRssBytes": 440287232,
+      "childrenPrivateBytes": 20951040
+    },
+    {
+      "childCount": 1,
+      "elapsedSeconds": 3.8928932,
+      "parentPrivateBytes": 2237571072,
+      "childrenRssBytes": 80498688,
+      "parentRssBytes": 441032704,
+      "childrenPrivateBytes": 20951040
+    }
+  ],
+  "pixels": [],
+  "close": {
+    "graceful": false,
+    "elapsedMs": null,
+    "duringActiveVideo": false,
+    "requested": false
+  },
+  "nativeChildExitGraceElapsedMs": 5.5033,
+  "remainingKnownOwnedChildren": 0,
+  "remainingOwnedListeners": 0,
+  "elapsedSeconds": 5.5377617,
+  "peakParentPrivateBytes": 2237571072.0,
+  "peakChildrenPrivateBytes": 21086208.0,
+  "renderStuckWarningCount": 1,
+  "swapMissingWarningCount": 0,
+  "geometrySaveCount": 4,
+  "probeReportSha256": "15e230b302ec1e3b25f0c9bb213cac9b354ad7d339e791c580d9d8472e0e88bd"
+}

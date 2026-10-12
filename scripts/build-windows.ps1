@@ -46,6 +46,7 @@ try {
     foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js', 'test-find-webclient.js')) {
         Invoke-Checked 'node' @("scripts/$test")
     }
+    Invoke-Checked 'node' @('scripts/live-playback-probe.mjs', '--self-test')
     $configure = @('-S', $sourceRoot, '-B', $nativeBuildDirectory, '-G', 'Ninja',
         '-DCMAKE_BUILD_TYPE=RelWithDebInfo', "-DCMAKE_MAKE_PROGRAM=$($state.ninjaExe)",
         "-DCMAKE_INSTALL_PREFIX=$nativeBuildDirectory/output", "-DQTROOT=$($state.qtRoot)",
@@ -58,7 +59,7 @@ try {
         '-DWIX_ACCEPT_EULA=ON', "-DJMP_DIAGNOSTIC=$($Diagnostic.IsPresent)", "-DJMP_PORTABLE_PROFILE=$($IsolatedPortable.IsPresent)")
     Invoke-Checked $cmake $configure
     Invoke-Checked $cmake @('--build', $nativeBuildDirectory, '--parallel', '2')
-    foreach ($test in @('discord', 'diagnostics', 'playback', 'application')) {
+    foreach ($test in @('discord', 'diagnostics', 'playback', 'application', 'ui')) {
         $testBuild = Join-Path $nativeBuildDirectory "tests/$test"
         Invoke-Checked $cmake @('-S', "tests/$test", '-B', $testBuild, '-G', 'Ninja',
             '-DCMAKE_BUILD_TYPE=RelWithDebInfo', "-DCMAKE_MAKE_PROGRAM=$($state.ninjaExe)", "-DCMAKE_PREFIX_PATH=$($state.qtRoot)")
