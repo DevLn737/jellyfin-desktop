@@ -925,8 +925,10 @@ void PlayerComponent::setVideoOnlyMode(bool enable)
 
 void PlayerComponent::videoUiReady()
 {
-  // Ignore delayed WebChannel calls once native playback has stopped.
-  if (m_windowVisible && m_playbackActive && m_inPlayback)
+  // A loaded video can be paused or buffering when the OSD finishes painting
+  // (notably during SyncPlay startup). Its background still needs refreshing.
+  // Ignore delayed WebChannel calls after stop and for audio-only playback.
+  if (m_windowVisible && m_inPlayback)
     emit videoUiBackgroundReady();
 }
 
