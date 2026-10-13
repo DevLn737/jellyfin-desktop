@@ -22,7 +22,7 @@ The previously published package bytes remain available for reproduction.
 - [x] Permit the one-shot video-background refresh for loaded paused/buffering video.
 - [x] Identify the separate translucent client-settings backdrop and accumulated listeners/styles.
 - [x] Replace client-settings native select popups with an in-page modal chooser.
-- [ ] Verify and package 2.0.1-rc.2 (MSI/Burn 2.0.9) with these corrections.
+- [x] Verify and package 2.0.1-rc.2 (MSI/Burn 2.0.9) with these corrections.
 - [ ] Obtain renewed acceptance; do not promote this candidate to stable automatically.
 
 ## Reproduction evidence
@@ -49,6 +49,28 @@ surface, avoiding the separate Qt native popup window in fullscreen. The
 friend's original invisible popup has not been reproduced locally; validation
 must therefore distinguish the replacement's fullscreen behavior from proof
 of the original popup's failure mechanism.
+
+The new candidate uses clean `9530a85a58b5c52783defe94cf65aa69a868a148`.
+The paused-start reproduction now emits one refresh from its first ready call,
+shows the synthetic video before unpause, keeps it visible after resume and
+clears moved tooltips. No manual refresh is used. A delayed call after stop is
+rejected. The application closed gracefully during active video in 257 ms.
+
+Cold/warm/reopened client settings scrolling measured p95 16.7–16.8 ms.
+Opening had isolated 33–50 ms frame intervals. Trusted clicks opened the Device
+Type chooser in both windowed and fullscreen modes; selection preserved value
+types and cancellation restored focus. Separate strict-CSP smoke checks cover
+Tab/Shift+Tab, dirty text/caret preservation, descriptor refresh and teardown.
+The runtime closed in 465 ms. Both runs preserved the original profile and left
+no owned child processes.
+
+Normal/diagnostic builds, native/JavaScript checks, renderer, strict-CSP,
+installer payload binding, PDB identity and localhost-only Tracy passed.
+[CI for this candidate](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38387416332)
+passed all three jobs; publication was skipped.
+[Numeric observations and package identities](../quality/observations/desktop-beta-9530a85.json)
+separate these new results from historical fullscreen/dialog observations and
+the causal baseline. This evidence-only follow-up does not change packaged code.
 
 ### Earlier fullscreen and general dialog work
 
