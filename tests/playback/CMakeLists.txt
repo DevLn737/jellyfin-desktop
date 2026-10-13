@@ -5,3 +5,17 @@ add_executable(playback-value-tests PlaybackValueTest.cpp)
 target_compile_features(playback-value-tests PRIVATE cxx_std_17)
 target_include_directories(playback-value-tests PRIVATE ../../src/player ../../src)
 add_test(NAME playback-values COMMAND playback-value-tests)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+set(player_source "${CMAKE_CURRENT_SOURCE_DIR}/../../src/player/PlayerComponent.cpp")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${player_source}")
+execute_process(COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract-video-ui-method.py"
+  "${player_source}" "${CMAKE_CURRENT_BINARY_DIR}/VideoUiReadyMethod.inc"
+  RESULT_VARIABLE extraction_result)
+if(NOT extraction_result EQUAL 0)
+  message(FATAL_ERROR "Could not extract the production videoUiReady method")
+endif()
+add_executable(video-ui-ready-tests VideoUiReadyTest.cpp)
+target_compile_features(video-ui-ready-tests PRIVATE cxx_std_17)
+target_include_directories(video-ui-ready-tests PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+add_test(NAME video-ui-ready COMMAND video-ui-ready-tests)

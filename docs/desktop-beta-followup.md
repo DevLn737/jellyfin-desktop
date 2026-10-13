@@ -18,9 +18,39 @@ The previously published package bytes remain available for reproduction.
 - [x] Verify SyncPlay group/settings, video card context menu, media information,
   playback settings/subtitles and outside-click dismissal.
 - [x] Build and verify the intermediate 2.0.1-rc.1 candidate (MSI/Burn 2.0.8).
+- [x] Reproduce retained video backgrounds when SyncPlay starts with a paused file.
+- [x] Permit the one-shot video-background refresh for loaded paused/buffering video.
+- [x] Identify the separate translucent client-settings backdrop and accumulated listeners/styles.
+- [x] Replace client-settings native select popups with an in-page modal chooser.
+- [ ] Verify and package 2.0.1-rc.2 (MSI/Burn 2.0.9) with these corrections.
 - [ ] Obtain renewed acceptance; do not promote this candidate to stable automatically.
 
 ## Reproduction evidence
+
+### Follow-up on 2.0.1-rc.1
+
+An isolated paused-start reproduction reached the actual Web OSD while the
+native video was loaded and paused. The single `videoUiReady()` call produced
+no background-refresh signal because `core-idle` made `m_playbackActive` false.
+Resuming did not retry the call. A manual call after resume immediately restored
+the synthetic video's red/cyan pixels. The correction accepts a loaded visible
+video even when paused or buffering, while retaining stopped/audio-only guards.
+This reproduces the SyncPlay startup state without creating remote groups; it
+does not establish multi-client synchronization tolerances.
+
+Client settings use their own translucent container, separate from Web dialogs.
+An A/B/A comparison observed scrolling p95 near 100 ms with that backdrop,
+16.7 ms without it, and 100 ms after restoration. Settings now use the same
+software-rendering policy as other dialogs, reuse their tooltip stylesheet,
+remove subscriptions on close and update values without rebuilding the form.
+
+Client-owned dropdowns now use an HTML modal chooser within the WebEngine
+surface, avoiding the separate Qt native popup window in fullscreen. The
+friend's original invisible popup has not been reproduced locally; validation
+must therefore distinguish the replacement's fullscreen behavior from proof
+of the original popup's failure mechanism.
+
+### Earlier fullscreen and general dialog work
 
 The local baseline uses an isolated profile copy, the actual served Web client,
 blocked remote writes/WebSockets and local synthetic video. It does not change
