@@ -14,10 +14,10 @@ The previously published package bytes remain available for reproduction.
   repeated entry/exit, restored geometry, moving video and WebEngine sizing.
 - [x] Reproduce SyncPlay and card-context dialog stalls with a controlled
   comparison of the software WebEngine backdrop.
-- [x] Fix shared dialog composition without disabling dialog animations or controls.
-- [ ] Verify SyncPlay group/settings, video card context menu, media information,
+- [x] Fix shared dialog composition while preserving modal input and cleanup.
+- [x] Verify SyncPlay group/settings, video card context menu, media information,
   playback settings/subtitles and outside-click dismissal.
-- [ ] Build and verify the intermediate 2.0.1-rc.1 candidate (MSI/Burn 2.0.8).
+- [x] Build and verify the intermediate 2.0.1-rc.1 candidate (MSI/Burn 2.0.8).
 - [ ] Obtain renewed acceptance; do not promote this candidate to stable automatically.
 
 ## Reproduction evidence
@@ -53,12 +53,33 @@ frame bridge additionally recreates and uploads a viewport-sized texture.
 A software-client-only 1 ms transition for `.formDialog.dialog-fixedSize`
 avoids repeated expensive animation frames, while preserving animation-end
 callbacks, focus, close behavior and original layout. It retains existing
-animations on small menus and GPU rendering. Repeat observations reached the
+animations on small menus and GPU rendering. A controlled pre-packaging comparison reached the
 fully drawn form around 246–261 ms after the click, versus 438–510 ms with the
 old transition. One-time form creation can still take about 50 ms per frame;
 these measurements do not claim every opening frame is 60 FPS.
 
-Final packages and fresh production checks follow the final source commit.
+Final packages use clean `7c52bdc2c2c63c3da250046cf53ea2f4e8a108a5`.
+The fresh production run checked all four broad dialog routes twice, plus
+playback settings/subtitles twice, without injected style overrides. Form
+entry/exit callbacks used 1 ms; focus and cleanup passed. Cold large forms
+finished opening around 316–325 ms after the click, warm forms around
+247–263 ms. Creation still produced individual 50–67 ms intervals; a sustained
+low-frame-rate transition is no longer required. Active-video close took
+437.54 ms, the original profile was unchanged and no owned children remained.
+
+Normal and diagnostic builds, all native/JavaScript checks, strict CSP,
+renderer, package payload binding, symbols and localhost-only Tracy passed.
+[CI for the built source](https://github.com/DevLn737/jellyfin-desktop/actions/runs/38381331638)
+passed all three jobs; publication was skipped. One initial local test-process
+startup exceeded its five-second limit; the targeted retry and full build
+rerun passed. Its failed-attempt log hash is retained rather than treated as a
+successful first attempt.
+
+[The numeric evidence](../quality/observations/desktop-beta-7c52bdc.json)
+binds the installer, portable, diagnostic portable and symbols to this source.
+It also distinguishes earlier fullscreen observations on unchanged native
+code from final production dialog measurements. The later evidence-only
+commit does not change the source embedded in these packages.
 
 Long-duration Qt memory and mixed-client SyncPlay drift qualification remain
 separate outstanding measurements. The previous publication exception does
