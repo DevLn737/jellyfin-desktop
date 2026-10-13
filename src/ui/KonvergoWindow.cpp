@@ -208,7 +208,7 @@ void KonvergoWindow::saveGeometry()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-QRect KonvergoWindow::loadGeometry()
+QRect KonvergoWindow::loadGeometry(bool restoreVisibility)
 {
   QRect rc = loadGeometryRect();
   QScreen* myScreen = loadLastScreen();
@@ -239,10 +239,21 @@ QRect KonvergoWindow::loadGeometry()
   }
   else
   {
-    setGeometry(nsize);
-    if (SettingsComponent::Get().value(SETTINGS_SECTION_STATE, "maximized").toBool())
+    const bool maximized = SettingsComponent::Get().value(SETTINGS_SECTION_STATE, "maximized").toBool();
+    // A maximized client rectangle is not a normal window rectangle. Applying
+    // it while leaving fullscreen can expand the native frame on every toggle.
+    if (!restoreVisibility || !maximized)
+    {
+      if (restoreVisibility)
+        setVisibility(QWindow::Windowed);
+      setGeometry(nsize);
+    }
+    if (maximized)
       setVisibility(QWindow::Maximized);
-    saveGeometry();
+    // Native state changes settle asynchronously; do not persist their
+    // intermediate geometry as the next fullscreen restoration target.
+    if (!restoreVisibility)
+      saveGeometry();
   }
 
   return nsize;
@@ -434,6 +445,11 @@ void KonvergoWindow::updateForcedScreen()
   if (m_closing)
     return;
 
+  if (!SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "fullscreen").toBool()
+      && !SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceAlwaysFS").toBool()
+      && !SystemComponent::Get().isOpenELEC())
+    return;
+
   QString screenName = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceFSScreen").toString();
 
   if (screenName.isEmpty())
@@ -459,6 +475,8 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
   if (m_closing)
     return;
 
+  const auto generation = ++m_windowStateGeneration;
+
   if (SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "fullscreen").toBool() || SystemComponent::Get().isOpenELEC() || SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceAlwaysFS").toBool())
   {
     // if we were go from windowed to fullscreen
@@ -470,16 +488,14 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
 
     // When fullscreening explicitly, we might have to move the window to a
     // different screen, as Qt will fullscreen to the current screen.
-    QTimer::singleShot(200, this, [this]
+    QTimer::singleShot(200, this, [this, generation]
     {
-      updateForcedScreen();
+      if (generation == m_windowStateGeneration)
+        updateForcedScreen();
     });
   }
   else
   {
-    setVisibility(QWindow::Windowed);
-    loadGeometry();
-
     Qt::WindowFlags forceOnTopFlags = Qt::WindowStaysOnTopHint;
 #ifdef Q_WS_X11
     forceOnTopFlags = forceOnTopFlags | Qt::X11BypassWindowManagerHint;
@@ -489,6 +505,8 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
       setFlags(flags() | forceOnTopFlags);
     else
       setFlags(flags() &~ forceOnTopFlags);
+
+    loadGeometry(true);
   }
 
   InputComponent::Get().cancelAutoRepeat();
@@ -743,9 +761,11 @@ void KonvergoWindow::onScreenAdded(QScreen *screen)
 
   updateScreens();
   // The timer is out of fear for chaotic mid-change states.
-  QTimer::singleShot(200, this, [this]
+  const auto generation = m_windowStateGeneration;
+  QTimer::singleShot(200, this, [this, generation]
   {
-    updateForcedScreen();
+    if (generation == m_windowStateGeneration)
+      updateForcedScreen();
   });
 }
 

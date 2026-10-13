@@ -13,3 +13,12 @@ Configure this directory with the manifest-pinned Qt prefix and the existing
 Windows compiler environment, build it, then run CTest with
 `--output-on-failure`. Generated method bodies and executables belong in an
 ignored build directory.
+
+The fullscreen target extracts the production forced-screen, window-state,
+screen-added and geometry-restoration methods. Qt native window operations are
+replaced with counters and a visibility model; it opens no windows. Cases cover
+obsolete delayed transitions, forced-fullscreen policies, and repeated exits to
+both maximized and normal windows. The maximized test rejects applying the saved
+maximized client rectangle as normal geometry, and both roundtrip tests reject
+saving geometry during restoration. Native pixels, frame decorations, asynchronous
+Windows state delivery and WebEngine sizing still require the desktop harness.

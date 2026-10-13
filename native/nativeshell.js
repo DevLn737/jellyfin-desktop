@@ -235,11 +235,11 @@ async function createApi() {
             style.replaceSync(`
                 .card, .cardScalable, .cardIndicators { contain: style !important; }
                 .cardPadder, .cardImageContainer { contain: size style !important; }
-                /* A translucent full-window backdrop makes software Viz redraw
-                   the entire transparent video surface during menu animations.
-                   Keep the modal hit area and the dialog's entry/exit animation,
-                   but leave native video undimmed while its menus are open. */
-                .transparentDocument .dialogBackdrop {
+                /* Software Viz blends this full-window surface during every
+                   dialog transition, including opaque library/SyncPlay pages.
+                   Keep the modal hit area and each dialog's entry/exit animation;
+                   omit dimming for all dialogs on the software backend. */
+                .dialogBackdrop {
                     opacity: 0 !important;
                     will-change: auto !important;
                 }

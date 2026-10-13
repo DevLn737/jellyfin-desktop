@@ -126,6 +126,29 @@ try {
             unknownUnicode: await setting('migrationSmoke', 'unknownUnicode'),
             nested: await setting('migrationSmoke', 'nested')
         };
+        // Check opaque-page dialogs under strict CSP: the former video-only
+        // selector missed these menus. Modal input and animations remain intact.
+        const fixtureSheet = new CSSStyleSheet();
+        fixtureSheet.replaceSync('.dialogBackdropOpened { opacity: .5; will-change: opacity; } .ownedModalDialog { opacity: .73; animation-name: ownedModalEntry; animation-duration: .14s; } @keyframes ownedModalEntry { from { transform: scale(.5); } to { transform: scale(1); } }');
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, fixtureSheet];
+        const backdrop = document.createElement('div');
+        backdrop.className = 'dialogBackdrop dialogBackdropOpened';
+        const dialog = document.createElement('div');
+        dialog.className = 'ownedModalDialog dialog';
+        document.body.append(backdrop, dialog);
+        const backdropStyle = getComputedStyle(backdrop), dialogStyle = getComputedStyle(dialog);
+        result.softwareDialogStyles = {
+            enabled: window.jmpInfo.softwareWebEngine,
+            opaqueDocument: !document.documentElement.classList.contains('transparentDocument'),
+            backdropOpacity: Number(backdropStyle.opacity),
+            backdropPointerEvents: backdropStyle.pointerEvents,
+            backdropWillChange: backdropStyle.willChange,
+            dialogOpacity: Number(dialogStyle.opacity),
+            dialogAnimation: dialogStyle.animationName,
+            dialogDuration: dialogStyle.animationDuration
+        };
+        backdrop.remove(); dialog.remove();
+        document.adoptedStyleSheets = document.adoptedStyleSheets.filter(sheet => sheet !== fixtureSheet);
         result.plugins = [];
         for (const name of window.NativeShell?.getPlugins() || []) {
             const plugin = await Promise.race([window[name](),
@@ -161,6 +184,11 @@ try {
                 assert.deepEqual(value.plugins.map(plugin => plugin.name),
                     ['mpvVideoPlayer', 'mpvAudioPlayer', 'jmpInputPlugin', 'jmpDiagnosticsPlugin', 'jmpUpdatePlugin']);
                 assert.ok(value.plugins.every(plugin => plugin.loaded));
+                assert.deepEqual(value.softwareDialogStyles, {
+                    enabled: true, opaqueDocument: true,
+                    backdropOpacity: 0, backdropPointerEvents: 'auto', backdropWillChange: 'auto',
+                    dialogOpacity: .73, dialogAnimation: 'ownedModalEntry', dialogDuration: '0.14s'
+                }, 'Software dialog styling must preserve modal input and animations under strict CSP');
                 report.phases[phase] = value;
                 return;
             } catch (error) { lastError = error; await wait(100); }

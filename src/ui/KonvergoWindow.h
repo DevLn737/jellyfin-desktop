@@ -118,7 +118,7 @@ private slots:
 
 private:
   void saveGeometry();
-  QRect loadGeometry();
+  QRect loadGeometry(bool restoreVisibility = false);
   QRect loadGeometryRect();
   bool fitsInScreens(const QRect& rc);
   QScreen* loadLastScreen();
@@ -128,6 +128,7 @@ private:
 
   bool m_debugLayer;
   bool m_closing = false;
+  quint64 m_windowStateGeneration = 0;
   QTimer* m_infoTimer;
   QString m_debugInfo, m_systemDebugInfo, m_videoInfo;
   int m_ignoreFullscreenSettingsChange;
