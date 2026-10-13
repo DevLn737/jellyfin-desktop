@@ -243,6 +243,15 @@ async function createApi() {
                     opacity: 0 !important;
                     will-change: auto !important;
                 }
+                /* Large form transitions repaint/rasterize a substantial part
+                   of the software viewport on every animation frame. Open them
+                   promptly; a nonzero duration preserves dialogHelper's
+                   animationend cleanup, including the exit transition.
+                   Small action sheets keep their normal animation. */
+                .formDialog.dialog-fixedSize {
+                    animation-duration: 1ms !important;
+                    animation-delay: 0ms !important;
+                }
             `);
             document.adoptedStyleSheets = [...document.adoptedStyleSheets, style];
         }

@@ -147,6 +147,16 @@ try {
             dialogAnimation: dialogStyle.animationName,
             dialogDuration: dialogStyle.animationDuration
         };
+        dialog.classList.add('formDialog', 'dialog-fixedSize');
+        const largeDialogStyle = getComputedStyle(dialog);
+        result.softwareLargeDialogStyles = {
+            duration: largeDialogStyle.animationDuration,
+            delay: largeDialogStyle.animationDelay,
+            animation: largeDialogStyle.animationName,
+            timing: largeDialogStyle.animationTimingFunction,
+            fill: largeDialogStyle.animationFillMode,
+            opacity: Number(largeDialogStyle.opacity)
+        };
         backdrop.remove(); dialog.remove();
         document.adoptedStyleSheets = document.adoptedStyleSheets.filter(sheet => sheet !== fixtureSheet);
         result.plugins = [];
@@ -189,6 +199,10 @@ try {
                     backdropOpacity: 0, backdropPointerEvents: 'auto', backdropWillChange: 'auto',
                     dialogOpacity: .73, dialogAnimation: 'ownedModalEntry', dialogDuration: '0.14s'
                 }, 'Software dialog styling must preserve modal input and animations under strict CSP');
+                assert.deepEqual(value.softwareLargeDialogStyles, {
+                    duration: '0.001s', delay: '0s', animation: 'ownedModalEntry',
+                    timing: 'ease', fill: 'none', opacity: .73
+                }, 'Large software forms must retain animation semantics with prompt entry/exit');
                 report.phases[phase] = value;
                 return;
             } catch (error) { lastError = error; await wait(100); }
