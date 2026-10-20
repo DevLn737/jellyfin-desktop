@@ -1,4 +1,4 @@
-<#
+﻿<#
 Stage 1 baseline measurements of the Jellyfin Desktop 2.x client on a real
 Windows PC, following /architecture/measurement-protocol.md of the project
 (same scenarios as the new client's prototype). Runs the packaged client from
@@ -22,6 +22,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+# `powershell -File` passes "a,b" as one string; accept both forms.
+$Scenarios = @($Scenarios | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$HardwareDecoding = @($HardwareDecoding | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $probeScript = Join-Path $PSScriptRoot 'jfd-probe.lua'
 $stage = [IO.Path]::GetFullPath($StagePath)
 $media = [IO.Path]::GetFullPath($MediaDir)
@@ -185,13 +188,13 @@ function Connect-Cdp {
     }
     if (-not $target) { throw 'Bundled client page not found over DevTools' }
     $script:ws = New-Object Net.WebSockets.ClientWebSocket
-    $script:ws.ConnectAsync([Uri]$target.webSocketDebuggerUrl, [Threading.CancellationToken]::None).GetAwaiter().GetResult()
+    $null = $script:ws.ConnectAsync([Uri]$target.webSocketDebuggerUrl, [Threading.CancellationToken]::None).GetAwaiter().GetResult()
 }
 
 function Invoke-Cdp([string]$Method, $Params, [int]$TimeoutMs = 10000) {
     $id = ++$script:cdpId
     $bytes = [Text.Encoding]::UTF8.GetBytes((@{ id = $id; method = $Method; params = $Params } | ConvertTo-Json -Depth 8 -Compress))
-    $script:ws.SendAsync((New-Object ArraySegment[byte] -ArgumentList (, $bytes)), 'Text', $true, [Threading.CancellationToken]::None).GetAwaiter().GetResult()
+    $null = $script:ws.SendAsync((New-Object ArraySegment[byte] -ArgumentList (, $bytes)), 'Text', $true, [Threading.CancellationToken]::None).GetAwaiter().GetResult()
     $buffer = New-Object byte[] 1048576
     $deadline = [DateTime]::UtcNow.AddMilliseconds($TimeoutMs)
     while ([DateTime]::UtcNow -lt $deadline) {
@@ -335,21 +338,23 @@ function Probe-Window($Records, [string]$From, [string]$To) {
     $end = ($Records | Where-Object { $_.kind -eq 'mark' -and $_.label -eq $To } | Select-Object -Last 1).t
     return @($Records | Where-Object { $_.kind -eq 'sample' -and $_.t -ge $start -and $_.t -le $end })
 }
+# The probe omits properties mpv reports as unavailable (nil), so read them leniently.
+function Prop($Record, [string]$Name) { $p = $Record.PSObject.Properties[$Name]; if ($p) { $p.Value } else { $null } }
 function Probe-Summary($Samples) {
     if ($Samples.Count -lt 2) { return @{ samples = $Samples.Count } }
     $first = $Samples[0]; $last = $Samples[-1]
-    $av = [double[]]@($Samples | Where-Object { $null -ne $_.avsync } | ForEach-Object { [Math]::Abs([double]$_.avsync) * 1000 })
-    $delta = { param($name) if ($null -ne $last.$name -and $null -ne $first.$name) { $last.$name - $first.$name } else { $null } }
+    $av = [double[]]@($Samples | Where-Object { $null -ne (Prop $_ 'avsync') } | ForEach-Object { [Math]::Abs([double](Prop $_ 'avsync')) * 1000 })
+    $delta = { param($name) $l = Prop $last $name; $f = Prop $first $name; if ($null -ne $l -and $null -ne $f) { $l - $f } else { $null } }
     return @{
         samples = $Samples.Count
-        hwdecCurrent = @($Samples | ForEach-Object { $_.'hwdec-current' } | Select-Object -Unique)
-        currentVo = $last.'current-vo'; currentAo = $last.'current-ao'; videoCodec = $last.'video-codec'
-        width = $last.width; height = $last.height
-        avsyncAbsMsP95 = Percentile $av 95; avsyncAbsMsMax = ($av | Measure-Object -Maximum).Maximum
+        hwdecCurrent = @($Samples | ForEach-Object { Prop $_ 'hwdec-current' } | Select-Object -Unique)
+        currentVo = Prop $last 'current-vo'; currentAo = Prop $last 'current-ao'; videoCodec = Prop $last 'video-codec'
+        width = Prop $last 'width'; height = Prop $last 'height'
+        avsyncAbsMsP95 = Percentile $av 95; avsyncAbsMsMax = $(if ($av.Count) { ($av | Measure-Object -Maximum).Maximum } else { $null })
         frameDrops = & $delta 'frame-drop-count'; decoderFrameDrops = & $delta 'decoder-frame-drop-count'
         voDelayedFrames = & $delta 'vo-delayed-frame-count'; mistimedFrames = & $delta 'mistimed-frame-count'
-        estimatedVfFps = Median ([double[]]@($Samples | Where-Object { $null -ne $_.'estimated-vf-fps' } | ForEach-Object { $_.'estimated-vf-fps' }))
-        displayFps = $last.'display-fps'
+        estimatedVfFps = Median ([double[]]@($Samples | ForEach-Object { Prop $_ 'estimated-vf-fps' } | Where-Object { $null -ne $_ }))
+        displayFps = Prop $last 'display-fps'
     }
 }
 
@@ -391,7 +396,8 @@ function Start-PresentMon([string]$RunDir) {
     # ETW presents need admin or membership in Performance Log Users.
     if (-not $PresentMonPath) { return $null }
     $csv = Join-Path $RunDir 'presentmon.csv'
-    return Start-Process -FilePath $PresentMonPath -PassThru -WindowStyle Hidden -ArgumentList @(
+    return Start-Process -FilePath $PresentMonPath -PassThru -WindowStyle Hidden `
+        -RedirectStandardOutput (Join-Path $RunDir 'presentmon.stdout.txt') -RedirectStandardError (Join-Path $RunDir 'presentmon.stderr.txt') -ArgumentList @(
         '--process_id', $script:app.Id, '--output_file', ('"' + $csv + '"'), '--v1_metrics', '--no_console_stats', '--stop_existing_session', '--session_name', 'jfd-baseline')
 }
 function Stop-PresentMon($Process, [string]$RunDir, [double]$RefreshHz) {
@@ -399,7 +405,8 @@ function Stop-PresentMon($Process, [string]$RunDir, [double]$RefreshHz) {
     & $PresentMonPath --terminate_existing_session --session_name jfd-baseline | Out-Null
     $null = $Process.WaitForExit(10000)
     $csv = Join-Path $RunDir 'presentmon.csv'
-    if (-not (Test-Path -LiteralPath $csv)) { return @{ measured = $false; reason = 'no PresentMon output' } }
+    # PresentMon writes the CSV only once it has seen a present from the target.
+    if (-not (Test-Path -LiteralPath $csv)) { return @{ measured = $false; reason = 'no PresentMon output (no presents captured; see presentmon.std*.txt)' } }
     $rows = Import-Csv -LiteralPath $csv
     $column = @('MsBetweenPresents','msBetweenPresents','MsBetweenAppStart') | Where-Object { $rows -and $rows[0].PSObject.Properties[$_] } | Select-Object -First 1
     if (-not $column) { return @{ measured = $false; reason = 'unknown PresentMon columns' } }
