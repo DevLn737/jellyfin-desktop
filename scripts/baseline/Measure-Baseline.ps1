@@ -18,21 +18,30 @@ param(
     [ValidateRange(1024,65535)][int]$DevToolsPort = 9231,
     [int]$MemoryMeasureSeconds = 3600,
     [int]$MemoryWarmupSeconds = 120,
-    [string]$PresentMonPath
+    [string]$PresentMonPath,
+    # File names in MediaDir; frames/cpu run once per file, the first one is also used elsewhere.
+    [string[]]$Media1080 = @('bbb-1080p60.mp4'),
+    [string[]]$Media2160 = @('bbb-2160p60.mp4'),
+    [int]$FrameWindowSeconds = 300,
+    [int]$CpuWindowSeconds = 60,
+    [int]$Seeks = 20
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 # `powershell -File` passes "a,b" as one string; accept both forms.
 $Scenarios = @($Scenarios | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $HardwareDecoding = @($HardwareDecoding | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$Media1080 = @($Media1080 | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$Media2160 = @($Media2160 | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $probeScript = Join-Path $PSScriptRoot 'jfd-probe.lua'
 $stage = [IO.Path]::GetFullPath($StagePath)
 $media = [IO.Path]::GetFullPath($MediaDir)
 $out = [IO.Path]::GetFullPath($OutDir)
 $exeName = 'JellyfinMediaPlayer.exe'
 if (-not (Test-Path -LiteralPath (Join-Path $stage $exeName))) { throw "StagePath must contain $exeName" }
-$mediaFiles = @{ '1080' = Join-Path $media 'bbb-1080p60.mp4'; '2160' = Join-Path $media 'bbb-2160p60.mp4' }
-foreach ($file in $mediaFiles.Values) { if (-not (Test-Path -LiteralPath $file)) { throw "Missing media $file" } }
+$mediaLists = @{ '1080' = @($Media1080 | ForEach-Object { Join-Path $media $_ }); '2160' = @($Media2160 | ForEach-Object { Join-Path $media $_ }) }
+$mediaFiles = @{ '1080' = $mediaLists['1080'][0]; '2160' = $mediaLists['2160'][0] }
+foreach ($file in ($mediaLists['1080'] + $mediaLists['2160'])) { if (-not (Test-Path -LiteralPath $file)) { throw "Missing media $file" } }
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 
 function Write-Json($Value, [string]$Path) {
@@ -428,16 +437,16 @@ function Save-ClientLog([string]$RunDir) {
 }
 $primary = $null
 
-function Run-Frames([string]$Res, [string]$Hwdec) {
-    $dir = New-RunDir "frames-$Res-$Hwdec"
+function Run-Frames([string]$Res, [string]$Hwdec, [string]$File) {
+    $dir = New-RunDir "frames-$Res-$Hwdec-$([IO.Path]::GetFileNameWithoutExtension($File))"
     $init = Start-Client $Hwdec $true $dir
     $pm = $null
     try {
         Show-Overlay $true
-        $load = Load-Media $mediaFiles[$Res]
+        $load = Load-Media $File
         Start-Sleep -Seconds 10
         $pm = Start-PresentMon $dir
-        $from = Mark 'window-start'; Start-Sleep -Seconds 60; $to = Mark 'window-end'
+        $from = Mark 'window-start'; Start-Sleep -Seconds $FrameWindowSeconds; $to = Mark 'window-end'
         $presentMon = Stop-PresentMon $pm $dir $primary.refreshHz; $pm = $null
         $rect = [JfdWin]::Rect($script:window)
     } finally { if ($pm) { Stop-PresentMon $pm $dir 60 | Out-Null }; $close = Stop-Client }
@@ -445,27 +454,27 @@ function Run-Frames([string]$Res, [string]$Hwdec) {
     $probe = Read-Probe (Join-Path $dir 'mpv-probe.jsonl')
     $mpv = Probe-Summary (Probe-Window $probe 'window-start' 'window-end')
     $frames = Frame-Summary (Join-Path $dir 'client-logs') $from $to $primary.refreshHz 60
-    return @{ scenario = "frames-$Res"; hwdecSetting = $Hwdec; overlay = $true; page = $init; load = $load; windowRect = $rect
+    return @{ scenario = "frames-$Res"; file = [IO.Path]::GetFileName($File); hwdecSetting = $Hwdec; overlay = $true; page = $init; load = $load; windowRect = $rect
               frames = $frames; presentMon = $presentMon; mpv = $mpv; close = $close; runDir = $dir }
 }
 
-function Run-Cpu([string]$Res, [string]$Hwdec) {
-    $dir = New-RunDir "cpu-$Res-$Hwdec"
+function Run-Cpu([string]$Res, [string]$Hwdec, [string]$File) {
+    $dir = New-RunDir "cpu-$Res-$Hwdec-$([IO.Path]::GetFileNameWithoutExtension($File))"
     $init = Start-Client $Hwdec $false $dir
     try {
         Show-Overlay $false
-        $load = Load-Media $mediaFiles[$Res]
+        $load = Load-Media $File
         Start-Sleep -Seconds 10
         $tree = Get-Tree $script:app.Id
         $null = Mark 'window-start'; $a = Sample-Tree $tree
-        Start-Sleep -Seconds 60
+        Start-Sleep -Seconds $CpuWindowSeconds
         $b = Sample-Tree $tree; $null = Mark 'window-end'
     } finally { $close = Stop-Client }
     Save-ClientLog $dir
     $seconds = ($b.at - $a.at).TotalSeconds
     $oneCore = 100.0 * ($b.cpuSeconds - $a.cpuSeconds) / $seconds
     $mpv = Probe-Summary (Probe-Window (Read-Probe (Join-Path $dir 'mpv-probe.jsonl')) 'window-start' 'window-end')
-    return @{ scenario = "cpu-$Res"; hwdecSetting = $Hwdec; overlay = $false; load = $load; processes = $b.processes
+    return @{ scenario = "cpu-$Res"; file = [IO.Path]::GetFileName($File); hwdecSetting = $Hwdec; overlay = $false; load = $load; processes = $b.processes
               cpuPercentOfOneCore = [Math]::Round($oneCore, 1); cpuPercentOfAllCores = [Math]::Round($oneCore / [Environment]::ProcessorCount, 2)
               privateBytes = $b.privateBytes; rssBytes = $b.rssBytes; mpv = $mpv; close = $close; runDir = $dir }
 }
@@ -477,7 +486,7 @@ function Run-FirstFrameSeek {
     try {
         Show-Overlay $false
         for ($i = 0; $i -lt 5; ++$i) { $loads += Load-Media $mediaFiles['1080']; Start-Sleep -Seconds 3 }
-        for ($i = 0; $i -lt 5; ++$i) {
+        for ($i = 0; $i -lt $Seeks; ++$i) {
             Invoke-Mpv ("seek {0} absolute-percent" -f $(if ($i % 2) { 20 } else { 50 })); Start-Sleep -Seconds 3
         }
     } finally { $close = Stop-Client }
@@ -494,7 +503,7 @@ function Run-FirstFrameSeek {
         }
     }
     # The fork itself issues a seek while loading; only harness seeks after the last load count.
-    $seekMs = @($seekMs | Select-Object -Last 5)
+    $seekMs = @($seekMs | Select-Object -Last $Seeks)
     return @{ scenario = 'first-frame-seek'; hwdecSetting = 'copy'; loadToFirstFrameMs = $loadMs; seekToFirstFrameMs = $seekMs
               loadMedianMs = Median ([double[]]$loadMs); loadMaxMs = ($loadMs | Measure-Object -Maximum).Maximum
               seekMedianMs = Median ([double[]]$seekMs); seekMaxMs = ($seekMs | Measure-Object -Maximum).Maximum
@@ -589,11 +598,11 @@ $inventory = Get-Inventory
 $primary = $inventory.screens | Where-Object { $_.primary } | Select-Object -First 1
 $manifestPath = Join-Path $stage 'build-manifest.json'
 $report = [ordered]@{
-    schemaVersion = 1; protocol = 'architecture/measurement-protocol.md rev. 1'; client = 'fork 2.x'
+    schemaVersion = 1; protocol = 'architecture/measurement-protocol.md rev. 2'; client = 'fork 2.x'
     startedAt = (Get-Date).ToString('o'); harnessSha256 = Sha256 $PSCommandPath; probeSha256 = Sha256 $probeScript
     exeSha256 = Sha256 (Join-Path $stage $exeName)
     appVersion = $(if (Test-Path -LiteralPath $manifestPath) { (Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json).appVersion } else { $null })
-    media = @{ '1080' = @{ file = $mediaFiles['1080']; sha256 = Sha256 $mediaFiles['1080'] }; '2160' = @{ file = $mediaFiles['2160']; sha256 = Sha256 $mediaFiles['2160'] } }
+    media = @(($mediaLists['1080'] + $mediaLists['2160']) | ForEach-Object { @{ file = $_; sha256 = Sha256 $_ } })
     inventory = $inventory; results = @(); failures = @()
 }
 if ($inventory.remoteSession) { Log 'WARNING: remote desktop session; GPU, frame and CPU numbers are not representative' }
@@ -601,7 +610,9 @@ $reportPath = Join-Path $out 'baseline-report.json'
 Write-Json $report $reportPath
 $jobs = foreach ($scenario in $Scenarios) {
     if ($scenario -match '^(frames|cpu)-(1080|2160)$') {
-        foreach ($h in $HardwareDecoding) { @{ name = "$scenario-$h"; kind = $Matches[1]; res = $Matches[2]; hwdec = $h } }
+        $kind = $Matches[1]; $res = $Matches[2]
+        foreach ($f in $mediaLists[$res]) { foreach ($h in $HardwareDecoding) {
+            @{ name = "$scenario-$h-$([IO.Path]::GetFileName($f))"; kind = $kind; res = $res; hwdec = $h; file = $f } } }
     } elseif ($scenario -in @('first-frame-seek','fullscreen-50','shutdown','memory-hour')) {
         @{ name = $scenario; kind = $scenario }
     } else { throw "Unknown scenario $scenario" }
@@ -610,8 +621,8 @@ foreach ($job in $jobs) {
     Log "Running $($job.name)"
     try {
         $result = switch ($job.kind) {
-            'frames' { Run-Frames $job.res $job.hwdec }
-            'cpu' { Run-Cpu $job.res $job.hwdec }
+            'frames' { Run-Frames $job.res $job.hwdec $job.file }
+            'cpu' { Run-Cpu $job.res $job.hwdec $job.file }
             'first-frame-seek' { Run-FirstFrameSeek }
             'fullscreen-50' { Run-Fullscreen }
             'shutdown' { Run-Shutdown }
