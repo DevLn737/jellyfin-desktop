@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QVariant>
 #include <QRect>
@@ -64,6 +65,10 @@ public:
 #include "WindowFullscreenMethods.inc"
 int main(int argc, char** argv) {
   QCoreApplication app(argc, argv);
+  // Keep scenario timing strict without charging Windows image loading or Qt
+  // initialization against the runtime of these extracted production methods.
+  QElapsedTimer scenarioClock;
+  scenarioClock.start();
   if (argc != 2) return 2;
   const QString scenario = QString::fromUtf8(argv[1]);
   auto& settings = SettingsComponent::Get().values;
@@ -123,6 +128,10 @@ int main(int argc, char** argv) {
   } else return 2;
   QTimer::singleShot(350, &app, &QCoreApplication::quit);
   app.exec();
+  if (scenarioClock.elapsed() >= 5000) {
+    std::cerr << "Fullscreen scenario exceeded its five-second runtime budget\n";
+    return 1;
+  }
   if (window.forcedMoves != expectedMoves || window.isFullScreen() != expectedFullscreen) {
     std::cerr << "Unexpected forced screen moves or fullscreen state\n";
     return 1;

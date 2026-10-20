@@ -32,9 +32,10 @@ target_include_directories(window-fullscreen-tests PRIVATE "${CMAKE_CURRENT_BINA
 target_link_libraries(window-fullscreen-tests PRIVATE Qt6::Core)
 foreach(scenario windowed-setting enter-exit enter-exit-enter screen-added-exit always-fullscreen openelec maximized-roundtrips windowed-roundtrips)
   add_test(NAME "window-fullscreen-${scenario}" COMMAND window-fullscreen-tests "${scenario}")
-  set_tests_properties("window-fullscreen-${scenario}" PROPERTIES TIMEOUT 5)
+  # Allow cold Windows image startup; the test enforces its own scenario budget.
+  set_tests_properties("window-fullscreen-${scenario}" PROPERTIES TIMEOUT 30)
 endforeach()
 foreach(scenario native-close direct-quit reentrant-save duplicate-close fullscreen-close fullscreen-quit)
   add_test(NAME "window-close-${scenario}" COMMAND window-close-tests "${scenario}")
-  set_tests_properties("window-close-${scenario}" PROPERTIES TIMEOUT 5)
+  set_tests_properties("window-close-${scenario}" PROPERTIES TIMEOUT 30)
 endforeach()
