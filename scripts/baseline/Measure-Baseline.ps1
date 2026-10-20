@@ -76,6 +76,7 @@ public static class JfdWin {
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr hwnd);
     [DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);
+    [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr context);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool EnumDisplaySettings(string name, int mode, ref DEVMODE dm);
     public static IntPtr Find(int pid) {
         IntPtr best = IntPtr.Zero; long bestArea = 0;
@@ -98,6 +99,9 @@ public static class JfdWin {
 }
 '@
 }
+# Physical pixels for screens and window rectangles on every monitor
+# (PER_MONITOR_AWARE_V2), before Windows Forms caches any screen metrics.
+$null = [JfdWin]::SetProcessDpiAwarenessContext([IntPtr](-4))
 Add-Type -AssemblyName System.Windows.Forms
 
 function Get-Inventory {
