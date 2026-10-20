@@ -75,6 +75,7 @@ public static class JfdWin {
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr hwnd);
+    [DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool EnumDisplaySettings(string name, int mode, ref DEVMODE dm);
     public static IntPtr Find(int pid) {
         IntPtr best = IntPtr.Zero; long bestArea = 0;
@@ -594,6 +595,9 @@ function Run-Memory {
 }
 
 # ---------------------------------------------------------------- main
+# Keep the display on and the PC awake while this script runs, like a video
+# player does; released automatically when the script exits.
+$null = [JfdWin]::SetThreadExecutionState([uint32]'0x80000003')
 $inventory = Get-Inventory
 $primary = $inventory.screens | Where-Object { $_.primary } | Select-Object -First 1
 $manifestPath = Join-Path $stage 'build-manifest.json'
