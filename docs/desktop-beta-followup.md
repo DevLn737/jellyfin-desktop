@@ -5,6 +5,14 @@ fullscreen regressions and additional dialog stuttering. GitHub 2.0.0 is now
 a prerelease, removed from Latest, with an explicit regression notice.
 The previously published package bytes remain available for reproduction.
 
+On 2026-10-20 the user requested the final 2.0.1 publication and an end to further
+development. Both participants confirmed testing rc.2 without remaining known
+issues. Final review additionally fixes playback cancellation, asynchronous
+external subtitles, delayed load-hook lifetime and credential redaction. The
+final package uses application/package versions 2.0.1/2.0.10; beta feedback does
+not verify these later changes or complete technical qualification. See
+[the final release notes](release-2.0.1.md).
+
 ## Work list
 
 - [x] Withdraw stable status of 2.0.0.
@@ -23,7 +31,8 @@ The previously published package bytes remain available for reproduction.
 - [x] Identify the separate translucent client-settings backdrop and accumulated listeners/styles.
 - [x] Replace client-settings native select popups with an in-page modal chooser.
 - [x] Verify and package 2.0.1-rc.2 (MSI/Burn 2.0.9) with these corrections.
-- [ ] Obtain renewed acceptance; do not promote this candidate to stable automatically.
+- [x] Obtain renewed rc.2 feedback from both participants: no known issues remain.
+- [ ] Complete final-source qualification before stable publication.
 
 ## Reproduction evidence
 

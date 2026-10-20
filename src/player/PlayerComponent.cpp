@@ -586,6 +586,9 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       m_diagnosticMetrics.clear();
       const auto pendingAudio = m_externalAudioRequest.nextFile();
       if (pendingAudio) mpv_abort_async_command(m_mpv, pendingAudio);
+      const auto pendingSubtitle = m_externalSubtitleRequest.nextFile();
+      if (pendingSubtitle) mpv_abort_async_command(m_mpv, pendingSubtitle);
+      m_pendingExternalSubtitleStream.clear();
       m_pendingExternalAudioStream.clear();
       // Publish only when this file starts, after the previous file's END_FILE.
       // Enqueuing the next episode must not replace the current presence early.
@@ -631,6 +634,12 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       m_inPlayback = false;
       m_readiness.invalidate();
       m_playbackTimeline.reset();
+      const auto pendingAudio = m_externalAudioRequest.nextFile();
+      if (pendingAudio) mpv_abort_async_command(m_mpv, pendingAudio);
+      m_pendingExternalAudioStream.clear();
+      const auto pendingSubtitle = m_externalSubtitleRequest.nextFile();
+      if (pendingSubtitle) mpv_abort_async_command(m_mpv, pendingSubtitle);
+      m_pendingExternalSubtitleStream.clear();
       m_videoTrackRestore.nextFile();
       m_playbackCanceled = false;
       m_playbackError = "";
@@ -730,7 +739,10 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
         // selection once mpv publishes the new track, and clean up a late
         // track if the user switched back to embedded audio while it loaded.
         if (m_inPlayback)
+        {
           reselectStream(m_currentAudioStream, MediaType::Audio);
+          reselectStream(m_currentSubtitleStream, MediaType::Subtitle);
+        }
       }
       else if (strcmp(prop->name, "vid") == 0)
       {
@@ -748,13 +760,26 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       break;
     case MPV_EVENT_COMMAND_REPLY:
     {
-      if (!m_externalAudioRequest.complete(event->reply_userdata))
-        break;
-      m_pendingExternalAudioStream.clear();
+      MediaType target;
+      QString requestedStream;
+      if (m_externalAudioRequest.complete(event->reply_userdata))
+      {
+        target = MediaType::Audio;
+        requestedStream = m_currentAudioStream;
+        m_pendingExternalAudioStream.clear();
+      }
+      else if (m_externalSubtitleRequest.complete(event->reply_userdata))
+      {
+        target = MediaType::Subtitle;
+        requestedStream = m_currentSubtitleStream;
+        m_pendingExternalSubtitleStream.clear();
+      }
+      else
+        break; // An old file/selection or unrelated command cannot select a track.
       if (event->error < 0)
-        qWarning() << "Failed to add external audio stream" << mpv_error_string(event->error);
+        qWarning() << "Failed to add external stream" << mpv_error_string(event->error);
       else if (m_inPlayback)
-        reselectStream(m_currentAudioStream, MediaType::Audio);
+        reselectStream(requestedStream, target);
       break;
     }
     case MPV_EVENT_LOG_MESSAGE:
@@ -786,27 +811,21 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
       // We use this to block loading until we explicitly tell it to continue.
       if (!strcmp(msg->args[1], "1"))
       {
-        // Calling this lambda will instruct mpv to continue loading the file.
-        auto resume = [=] {
-          qInfo() << "checking codecs";
-          startCodecsLoading([=] {
-            qInfo() << "resuming loading";
-            mpv::qt::command(m_mpv, QStringList() << "hook-ack" << resumeId);
-          });
+        auto continueHook = [this, resumeId] {
+          mpv::qt::command(m_mpv, QStringList() << "hook-ack" << resumeId);
         };
         if (switchDisplayFrameRate())
         {
           // Now wait for some time for mode change - this is needed because mode changing can take some
           // time, during which the screen is black, and initializing hardware decoding could fail due
           // to various strange OS-related reasons.
-          // (Better hope the user doesn't try to exit Konvergo during mode change.)
           int pause = SettingsComponent::Get().value(SETTINGS_SECTION_VIDEO, "refreshrate.delay").toInt() * 1000;
           qInfo() << "waiting" << pause << "msec after rate switch before loading";
-          QTimer::singleShot(pause, resume);
+          continueLoadHookAfterDelay(pause, continueHook);
         }
         else
         {
-          resume();
+          continueLoadHookAfterDelay(0, continueHook);
         }
         break;
       }
@@ -836,27 +855,21 @@ void PlayerComponent::handleMpvEvent(mpv_event *event)
 
       if (!strcmp(hook->name, "on_load"))
       {
-        // Calling this lambda will instruct mpv to continue loading the file.
-        auto resume = [=] {
-          qInfo() << "checking codecs";
-          startCodecsLoading([=] {
-            qInfo() << "resuming loading";
-            mpv_hook_continue(m_mpv, id);
-          });
+        auto continueHook = [this, id] {
+          mpv_hook_continue(m_mpv, id);
         };
         if (switchDisplayFrameRate())
         {
           // Now wait for some time for mode change - this is needed because mode changing can take some
           // time, during which the screen is black, and initializing hardware decoding could fail due
           // to various strange OS-related reasons.
-          // (Better hope the user doesn't try to exit Konvergo during mode change.)
           int pause = SettingsComponent::Get().value(SETTINGS_SECTION_VIDEO, "refreshrate.delay").toInt() * 1000;
           qInfo() << "waiting" << pause << "msec after rate switch before loading";
-          QTimer::singleShot(pause, resume);
+          continueLoadHookAfterDelay(pause, continueHook);
         }
         else
         {
-          resume();
+          continueLoadHookAfterDelay(0, continueHook);
         }
         break;
       }
@@ -953,6 +966,9 @@ void PlayerComponent::stop()
   m_diagnosticMetrics.clear();
   const auto pendingAudio = m_externalAudioRequest.nextFile();
   if (pendingAudio) mpv_abort_async_command(m_mpv, pendingAudio);
+  const auto pendingSubtitle = m_externalSubtitleRequest.nextFile();
+  if (pendingSubtitle) mpv_abort_async_command(m_mpv, pendingSubtitle);
+  m_pendingExternalSubtitleStream.clear();
   m_currentAudioStream.clear();
   m_currentSubtitleStream.clear();
   m_pendingExternalAudioStream.clear();
@@ -1129,16 +1145,17 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
       streamName = streamSelection.mid(splitPos + 1);
     }
   }
-  if (target == MediaType::Audio)
+  auto& pendingStream = target == MediaType::Audio ? m_pendingExternalAudioStream : m_pendingExternalSubtitleStream;
+  auto& pendingRequest = target == MediaType::Audio ? m_externalAudioRequest : m_externalSubtitleRequest;
   {
-    if (m_pendingExternalAudioStream != streamName)
+    if (pendingStream != streamName || (streamName.isEmpty() && pendingRequest.pending()))
     {
-      const auto pendingAudio = m_externalAudioRequest.cancel();
-      if (pendingAudio) mpv_abort_async_command(m_mpv, pendingAudio);
-      m_pendingExternalAudioStream.clear();
+      const auto pending = pendingRequest.cancel();
+      if (pending) mpv_abort_async_command(m_mpv, pending);
+      pendingStream.clear();
     }
 
-    QStringList staleExternalAudioStreamIds;
+    QStringList staleExternalStreamIds;
     auto tracks = mpv::qt::get_property(m_mpv, "track-list");
 
     for (auto track : tracks.toList())
@@ -1153,16 +1170,16 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
 
       auto id = map["id"].toString();
       if (!id.isEmpty())
-        staleExternalAudioStreamIds += id;
+        staleExternalStreamIds += id;
     }
 
-    for (const auto &id : staleExternalAudioStreamIds)
+    for (const auto &id : staleExternalStreamIds)
     {
-      qInfo() << "removing stale external audio stream" << id;
-      auto result = mpv::qt::command(m_mpv, QStringList() << "audio-remove" << id);
+      qInfo() << "removing stale external stream" << id;
+      auto result = mpv::qt::command(m_mpv, QStringList() << (target == MediaType::Audio ? "audio-remove" : "sub-remove") << id);
       auto error = mpv::qt::get_error(result);
       if (error < 0)
-        qWarning() << "failed to remove external audio stream" << id << mpv_error_string(error);
+        qWarning() << "failed to remove external stream" << id << mpv_error_string(error);
     }
   }
 
@@ -1178,31 +1195,25 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
     if (streams.isEmpty())
     {
       QStringList args = (QStringList() << streamAddCommandName << streamName);
-
-      if (target == MediaType::Audio)
-      {
-        if (m_pendingExternalAudioStream == streamName)
-          return;
-
-        // HTTP audio loading must not block the GUI. Do not auto-select a late
-        // completion after the user has changed tracks: select from track-list
-        // only while this URL is still the active file's requested stream.
-        m_pendingExternalAudioStream = streamName;
-        args << "auto";
-        const auto requestId = m_externalAudioRequest.begin();
-        qInfo() << "adding external audio stream asynchronously";
-        mpv::qt::node_builder command(args);
-        const int error = mpv_command_node_async(m_mpv, requestId, command.node());
-        if (error < 0)
-        {
-          m_externalAudioRequest.complete(requestId);
-          m_pendingExternalAudioStream.clear();
-          qWarning() << "failed to add external audio stream" << mpv_error_string(error);
-        }
+      if (pendingStream == streamName)
         return;
-      }
 
-      mpv::qt::command(m_mpv, args);
+      // HTTP audio/subtitle loading must not block the GUI. Do not auto-select a late
+      // completion after the user has changed tracks: select from track-list
+      // only while this URL is still the active file's requested stream.
+      pendingStream = streamName;
+      args << "auto";
+      const auto requestId = pendingRequest.begin();
+      qInfo() << "adding external stream asynchronously";
+      mpv::qt::node_builder command(args);
+      const int error = mpv_command_node_async(m_mpv, requestId, command.node());
+      if (error < 0)
+      {
+        pendingRequest.complete(requestId);
+        pendingStream.clear();
+        qWarning() << "failed to add external stream" << mpv_error_string(error);
+      }
+      return;
     }
   }
 
@@ -1226,9 +1237,9 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
     }
   }
 
-  if (target == MediaType::Audio && !streamName.isEmpty() && selection == "no")
+  if (!streamName.isEmpty() && selection == "no")
   {
-    // The external demuxer exists, but has not published an audio track yet.
+    // The external demuxer exists, but has not published a matching track yet.
     // Keep the existing selection until the observed track-list changes.
     return;
   }
@@ -1240,8 +1251,8 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
 
   if (mpv::qt::get_property(m_mpv, streamIdPropertyName).toString() == selection)
   {
-    if (target == MediaType::Audio && !streamName.isEmpty())
-      m_pendingExternalAudioStream.clear();
+    if (!streamName.isEmpty())
+      pendingStream.clear();
     return;
   }
 
@@ -1252,8 +1263,8 @@ void PlayerComponent::reselectStream(const QString &streamSelection, MediaType t
     return;
   }
 
-  if (target == MediaType::Audio && !streamName.isEmpty())
-    m_pendingExternalAudioStream.clear();
+  if (!streamName.isEmpty())
+    pendingStream.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1968,9 +1979,30 @@ void PlayerComponent::setPreferredCodecs(const QList<CodecDriver>& codecs)
 Q_DECLARE_METATYPE(std::function<void()>);
 
 /////////////////////////////////////////////////////////////////////////////////////////
+void PlayerComponent::continueLoadHookAfterDelay(int delayMilliseconds, std::function<void()> continueHook)
+{
+  const auto generation = m_playbackTimeline.generation();
+  auto resume = [this, generation, continueHook = std::move(continueHook)] {
+    if (generation != m_playbackTimeline.generation())
+    {
+      // Release this hook's original token even after stop/replacement. Leaving
+      // a superseded on_load hook blocked can also block mpv's next command.
+      continueHook();
+      return;
+    }
+    startCodecsLoading(continueHook);
+  };
+  if (delayMilliseconds > 0)
+    QTimer::singleShot(delayMilliseconds, this, std::move(resume));
+  else
+    resume();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 void PlayerComponent::startCodecsLoading(std::function<void()> resume)
 {
   auto fetcher = new CodecsFetcher();
+  fetcher->setParent(this);
   fetcher->userData = QVariant::fromValue(resume);
   connect(fetcher, &CodecsFetcher::done, this, &PlayerComponent::onCodecsLoadingDone);
   Codecs::updateCachedCodecList();

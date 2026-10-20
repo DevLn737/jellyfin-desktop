@@ -1,5 +1,9 @@
 # Jellyfin Desktop 2.0.0 for Windows
 
+Historical release notes: 2.0.0 was withdrawn from Latest on 2026-10-13 after
+regressions and remains an intermediate prerelease. See [the final 2.0.1 release](release-2.0.1.md)
+for the corrected client and current development status.
+
 Windows x64: Windows 10 version 1903 or later, and Windows 11.
 This version promotes the owner-accepted `2.0.0-rc.6` application source
 (`cac8ac6201401ae10fb81a47f828fcf6f5cf5c5a`) without further behavior changes.

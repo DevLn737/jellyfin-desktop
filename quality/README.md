@@ -1,5 +1,11 @@
 # Single final Windows acceptance
 
+On 2026-10-20 the user requested the final 2.0.1 release as the primary
+transitional client and ended further development. This publication decision is
+recorded separately in [final-publication-decision.json](final-publication-decision.json).
+It does not claim a new user test session or complete the outstanding technical
+qualification below. Historical acceptance and failed observations remain intact.
+
 The user withdrew acceptance of Windows 2.0.0 on 2026-10-13 after critical
 fullscreen regressions and stuttering dialogs. GitHub v2.0.0 is now an
 intermediate prerelease and is excluded from Latest. Its original assets are
@@ -7,9 +13,9 @@ retained for reproduction. [desktop-acceptance.json](desktop-acceptance.json)
 retains the historical RC6 identity and records the explicit revocation with
 `accepted: false`.
 
-The follow-up candidate is 2.0.1-rc.1 (MSI/Burn 2.0.8). See the
-[regression work list](../docs/desktop-beta-followup.md). It requires renewed
-acceptance and must not be promoted to stable automatically. Mixed-client
+The verified follow-up candidate was 2.0.1-rc.2 (MSI/Burn 2.0.9). See the
+[regression work list](../docs/desktop-beta-followup.md). The final 2.0.1 decision
+authorizes publication separately from technical acceptance. Mixed-client
 SyncPlay drift, current-source long-duration Qt memory and diagnostics-overhead
 qualification remain unasserted.
 

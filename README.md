@@ -5,16 +5,34 @@ This fork's unified 2.0 update targets Windows x64, Windows 10 1903 and Windows 
 It combines Qt6, SyncPlay with independent external tracks, and Discord Rich Presence.
 The executable and existing installation and AppData identities are preserved.
 
+## Final release preparation: 2.0.1
+
+Version 2.0.1 is being prepared as the final release of this fork and the primary client
+during the transition to a separate new implementation. Active development of
+this client ends with this release; no further feature work or scheduled updates
+are planned. The replacement is not part of this release.
+
+- Final Windows x64 downloads will be added after qualification and publication.
+- [Changes, installation and verification scope](docs/release-2.0.1.md)
+
+This release includes the fullscreen, paused SyncPlay playback and client-settings
+fixes verified in 2.0.1-rc.2. On 2026-10-20 both users reported no remaining known
+bugs in that beta and requested a final code review and fixes before publication.
+See the [final release checklist](docs/final-release-checklist.md).
+
 Build instructions: [Windows toolchain and packaging](bundle/win/README.md).
 Implementation and outstanding release gates: [unified migration](docs/WINDOWS-QT6-MIGRATION.md).
-The development Qt lock is not yet qualified for a public release.
+The locked Qt dependency remains technically unqualified by the full protocol.
 
 ## Discord Rich Presence for Windows
 
 The Windows client includes movie/series posters, titles, year or episode numbers, playback
 status and an elapsed timer to Discord. See [setup, image requirements and tests](DISCORD-RICH-PRESENCE.md).
 Installer, ordinary portable and diagnostic portable artifacts are produced by the
-**Windows Desktop** workflow. Publication requires a version tag and release qualification.
+**Windows Desktop** workflow. Automatic publication requires a version tag and
+release qualification. The final 2.0.1 request is recorded separately in
+[the release decision](quality/final-publication-decision.json); it does not waive
+qualification, and the automatic qualification rules remain unchanged.
 
 ## Previous SyncPlay Windows release
 
