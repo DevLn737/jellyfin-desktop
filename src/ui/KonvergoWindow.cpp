@@ -262,14 +262,22 @@ QRect KonvergoWindow::loadGeometry(bool restoreVisibility)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 QRect KonvergoWindow::loadGeometryRect()
 {
-  // if we dont have anything, default to 720p in the middle of the screen
+  // Prefer 720p, but keep a first-launch window inside the available logical
+  // desktop (which can be smaller than 1280x720 on a high-DPI display).
   QScreen *curScreen = screen();
   QRect defaultRect = QRect(0, 0, WEBUI_SIZE.width(), WEBUI_SIZE.height());
   if (curScreen)
   {
-    defaultRect = QRect((curScreen->geometry().width() - WEBUI_SIZE.width()) / 2,
-                        (curScreen->geometry().height() - WEBUI_SIZE.height()) / 2,
-                        WEBUI_SIZE.width(), WEBUI_SIZE.height());
+    const QMargins margins = frameMargins();
+    const QRect available = curScreen->availableGeometry().adjusted(
+      margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    if (available.isValid())
+    {
+      const QSize size = WEBUI_SIZE.boundedTo(available.size()).expandedTo(windowMinSize());
+      defaultRect = QRect(available.x() + (available.width() - size.width()) / 2,
+                          available.y() + (available.height() - size.height()) / 2,
+                          size.width(), size.height());
+    }
   }
 
   QVariantMap map = SettingsComponent::Get().value(SETTINGS_SECTION_STATE, "geometry").toMap();

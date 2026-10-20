@@ -20,6 +20,17 @@ if(MSVC)
   target_compile_options(window-close-tests PRIVATE /utf-8)
 endif()
 enable_testing()
+execute_process(COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract-geometry-method.py"
+  "${window_source}" "${CMAKE_CURRENT_BINARY_DIR}/WindowGeometryMethod.inc"
+  RESULT_VARIABLE geometry_extraction_result)
+if(NOT geometry_extraction_result EQUAL 0)
+  message(FATAL_ERROR "Could not extract the production window geometry method")
+endif()
+add_executable(window-geometry-tests WindowGeometryTest.cpp)
+target_compile_features(window-geometry-tests PRIVATE cxx_std_17)
+target_include_directories(window-geometry-tests PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(window-geometry-tests PRIVATE Qt6::Core)
+add_test(NAME window-geometry COMMAND window-geometry-tests)
 execute_process(COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/extract-fullscreen-methods.py"
   "${window_source}" "${CMAKE_CURRENT_BINARY_DIR}/WindowFullscreenMethods.inc"
   RESULT_VARIABLE fullscreen_extraction_result)
