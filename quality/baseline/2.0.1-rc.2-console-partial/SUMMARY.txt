@@ -1,0 +1,34 @@
+Jellyfin Desktop 2.0.1-rc.2 (fork) - console baseline run, 2026-10-20 20:29-22:28 UTC (local +04:00).
+Harness eb96bc4 (scripts/baseline/Measure-Baseline.ps1), protocol rev. 2, fixtures pattern-*.mkv (see jfd-media SHA256SUMS in the report).
+Noise log: every 30 s sample the foreground window was the measured client except one; no non-client process above 5% CPU (noise-log.txt).
+Not run in this sitting: first-frame-seek (harness bug, fixed in the following commit; rerun pending).
+drops: mpv frame-drop-count delta within the window; negative values come from counter resets on loop and are not drops.
+
+noise samples in run: 239
+  fg JellyfinMediaPlayer: 238
+  fg claude: 1
+report: remote=False failures=1 started=2026-10-21T00:29:06.9706087+04:00 finished=2026-10-21T02:28:45.9089509+04:00
+  screen \\.\DISPLAY1 0,0,2560,1440 165 Hz primary=True
+  screen \\.\DISPLAY2 2560,141,1920,1080 60 Hz primary=False
+frames-1080 copy pattern-1080p60-h264.mkv: fps 70.78 p50 15 p95 23 p99 30 max 65 ms, p95=3.795 refresh periods @165Hz, >1.25: 0.7887; PM 21231 presents p50 15.4919 p95 22.4586 p99 30.1691 ms = 3.706 periods; hwdec d3d11va-copy, drops -1/dec 0/delayed 0, avsync p95 11.84 ms, samples 1189, displayFps 165; ready 127 ms; exit 0
+frames-1080 enabled pattern-1080p60-h264.mkv: fps 71.5 p50 15 p95 23 p99 30 max 60 ms, p95=3.795 refresh periods @165Hz, >1.25: 0.7794; PM 21445 presents p50 15.4369 p95 22.3892 p99 30.2867 ms = 3.694 periods; hwdec d3d11va-copy, drops 0/dec 0/delayed 0, avsync p95 11.13 ms, samples 1189, displayFps 165; ready 82 ms; exit 0
+frames-1080 copy pattern-1080p60-hevc.mkv: fps 71.33 p50 15 p95 22 p99 30 max 56 ms, p95=3.63 refresh periods @165Hz, >1.25: 0.7836; PM 21391 presents p50 15.4642 p95 22.1038 p99 30.0882 ms = 3.647 periods; hwdec d3d11va-copy, drops -1/dec 0/delayed 0, avsync p95 11.05 ms, samples 1190, displayFps 165; ready 288 ms; exit 0
+frames-1080 enabled pattern-1080p60-hevc.mkv: fps 71.27 p50 15 p95 23 p99 30 max 64 ms, p95=3.795 refresh periods @165Hz, >1.25: 0.7815; PM 21376 presents p50 15.4426 p95 22.4971 p99 30.1791 ms = 3.712 periods; hwdec d3d11va-copy, drops -1/dec 0/delayed 0, avsync p95 11.01 ms, samples 1188, displayFps 165; ready 282 ms; exit 0
+frames-2160 copy pattern-2160p60-h264.mkv: fps 70.79 p50 15 p95 25 p99 30 max 51 ms, p95=4.125 refresh periods @165Hz, >1.25: 0.7644; PM 21234 presents p50 15.5004 p95 25.0561 p99 30.2655 ms = 4.134 periods; hwdec d3d11va-copy, drops -14/dec 0/delayed 0, avsync p95 10.82 ms, samples 1191, displayFps 165; ready 100 ms; exit 0
+frames-2160 enabled pattern-2160p60-h264.mkv: fps 70.55 p50 15 p95 25 p99 30 max 54 ms, p95=4.125 refresh periods @165Hz, >1.25: 0.7714; PM 21160 presents p50 15.4699 p95 25.0252 p99 30.2928 ms = 4.129 periods; hwdec d3d11va-copy, drops 0/dec 0/delayed 0, avsync p95 11.08 ms, samples 1189, displayFps 165; ready 99 ms; exit 0
+frames-2160 copy pattern-2160p60-hevc.mkv: fps 70.02 p50 15 p95 25 p99 30 max 63 ms, p95=4.125 refresh periods @165Hz, >1.25: 0.7695; PM 21000 presents p50 15.5061 p95 25.0945 p99 30.254 ms = 4.141 periods; hwdec d3d11va-copy, drops -1/dec 0/delayed 0, avsync p95 10.95 ms, samples 1188, displayFps 165; ready 293 ms; exit 0
+frames-2160 enabled pattern-2160p60-hevc.mkv: fps 70.51 p50 15 p95 25 p99 30 max 58 ms, p95=4.125 refresh periods @165Hz, >1.25: 0.7679; PM 21149 presents p50 15.4653 p95 25.0549 p99 30.288 ms = 4.134 periods; hwdec d3d11va-copy, drops -1/dec 0/delayed 0, avsync p95 10.21 ms, samples 1189, displayFps 165; ready 300 ms; exit 0
+cpu-1080 copy pattern-1080p60-h264.mkv: 13.9% one core / 1.16% all, private 636 MB, RSS 390 MB, procs 2; hwdec d3d11va-copy, drops -1, avsync p95 10.07 ms; exit 0
+cpu-1080 enabled pattern-1080p60-h264.mkv: 18.1% one core / 1.51% all, private 634 MB, RSS 388 MB, procs 2; hwdec d3d11va-copy, drops -1, avsync p95 10.23 ms; exit 0
+cpu-1080 copy pattern-1080p60-hevc.mkv: 14.6% one core / 1.22% all, private 607 MB, RSS 382 MB, procs 2; hwdec d3d11va-copy, drops -1, avsync p95 10.3 ms; exit 0
+cpu-1080 enabled pattern-1080p60-hevc.mkv: 16.2% one core / 1.35% all, private 609 MB, RSS 385 MB, procs 2; hwdec d3d11va-copy, drops -37, avsync p95 11.26 ms; exit 0
+cpu-2160 copy pattern-2160p60-h264.mkv: 23.7% one core / 1.98% all, private 986 MB, RSS 507 MB, procs 2; hwdec d3d11va-copy, drops 0, avsync p95 11.88 ms; exit 0
+cpu-2160 enabled pattern-2160p60-h264.mkv: 29.7% one core / 2.47% all, private 984 MB, RSS 506 MB, procs 2; hwdec d3d11va-copy, drops 0, avsync p95 10.95 ms; exit 0
+cpu-2160 copy pattern-2160p60-hevc.mkv: 27.1% one core / 2.26% all, private 874 MB, RSS 492 MB, procs 2; hwdec d3d11va-copy, drops -1, avsync p95 10.05 ms; exit 0
+cpu-2160 enabled pattern-2160p60-hevc.mkv: 25.5% one core / 2.12% all, private 875 MB, RSS 494 MB, procs 2; hwdec d3d11va-copy, drops -1, avsync p95 10.11 ms; exit 0
+fullscreen-50 \\.\DISPLAY1 @165Hz: pairs 50, drift pairs 0, max drift 0 px, not covering 0, initial 384,216,1920,1080 final 384,216,1920,1080
+fullscreen-50 \\.\DISPLAY2 @60Hz: pairs 50, drift pairs 0, max drift 0 px, not covering 0, initial 2848,303,4076,994 final 2848,303,4076,994
+  close exit 0 382.8 ms
+shutdown: median 364.6 max 374.6 ms, all exit 0 = True, leftovers 0,0,0,0,0
+memory-hour: warmup 120+3600 s, samples 744, private growth 7.9 MB, RSS growth 5.8 MB, private peak 690 MB, RSS peak 440 MB; exit 0
+FAIL first-frame-seek: Could not compare "0" to "". Error: "Cannot convert the "System.Object[]" value of type "System.Object[]" to type "System.Int32"."

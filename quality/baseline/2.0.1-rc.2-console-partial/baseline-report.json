@@ -1,0 +1,1147 @@
+{
+    "schemaVersion":  1,
+    "protocol":  "architecture/measurement-protocol.md rev. 2",
+    "client":  "fork 2.x",
+    "startedAt":  "2026-10-21T00:29:06.9706087+04:00",
+    "harnessSha256":  "aad0f5d14da7b7cf8e8aaf3513c7a8761585ff114b9e9b2f5225bf42baff6ead",
+    "probeSha256":  "b78e3208441084862284f3c7e17cd750babf9954de72e6009bec8a095968be54",
+    "exeSha256":  "5e83c364e576ff6e3d8cb5444f235c915e567fec31c4419816257e0e27bb60d2",
+    "appVersion":  "2.0.1-rc.2",
+    "media":  [
+                  {
+                      "sha256":  "a51c09c40533f91ae20e0b06caef6fc58c7eb04601a6dda9e0b310747304b8d7",
+                      "file":  "C:\\Users\\win\\Documents\\Claude\\jfd-media\\pattern-1080p60-h264.mkv"
+                  },
+                  {
+                      "sha256":  "4eb4df64efc61a3b393ffca8d94ce0fb6fab37028a91a28f4ccf49324681b503",
+                      "file":  "C:\\Users\\win\\Documents\\Claude\\jfd-media\\pattern-1080p60-hevc.mkv"
+                  },
+                  {
+                      "sha256":  "408fa2b53270c9c2275bf29a1aeeac4eae32251f5bec636d5f7b1a8bf5e40622",
+                      "file":  "C:\\Users\\win\\Documents\\Claude\\jfd-media\\pattern-2160p60-h264.mkv"
+                  },
+                  {
+                      "sha256":  "c3266242cf6400a93227adca2986b6788057574582d2baeb1f19dff42636a141",
+                      "file":  "C:\\Users\\win\\Documents\\Claude\\jfd-media\\pattern-2160p60-hevc.mkv"
+                  }
+              ],
+    "inventory":  {
+                      "elevated":  false,
+                      "ramBytes":  34276941824,
+                      "remoteSession":  false,
+                      "cpu":  "AMD Ryzen 5 5600 6-Core Processor              ",
+                      "sessionName":  null,
+                      "os":  "Microsoft Windows 11 IoT Enterprise LTSC 10.0.26100",
+                      "screens":  [
+                                      {
+                                          "primary":  true,
+                                          "bounds":  [
+                                                         0,
+                                                         0,
+                                                         2560,
+                                                         1440
+                                                     ],
+                                          "device":  "\\\\.\\DISPLAY1",
+                                          "refreshHz":  165
+                                      },
+                                      {
+                                          "primary":  false,
+                                          "bounds":  [
+                                                         2560,
+                                                         141,
+                                                         1920,
+                                                         1080
+                                                     ],
+                                          "device":  "\\\\.\\DISPLAY2",
+                                          "refreshHz":  60
+                                      }
+                                  ],
+                      "computer":  "DESKTOP-SAOMONF",
+                      "powerPlan":  "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+                      "logicalProcessors":  12,
+                      "gpus":  [
+                                   {
+                                       "driver":  "32.0.31041.1004",
+                                       "name":  "AMD Radeon RX 9060 XT"
+                                   }
+                               ]
+                  },
+    "results":  [
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  1920,
+                                    "frameDrops":  -1,
+                                    "samples":  1189,
+                                    "avsyncAbsMsP95":  11.844999999999999,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.458,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-1080",
+                        "overlay":  true,
+                        "hwdecSetting":  "copy",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.4919,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  3.706,
+                                           "intervalMsP99":  30.1691,
+                                           "intervalMsP95":  22.4586,
+                                           "presents":  21231,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  70.78,
+                                       "seconds":  300.03144829999997,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7887,
+                                       "p95InRefreshPeriods":  3.795,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  65,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  23,
+                                       "intervalMsP99":  30,
+                                       "frames":  21235,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.38
+                                   },
+                        "load":  {
+                                     "readyMs":  126.80000001192093,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  385.7,
+                                      "treeExitMs":  399
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-1080-copy-pattern-1080p60-h264-20261021-002907",
+                        "file":  "pattern-1080p60-h264.mkv"
+                    },
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  1920,
+                                    "frameDrops":  0,
+                                    "samples":  1189,
+                                    "avsyncAbsMsP95":  11.129,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.859,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-1080",
+                        "overlay":  true,
+                        "hwdecSetting":  "enabled",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.4369,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  3.694,
+                                           "intervalMsP99":  30.2867,
+                                           "intervalMsP95":  22.3892,
+                                           "presents":  21445,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  71.5,
+                                       "seconds":  300.0122474,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7794,
+                                       "p95InRefreshPeriods":  3.795,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  60,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  23,
+                                       "intervalMsP99":  30,
+                                       "frames":  21451,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.38
+                                   },
+                        "load":  {
+                                     "readyMs":  81.89999997615814,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  364.8,
+                                      "treeExitMs":  365.8
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-1080-enabled-pattern-1080p60-h264-20261021-003430",
+                        "file":  "pattern-1080p60-h264.mkv"
+                    },
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  1920,
+                                    "frameDrops":  -1,
+                                    "samples":  1190,
+                                    "avsyncAbsMsP95":  11.054,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  15.277000000000001,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-1080",
+                        "overlay":  true,
+                        "hwdecSetting":  "copy",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.4642,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  3.647,
+                                           "intervalMsP99":  30.0882,
+                                           "intervalMsP95":  22.1038,
+                                           "presents":  21391,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  71.33,
+                                       "seconds":  300.0053316,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7836,
+                                       "p95InRefreshPeriods":  3.63,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  56,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  22,
+                                       "intervalMsP99":  30,
+                                       "frames":  21399,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.32
+                                   },
+                        "load":  {
+                                     "readyMs":  287.5,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  394.3,
+                                      "treeExitMs":  395.1
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-1080-copy-pattern-1080p60-hevc-20261021-003949",
+                        "file":  "pattern-1080p60-hevc.mkv"
+                    },
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  1920,
+                                    "frameDrops":  -1,
+                                    "samples":  1188,
+                                    "avsyncAbsMsP95":  11.014,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.735,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-1080",
+                        "overlay":  true,
+                        "hwdecSetting":  "enabled",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.4426,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  3.712,
+                                           "intervalMsP99":  30.1791,
+                                           "intervalMsP95":  22.4971,
+                                           "presents":  21376,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  71.27,
+                                       "seconds":  300.01439139999997,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7815,
+                                       "p95InRefreshPeriods":  3.795,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  64,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  23,
+                                       "intervalMsP99":  30,
+                                       "frames":  21381,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.38
+                                   },
+                        "load":  {
+                                     "readyMs":  282.30000001192093,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  367.5,
+                                      "treeExitMs":  368.4
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-1080-enabled-pattern-1080p60-hevc-20261021-004508",
+                        "file":  "pattern-1080p60-hevc.mkv"
+                    },
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  3840,
+                                    "frameDrops":  -14,
+                                    "samples":  1191,
+                                    "avsyncAbsMsP95":  10.822,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  15.001999999999999,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-2160",
+                        "overlay":  true,
+                        "hwdecSetting":  "copy",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.5004,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  4.134,
+                                           "intervalMsP99":  30.2655,
+                                           "intervalMsP95":  25.0561,
+                                           "presents":  21234,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  70.79,
+                                       "seconds":  300.0064913,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7644,
+                                       "p95InRefreshPeriods":  4.125,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  51,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  25,
+                                       "intervalMsP99":  30,
+                                       "frames":  21236,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.5
+                                   },
+                        "load":  {
+                                     "readyMs":  100.19999998807907,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  381.1,
+                                      "treeExitMs":  381.9
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-2160-copy-pattern-2160p60-h264-20261021-005027",
+                        "file":  "pattern-2160p60-h264.mkv"
+                    },
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  3840,
+                                    "frameDrops":  0,
+                                    "samples":  1189,
+                                    "avsyncAbsMsP95":  11.075,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.47,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-2160",
+                        "overlay":  true,
+                        "hwdecSetting":  "enabled",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.4699,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  4.129,
+                                           "intervalMsP99":  30.2928,
+                                           "intervalMsP95":  25.0252,
+                                           "presents":  21160,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  70.55,
+                                       "seconds":  300.0136937,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7714,
+                                       "p95InRefreshPeriods":  4.125,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  54,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  25,
+                                       "intervalMsP99":  30,
+                                       "frames":  21165,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.5
+                                   },
+                        "load":  {
+                                     "readyMs":  99.40000000596046,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  359.8,
+                                      "treeExitMs":  360.6
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-2160-enabled-pattern-2160p60-h264-20261021-005546",
+                        "file":  "pattern-2160p60-h264.mkv"
+                    },
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  3840,
+                                    "frameDrops":  -1,
+                                    "samples":  1188,
+                                    "avsyncAbsMsP95":  10.951,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.566,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-2160",
+                        "overlay":  true,
+                        "hwdecSetting":  "copy",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.5061,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  4.141,
+                                           "intervalMsP99":  30.254,
+                                           "intervalMsP95":  25.0945,
+                                           "presents":  21000,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  70.02,
+                                       "seconds":  300.0139595,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7695,
+                                       "p95InRefreshPeriods":  4.125,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  63,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  25,
+                                       "intervalMsP99":  30,
+                                       "frames":  21006,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.5
+                                   },
+                        "load":  {
+                                     "readyMs":  293.30000001192093,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  361,
+                                      "treeExitMs":  362.2
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-2160-copy-pattern-2160p60-hevc-20261021-010105",
+                        "file":  "pattern-2160p60-hevc.mkv"
+                    },
+                    {
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  3840,
+                                    "frameDrops":  -1,
+                                    "samples":  1189,
+                                    "avsyncAbsMsP95":  10.206,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.917,
+                                    "voDelayedFrames":  0
+                                },
+                        "scenario":  "frames-2160",
+                        "overlay":  true,
+                        "hwdecSetting":  "enabled",
+                        "windowRect":  [
+                                           -9,
+                                           -9,
+                                           2569,
+                                           1389
+                                       ],
+                        "page":  {
+                                     "player":  true,
+                                     "input":  true,
+                                     "diagnosticsCapturing":  false,
+                                     "ua":  "JellyfinMediaPlayer 2.0.1-rc.2 (windows-x86_64 11)",
+                                     "dpr":  1.25,
+                                     "w":  2048,
+                                     "h":  1082
+                                 },
+                        "presentMon":  {
+                                           "intervalMsP50":  15.4653,
+                                           "source":  "PresentMon MsBetweenPresents",
+                                           "p95InRefreshPeriods":  4.134,
+                                           "intervalMsP99":  30.288,
+                                           "intervalMsP95":  25.0549,
+                                           "presents":  21149,
+                                           "measured":  true
+                                       },
+                        "frames":  {
+                                       "fps":  70.51,
+                                       "seconds":  300.0035947,
+                                       "intervalMsP50":  15,
+                                       "refreshHz":  165,
+                                       "shareOver125RefreshPeriods":  0.7679,
+                                       "p95InRefreshPeriods":  4.125,
+                                       "source":  "qt.scenegraph.time.renderloop",
+                                       "intervalMsMax":  58,
+                                       "windowsInLog":  1,
+                                       "intervalMsP95":  25,
+                                       "intervalMsP99":  30,
+                                       "frames":  21153,
+                                       "measured":  true,
+                                       "p95InVideoFramePeriods":  1.5
+                                   },
+                        "load":  {
+                                     "readyMs":  300,
+                                     "positionMs":  0
+                                 },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  384.6,
+                                      "treeExitMs":  385.5
+                                  },
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\frames-2160-enabled-pattern-2160p60-hevc-20261021-010624",
+                        "file":  "pattern-2160p60-hevc.mkv"
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  1920,
+                                    "frameDrops":  -1,
+                                    "samples":  237,
+                                    "avsyncAbsMsP95":  10.073,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  13.071,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  364.5,
+                                      "treeExitMs":  365.5
+                                  },
+                        "file":  "pattern-1080p60-h264.mkv",
+                        "cpuPercentOfAllCores":  1.16,
+                        "processes":  2,
+                        "privateBytes":  667369472,
+                        "cpuPercentOfOneCore":  13.9,
+                        "hwdecSetting":  "copy",
+                        "scenario":  "cpu-1080",
+                        "rssBytes":  408858624,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-1080-copy-pattern-1080p60-h264-20261021-011143",
+                        "load":  {
+                                     "readyMs":  282.40000000596046,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  1920,
+                                    "frameDrops":  -1,
+                                    "samples":  237,
+                                    "avsyncAbsMsP95":  10.227,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  12.944,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  372.5,
+                                      "treeExitMs":  373.9
+                                  },
+                        "file":  "pattern-1080p60-h264.mkv",
+                        "cpuPercentOfAllCores":  1.51,
+                        "processes":  2,
+                        "privateBytes":  664473600,
+                        "cpuPercentOfOneCore":  18.1,
+                        "hwdecSetting":  "enabled",
+                        "scenario":  "cpu-1080",
+                        "rssBytes":  407085056,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-1080-enabled-pattern-1080p60-h264-20261021-011258",
+                        "load":  {
+                                     "readyMs":  292.89999997615814,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  1920,
+                                    "frameDrops":  -1,
+                                    "samples":  236,
+                                    "avsyncAbsMsP95":  10.305,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.827,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  359.3,
+                                      "treeExitMs":  360.1
+                                  },
+                        "file":  "pattern-1080p60-hevc.mkv",
+                        "cpuPercentOfAllCores":  1.22,
+                        "processes":  2,
+                        "privateBytes":  636116992,
+                        "cpuPercentOfOneCore":  14.6,
+                        "hwdecSetting":  "copy",
+                        "scenario":  "cpu-1080",
+                        "rssBytes":  400359424,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-1080-copy-pattern-1080p60-hevc-20261021-011414",
+                        "load":  {
+                                     "readyMs":  289.90000000596046,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  1920,
+                                    "frameDrops":  -37,
+                                    "samples":  236,
+                                    "avsyncAbsMsP95":  11.261999999999999,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  1080,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  13.599,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  376.8,
+                                      "treeExitMs":  377.6
+                                  },
+                        "file":  "pattern-1080p60-hevc.mkv",
+                        "cpuPercentOfAllCores":  1.35,
+                        "processes":  2,
+                        "privateBytes":  638132224,
+                        "cpuPercentOfOneCore":  16.2,
+                        "hwdecSetting":  "enabled",
+                        "scenario":  "cpu-1080",
+                        "rssBytes":  403197952,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-1080-enabled-pattern-1080p60-hevc-20261021-011529",
+                        "load":  {
+                                     "readyMs":  685.5,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  3840,
+                                    "frameDrops":  0,
+                                    "samples":  236,
+                                    "avsyncAbsMsP95":  11.885,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  13.955,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  371.7,
+                                      "treeExitMs":  372.8
+                                  },
+                        "file":  "pattern-2160p60-h264.mkv",
+                        "cpuPercentOfAllCores":  1.98,
+                        "processes":  2,
+                        "privateBytes":  1034162176,
+                        "cpuPercentOfOneCore":  23.7,
+                        "hwdecSetting":  "copy",
+                        "scenario":  "cpu-2160",
+                        "rssBytes":  531460096,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-2160-copy-pattern-2160p60-h264-20261021-011645",
+                        "load":  {
+                                     "readyMs":  90.59999999403954,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "h264",
+                                    "width":  3840,
+                                    "frameDrops":  0,
+                                    "samples":  236,
+                                    "avsyncAbsMsP95":  10.947000000000001,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.382000000000001,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  384.1,
+                                      "treeExitMs":  384.9
+                                  },
+                        "file":  "pattern-2160p60-h264.mkv",
+                        "cpuPercentOfAllCores":  2.47,
+                        "processes":  2,
+                        "privateBytes":  1032253440,
+                        "cpuPercentOfOneCore":  29.7,
+                        "hwdecSetting":  "enabled",
+                        "scenario":  "cpu-2160",
+                        "rssBytes":  530534400,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-2160-enabled-pattern-2160p60-h264-20261021-011800",
+                        "load":  {
+                                     "readyMs":  91.19999998807907,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  3840,
+                                    "frameDrops":  -1,
+                                    "samples":  236,
+                                    "avsyncAbsMsP95":  10.054,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.135,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  355.9,
+                                      "treeExitMs":  356.7
+                                  },
+                        "file":  "pattern-2160p60-hevc.mkv",
+                        "cpuPercentOfAllCores":  2.26,
+                        "processes":  2,
+                        "privateBytes":  916647936,
+                        "cpuPercentOfOneCore":  27.1,
+                        "hwdecSetting":  "copy",
+                        "scenario":  "cpu-2160",
+                        "rssBytes":  515854336,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-2160-copy-pattern-2160p60-hevc-20261021-011915",
+                        "load":  {
+                                     "readyMs":  298.90000000596046,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "overlay":  false,
+                        "mpv":  {
+                                    "displayFps":  165,
+                                    "videoCodec":  "hevc",
+                                    "width":  3840,
+                                    "frameDrops":  -1,
+                                    "samples":  236,
+                                    "avsyncAbsMsP95":  10.109,
+                                    "mistimedFrames":  null,
+                                    "currentAo":  "wasapi",
+                                    "height":  2160,
+                                    "hwdecCurrent":  [
+                                                         "d3d11va-copy"
+                                                     ],
+                                    "currentVo":  "libmpv",
+                                    "estimatedVfFps":  60.000002,
+                                    "decoderFrameDrops":  0,
+                                    "avsyncAbsMsMax":  14.3,
+                                    "voDelayedFrames":  0
+                                },
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  370.1,
+                                      "treeExitMs":  371
+                                  },
+                        "file":  "pattern-2160p60-hevc.mkv",
+                        "cpuPercentOfAllCores":  2.12,
+                        "processes":  2,
+                        "privateBytes":  917602304,
+                        "cpuPercentOfOneCore":  25.5,
+                        "hwdecSetting":  "enabled",
+                        "scenario":  "cpu-2160",
+                        "rssBytes":  517730304,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\cpu-2160-enabled-pattern-2160p60-hevc-20261021-012030",
+                        "load":  {
+                                     "readyMs":  297.30000001192093,
+                                     "positionMs":  0
+                                 }
+                    },
+                    {
+                        "scenario":  "fullscreen-50",
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\fullscreen-50-20261021-012209",
+                        "monitors":  [
+                                         {
+                                             "pairsWithDrift":  0,
+                                             "initialRect":  [
+                                                                 384,
+                                                                 216,
+                                                                 1920,
+                                                                 1080
+                                                             ],
+                                             "refreshHz":  165,
+                                             "monitor":  "\\\\.\\DISPLAY1",
+                                             "maxDriftPx":  0,
+                                             "fullscreenNotCoveringMonitor":  0,
+                                             "finalRect":  [
+                                                               384,
+                                                               216,
+                                                               1920,
+                                                               1080
+                                                           ],
+                                             "togglePairs":  50
+                                         },
+                                         {
+                                             "pairsWithDrift":  0,
+                                             "initialRect":  [
+                                                                 2848,
+                                                                 303,
+                                                                 4076,
+                                                                 994
+                                                             ],
+                                             "refreshHz":  60,
+                                             "monitor":  "\\\\.\\DISPLAY2",
+                                             "maxDriftPx":  0,
+                                             "fullscreenNotCoveringMonitor":  0,
+                                             "finalRect":  [
+                                                               2848,
+                                                               303,
+                                                               4076,
+                                                               994
+                                                           ],
+                                             "togglePairs":  50
+                                         }
+                                     ],
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  382.1,
+                                      "treeExitMs":  382.8
+                                  }
+                    },
+                    {
+                        "method":  "WM_CLOSE during 1080p60 playback with overlay",
+                        "treeExitMaxMs":  374.6,
+                        "treeExitMedianMs":  364.6,
+                        "runs":  [
+                                     {
+                                         "exited":  true,
+                                         "leftoverChildren":  0,
+                                         "exitCode":  0,
+                                         "mainExitMs":  367.5,
+                                         "treeExitMs":  368.4
+                                     },
+                                     {
+                                         "exited":  true,
+                                         "leftoverChildren":  0,
+                                         "exitCode":  0,
+                                         "mainExitMs":  373.8,
+                                         "treeExitMs":  374.6
+                                     },
+                                     {
+                                         "exited":  true,
+                                         "leftoverChildren":  0,
+                                         "exitCode":  0,
+                                         "mainExitMs":  363.8,
+                                         "treeExitMs":  364.6
+                                     },
+                                     {
+                                         "exited":  true,
+                                         "leftoverChildren":  0,
+                                         "exitCode":  0,
+                                         "mainExitMs":  362.4,
+                                         "treeExitMs":  363.2
+                                     },
+                                     {
+                                         "exited":  true,
+                                         "leftoverChildren":  0,
+                                         "exitCode":  0,
+                                         "mainExitMs":  363.9,
+                                         "treeExitMs":  364.6
+                                     }
+                                 ],
+                        "allExitCodesZero":  true,
+                        "scenario":  "shutdown"
+                    },
+                    {
+                        "samples":  744,
+                        "scenario":  "memory-hour",
+                        "privateGrowthBytes":  8273920,
+                        "reloadEverySeconds":  60,
+                        "close":  {
+                                      "exited":  true,
+                                      "leftoverChildren":  0,
+                                      "exitCode":  0,
+                                      "mainExitMs":  222.3,
+                                      "treeExitMs":  223
+                                  },
+                        "warmupSeconds":  120,
+                        "runDir":  "C:\\Users\\win\\Documents\\Claude\\jfd-baseline\\console\\memory-hour-20261021-012640",
+                        "rssGrowthBytes":  6037504,
+                        "privatePeakBytes":  723644416,
+                        "measureSeconds":  3600,
+                        "rssPeakBytes":  461729792
+                    }
+                ],
+    "failures":  [
+                     {
+                         "scenario":  "first-frame-seek",
+                         "error":  "Could not compare \"0\" to \"\". Error: \"Cannot convert the \"System.Object[]\" value of type \"System.Object[]\" to type \"System.Int32\".\"",
+                         "at":  "2026-10-21T01:22:09.3212013+04:00"
+                     }
+                 ],
+    "finishedAt":  "2026-10-21T02:28:45.9089509+04:00"
+}
