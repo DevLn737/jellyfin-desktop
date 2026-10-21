@@ -487,7 +487,8 @@ function Run-Cpu([string]$Res, [string]$Hwdec, [string]$File) {
 function Run-FirstFrameSeek {
     $dir = New-RunDir 'first-frame-seek'
     $init = Start-Client 'copy' $false $dir
-    $loads = @(); $seeks = @()
+    # No local $seeks: PowerShell names are case-insensitive and it would hide -Seeks.
+    $loads = @()
     try {
         Show-Overlay $false
         for ($i = 0; $i -lt 5; ++$i) { $loads += Load-Media $mediaFiles['1080']; Start-Sleep -Seconds 3 }
