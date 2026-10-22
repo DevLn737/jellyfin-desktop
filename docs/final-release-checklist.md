@@ -1,4 +1,4 @@
-# Final current-client release preparation — 2026-10-20
+# Final current-client release preparation — 2026-10-22
 
 The user requested a completed final release, permitted a full client code review
 and confirmed that both participants tested 2.0.1-rc.2 (`9530a85`) without known
@@ -11,15 +11,50 @@ and the separate replacement-client project remain outside this work.
 - [x] Review diagnostics, Discord, updater and packaging; fix supported credential redaction.
 - [ ] Build and run all native/JavaScript/package checks on clean final source.
 - [ ] Check composed paused-start video and client settings/fullscreen on that build.
-- [ ] Repeat the frozen hour-long memory protocol and diagnostics benchmark.
+- [x] Preserve the shortened memory observation; do not repeat the hour-long test (user instruction, 2026-10-22).
+- [x] Run the frozen diagnostics comparison on `97fff20`; all three synthetic pairs met the thresholds.
 - [ ] Verify current official Qt release status and package identity.
 - [ ] Complete mixed-client drift evidence and installation qualification.
 - [ ] Integrate in master, publish verified final assets and record development closure.
 
-The official Qt version endpoint was read on 2026-10-20. It still reports
+The official Qt version endpoint was read again on 2026-10-22. It still reports
 6.11.3 as `released: false`, with planned date 2026-10-23. A planned date is not
 release evidence. This is an external qualification dependency; do not mark it
 passed or bypass it merely because the application builds.
+
+## Verification snapshot, 2026-10-22
+
+These observations are explicitly bound to `97fff20`; they do not automatically
+qualify later source revisions or all scenes in the acceptance matrix.
+
+- Normal and diagnostic builds, native tests, package binding, NativeShell and
+  localhost-only Tracy checks passed on this candidate.
+- The corrected offline harness passed actual native paused-start/resume,
+  composed video pixels, tooltip cleanup and stable geometry. Closing during
+  playback took 401 ms. Client-settings scrolling measured p95 16.7–16.8 ms;
+  fullscreen device chooser and cleanup passed, with a 170 ms cold-open delay.
+  Physical-screen presentation was unavailable in the disconnected host session.
+- The public live server reports 12.2.0. A fresh Desktop prelogin probe passed
+  HTTPS, chooser navigation, NativeShell/WebChannel and saved-server checks.
+  A preceding five-second timeout is retained; its exact cause was not established.
+- The deployed server remains `12.2-syncplay.1`, image `71efa2db...`, Server
+  `494362e...`, Web `b2a97d40...`; prepared `.2` sources are not deployed-contract evidence.
+- RC2 → 2.0.1 Burn upgrade passed in a fresh Windows Sandbox: exact executable
+  identity, registered package version, startup, graceful close and synthetic
+  settings preservation. Captured images exposed the remaining native-titlebar
+  placement defect at high DPI; correcting that defect requires new-source checks.
+- The saved application credential returned HTTP 401. The user authorized
+  current-account test playback in a dedicated temporary SyncPlay group; fresh
+  login is required before the prepared real Native/Web drift test can execute.
+- GitHub workflow dispatch still returns HTTP 422, “Actions has been disabled
+  for this repository.” Local checks are not reported as a current CI run.
+
+The memory observation from `1b3bb8c` ended at the user's request after 2209 s,
+without an observed ceiling exceedance. It is a shortened observation, not a
+passed hour-long protocol. No repeat is scheduled. The diagnostic comparison
+on `97fff20` measured maximum p95 growth 2.80% and CPU growth 0.217 percentage
+points; its synthetic WebChannel scope does not establish production playback
+overhead. Earlier failed observations remain retained.
 
 User feedback confirms observed behavior; it does not supply measured drift,
 all matrix cases or clean-machine installation evidence. Historical failed

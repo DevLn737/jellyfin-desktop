@@ -3,6 +3,7 @@
 
 #include <QQuickWindow>
 #include <QEvent>
+#include <QMargins>
 #include <settings/SettingsComponent.h>
 
 
@@ -129,6 +130,7 @@ private:
   bool m_debugLayer;
   bool m_closing = false;
   quint64 m_windowStateGeneration = 0;
+  QMargins m_windowedFrameMargins;
   QTimer* m_infoTimer;
   QString m_debugInfo, m_systemDebugInfo, m_videoInfo;
   int m_ignoreFullscreenSettingsChange;

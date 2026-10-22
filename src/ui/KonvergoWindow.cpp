@@ -265,17 +265,32 @@ QRect KonvergoWindow::loadGeometryRect()
   // Prefer 720p, but keep a first-launch window inside the available logical
   // desktop (which can be smaller than 1280x720 on a high-DPI display).
   QScreen *curScreen = screen();
+  if (!handle())
+  {
+    // frameMargins() is zero until the native window exists. Select its saved
+    // screen first so Windows computes decorations for that screen's DPI.
+    if (auto* savedScreen = loadLastScreen())
+    {
+      setScreen(savedScreen);
+      curScreen = savedScreen;
+    }
+    create(); // Create once while hidden; do not recreate a playback surface.
+  }
+  QMargins margins = frameMargins();
+  if (isFullScreen())
+    margins = m_windowedFrameMargins;
+  else if (!margins.isNull())
+    m_windowedFrameMargins = margins;
   QRect defaultRect = QRect(0, 0, WEBUI_SIZE.width(), WEBUI_SIZE.height());
   if (curScreen)
   {
-    const QMargins margins = frameMargins();
     const QRect available = curScreen->availableGeometry().adjusted(
       margins.left(), margins.top(), -margins.right(), -margins.bottom());
     if (available.isValid())
     {
       const QSize size = WEBUI_SIZE.boundedTo(available.size()).expandedTo(windowMinSize());
-      defaultRect = QRect(available.x() + (available.width() - size.width()) / 2,
-                          available.y() + (available.height() - size.height()) / 2,
+      defaultRect = QRect(available.x() + qMax(0, (available.width() - size.width()) / 2),
+                          available.y() + qMax(0, (available.height() - size.height()) / 2),
                           size.width(), size.height());
     }
   }
@@ -309,6 +324,27 @@ QRect KonvergoWindow::loadGeometryRect()
     return defaultRect;
   }
 
+  // Older versions could persist a client rect at (0,0) that fits the desktop
+  // while its native title bar is above it. Preserve valid saved geometry,
+  // correcting only dimensions/position that would hide its decorated frame.
+  QScreen* geometryScreen = curScreen;
+  for (auto* candidate : QGuiApplication::screens())
+    if (candidate->geometry().contains(rc.center()))
+    {
+      geometryScreen = candidate;
+      break;
+    }
+  if (geometryScreen)
+  {
+    const QRect available = geometryScreen->availableGeometry().adjusted(
+      margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    if (available.isValid())
+    {
+      rc.setSize(rc.size().boundedTo(available.size()).expandedTo(minsz));
+      rc.moveLeft(qBound(available.left(), rc.left(), qMax(available.left(), available.right() - rc.width() + 1)));
+      rc.moveTop(qBound(available.top(), rc.top(), qMax(available.top(), available.bottom() - rc.height() + 1)));
+    }
+  }
   return rc;
 }
 
