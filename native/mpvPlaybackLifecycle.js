@@ -70,6 +70,7 @@ class mpvPlaybackLifecycle {
         this.connect();
         this.ready = false;
         this._failure = null;
+        if (kind === 'load') this._errorReported = false;
         const id = window._jmpNativeRequestId = (window._jmpNativeRequestId || 0) + 1;
         if (!Number.isSafeInteger(id)) throw new Error('Native request counter exhausted.');
         const request = { id, kind, acknowledged: false };
@@ -102,7 +103,10 @@ class mpvPlaybackLifecycle {
             preserveTimestamps: mpvPlaybackLifecycle.preserveTimestamps(options, url),
             nativeRequestId: request.id
         }, metadata, audio, subtitle, accepted => this._ack(request, accepted));
-        return request.promise;
+        // Web's public play Promise describes command dispatch. Keeping native
+        // readiness private prevents an old load's late resolution/rejection
+        // from entering playbackmanager callbacks for a replacement item.
+        return Promise.resolve();
     }
 
     seek(logicalMs) {
@@ -142,7 +146,7 @@ class mpvPlaybackLifecycle {
         if (this.owner._paused) this.paused();
         if (request.kind === 'load') this.owner.onNativeReady?.();
         request.resolve();
-        if (request.kind === 'seek') Promise.resolve().then(() => this._notifyReady());
+        Promise.resolve().then(() => this._notifyReady());
     }
 
     playing() {
@@ -289,6 +293,7 @@ class mpvPlaybackLifecycle {
         request.reject(error);
         try { this.owner._toast?.(error.message); } catch (_) { }
         if (request.kind === 'seek') this.owner.events.trigger(this.owner, 'error', [{ type: 'mediadecodeerror' }]);
+        else this.owner.onError?.(error.message);
     }
 
     cancel(message = 'Native playback was stopped.') {

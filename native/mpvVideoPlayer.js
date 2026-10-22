@@ -210,8 +210,11 @@
              * @param e {Event} The event received from the `<video>` element
              */
             this.onError = async (error) => {
+                if (this._lifecycle._errorReported) return;
+                this._lifecycle._errorReported = true;
                 this._lifecycle.cancel('Native playback failed.');
                 this.removeMediaDialog();
+                const generation = this._playGeneration;
                 console.error(`media error: ${error}`);
 
                 const errorData = {
@@ -236,7 +239,7 @@
                     };
                 }
 
-                this.events.trigger(this, 'error', [errorData]);
+                if (generation === this._playGeneration) this.events.trigger(this, 'error', [errorData]);
             };
 
             this.onDuration = (duration) => {
@@ -249,6 +252,7 @@
         }
 
         async play(options) {
+            this._playGeneration = (this._playGeneration || 0) + 1;
             this._started = false;
             this._timeUpdated = false;
             this._currentTime = null;
@@ -256,12 +260,12 @@
             this.resetSubtitleOffset();
             this.loading.show();
             window.api.power.setScreensaverEnabled(false);
-            const elem = await this.createMediaElement(options);
-            return await this.setCurrentSrc(elem, options);
+            const elem = this.createMediaElement(options);
+            return this.setCurrentSrc(elem, options);
         }
 
         getSavedVolume() {
-            return this.appSettings.get('volume') || 1;
+            return this.appSettings.get('volume') ?? 1;
         }
 
         /**
@@ -419,7 +423,7 @@
             {
                 const val = options.url;
                 this._currentSrc = val;
-                console.debug(`playing url: ${val}`);
+                console.debug('Starting native video playback');
 
                 this._currentPlayOptions = { ...options };
                 this._subtitleTrackIndexToSetOnPlaying = options.mediaSource.DefaultSubtitleStreamIndex == null ? -1 : options.mediaSource.DefaultSubtitleStreamIndex;
@@ -504,27 +508,28 @@
                 src: this._currentSrc
             };
 
-            this.events.trigger(this, 'stopped', [stopInfo]);
-
             this._currentTime = null;
             this._currentSrc = null;
             this._currentPlayOptions = null;
+            this.events.trigger(this, 'stopped', [stopInfo]);
         }
 
         stop(destroyPlayer) {
+            const generation = this._playGeneration = (this._playGeneration || 0) + 1;
             this._lifecycle.cancel();
             window.api.player.stop();
             window.api.power.setScreensaverEnabled(true);
 
             this.onEndedInternal();
 
-            if (destroyPlayer) {
+            if (destroyPlayer && generation === this._playGeneration) {
                 this.destroy();
             }
             return Promise.resolve();
         }
 
         removeMediaDialog() {
+            this._playGeneration = (this._playGeneration || 0) + 1;
             this._lifecycle.cancel();
             this.loading.hide();
             window.api.player.stop();
@@ -606,14 +611,14 @@
                     // At this point, we must hide the scrollbar placeholder, so it's not being displayed while the item is being loaded
                     document.body.classList.add('hide-scroll');
                 }
-                return Promise.resolve();
+                return;
             } else {
                 // we need to hide scrollbar when starting playback from page with animated background
                 if (options.fullscreen) {
                     document.body.classList.add('hide-scroll');
                 }
 
-                return Promise.resolve();
+                return;
             }
         }
 
@@ -810,7 +815,7 @@
     }
 
     saveVolume(value) {
-        if (value) {
+        if (value != null) {
             this.appSettings.set('volume', value);
         }
     }

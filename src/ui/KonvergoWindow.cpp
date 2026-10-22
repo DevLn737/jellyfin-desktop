@@ -208,7 +208,7 @@ void KonvergoWindow::saveGeometry()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-QRect KonvergoWindow::loadGeometry()
+QRect KonvergoWindow::loadGeometry(bool restoreVisibility)
 {
   QRect rc = loadGeometryRect();
   QScreen* myScreen = loadLastScreen();
@@ -239,10 +239,21 @@ QRect KonvergoWindow::loadGeometry()
   }
   else
   {
-    setGeometry(nsize);
-    if (SettingsComponent::Get().value(SETTINGS_SECTION_STATE, "maximized").toBool())
+    const bool maximized = SettingsComponent::Get().value(SETTINGS_SECTION_STATE, "maximized").toBool();
+    // A maximized client rectangle is not a normal window rectangle. Applying
+    // it while leaving fullscreen can expand the native frame on every toggle.
+    if (!restoreVisibility || !maximized)
+    {
+      if (restoreVisibility)
+        setVisibility(QWindow::Windowed);
+      setGeometry(nsize);
+    }
+    if (maximized)
       setVisibility(QWindow::Maximized);
-    saveGeometry();
+    // Native state changes settle asynchronously; do not persist their
+    // intermediate geometry as the next fullscreen restoration target.
+    if (!restoreVisibility)
+      saveGeometry();
   }
 
   return nsize;
@@ -251,14 +262,37 @@ QRect KonvergoWindow::loadGeometry()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 QRect KonvergoWindow::loadGeometryRect()
 {
-  // if we dont have anything, default to 720p in the middle of the screen
+  // Prefer 720p, but keep a first-launch window inside the available logical
+  // desktop (which can be smaller than 1280x720 on a high-DPI display).
   QScreen *curScreen = screen();
+  if (!handle())
+  {
+    // frameMargins() is zero until the native window exists. Select its saved
+    // screen first so Windows computes decorations for that screen's DPI.
+    if (auto* savedScreen = loadLastScreen())
+    {
+      setScreen(savedScreen);
+      curScreen = savedScreen;
+    }
+    create(); // Create once while hidden; do not recreate a playback surface.
+  }
+  QMargins margins = frameMargins();
+  if (isFullScreen())
+    margins = m_windowedFrameMargins;
+  else if (!margins.isNull())
+    m_windowedFrameMargins = margins;
   QRect defaultRect = QRect(0, 0, WEBUI_SIZE.width(), WEBUI_SIZE.height());
   if (curScreen)
   {
-    defaultRect = QRect((curScreen->geometry().width() - WEBUI_SIZE.width()) / 2,
-                        (curScreen->geometry().height() - WEBUI_SIZE.height()) / 2,
-                        WEBUI_SIZE.width(), WEBUI_SIZE.height());
+    const QRect available = curScreen->availableGeometry().adjusted(
+      margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    if (available.isValid())
+    {
+      const QSize size = WEBUI_SIZE.boundedTo(available.size()).expandedTo(windowMinSize());
+      defaultRect = QRect(available.x() + qMax(0, (available.width() - size.width()) / 2),
+                          available.y() + qMax(0, (available.height() - size.height()) / 2),
+                          size.width(), size.height());
+    }
   }
 
   QVariantMap map = SettingsComponent::Get().value(SETTINGS_SECTION_STATE, "geometry").toMap();
@@ -290,6 +324,27 @@ QRect KonvergoWindow::loadGeometryRect()
     return defaultRect;
   }
 
+  // Older versions could persist a client rect at (0,0) that fits the desktop
+  // while its native title bar is above it. Preserve valid saved geometry,
+  // correcting only dimensions/position that would hide its decorated frame.
+  QScreen* geometryScreen = curScreen;
+  for (auto* candidate : QGuiApplication::screens())
+    if (candidate->geometry().contains(rc.center()))
+    {
+      geometryScreen = candidate;
+      break;
+    }
+  if (geometryScreen)
+  {
+    const QRect available = geometryScreen->availableGeometry().adjusted(
+      margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    if (available.isValid())
+    {
+      rc.setSize(rc.size().boundedTo(available.size()).expandedTo(minsz));
+      rc.moveLeft(qBound(available.left(), rc.left(), qMax(available.left(), available.right() - rc.width() + 1)));
+      rc.moveTop(qBound(available.top(), rc.top(), qMax(available.top(), available.bottom() - rc.height() + 1)));
+    }
+  }
   return rc;
 }
 
@@ -434,6 +489,11 @@ void KonvergoWindow::updateForcedScreen()
   if (m_closing)
     return;
 
+  if (!SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "fullscreen").toBool()
+      && !SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceAlwaysFS").toBool()
+      && !SystemComponent::Get().isOpenELEC())
+    return;
+
   QString screenName = SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceFSScreen").toString();
 
   if (screenName.isEmpty())
@@ -459,6 +519,8 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
   if (m_closing)
     return;
 
+  const auto generation = ++m_windowStateGeneration;
+
   if (SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "fullscreen").toBool() || SystemComponent::Get().isOpenELEC() || SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceAlwaysFS").toBool())
   {
     // if we were go from windowed to fullscreen
@@ -470,16 +532,14 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
 
     // When fullscreening explicitly, we might have to move the window to a
     // different screen, as Qt will fullscreen to the current screen.
-    QTimer::singleShot(200, this, [this]
+    QTimer::singleShot(200, this, [this, generation]
     {
-      updateForcedScreen();
+      if (generation == m_windowStateGeneration)
+        updateForcedScreen();
     });
   }
   else
   {
-    setVisibility(QWindow::Windowed);
-    loadGeometry();
-
     Qt::WindowFlags forceOnTopFlags = Qt::WindowStaysOnTopHint;
 #ifdef Q_WS_X11
     forceOnTopFlags = forceOnTopFlags | Qt::X11BypassWindowManagerHint;
@@ -489,6 +549,8 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
       setFlags(flags() | forceOnTopFlags);
     else
       setFlags(flags() &~ forceOnTopFlags);
+
+    loadGeometry(true);
   }
 
   InputComponent::Get().cancelAutoRepeat();
@@ -743,9 +805,11 @@ void KonvergoWindow::onScreenAdded(QScreen *screen)
 
   updateScreens();
   // The timer is out of fear for chaotic mid-change states.
-  QTimer::singleShot(200, this, [this]
+  const auto generation = m_windowStateGeneration;
+  QTimer::singleShot(200, this, [this, generation]
   {
-    updateForcedScreen();
+    if (generation == m_windowStateGeneration)
+      updateForcedScreen();
   });
 }
 

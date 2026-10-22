@@ -241,6 +241,7 @@ private:
   void setPreferredCodecs(const QList<CodecDriver>& codecs);
   // Determine the required codecs and possibly download them.
   // Call resume() when done.
+  void continueLoadHookAfterDelay(int delayMilliseconds, std::function<void()> continueHook);
   void startCodecsLoading(std::function<void()> resume);
   void updateVideoAspectSettings();
   QVariantList findStreamsForURL(const QString &url);
@@ -276,6 +277,8 @@ private:
   QString m_currentAudioStream;
   QString m_pendingExternalAudioStream;
   ExternalAudioRequest m_externalAudioRequest;
+  QString m_pendingExternalSubtitleStream;
+  ExternalStreamRequest m_externalSubtitleRequest {ExternalStreamRequest::SubtitleNamespace};
   VideoTrackRestore m_videoTrackRestore;
   PlaybackReadiness m_readiness;
   PlaybackTimeline m_playbackTimeline;
