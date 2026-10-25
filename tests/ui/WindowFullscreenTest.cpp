@@ -12,6 +12,7 @@ class SettingsComponent {
 public:
   static SettingsComponent& Get() { static SettingsComponent s; return s; }
   QVariant value(const char*, const char* key) const { return values.value(key); }
+  void setValue(const char*, const char* key, QVariant value) { values[key] = value; }
   QMap<QString, QVariant> values;
 };
 class SystemComponent {
@@ -27,7 +28,7 @@ public:
 };
 class QWindow {
 public:
-  enum Visibility { FullScreen, Windowed, Maximized };
+  enum Visibility { FullScreen, Windowed, Maximized, Minimized, Hidden };
 };
 class QScreen {
 public:
@@ -41,6 +42,9 @@ public:
 class KonvergoWindow : public QObject {
 public:
   void updateForcedScreen();
+  void minimizeWindow();
+  void setFullScreen(bool enable);
+  QWindow::Visibility visibility() const { return current; }
   void updateWindowState(bool saveGeo = true);
   void onScreenAdded(QScreen* screen);
   void updateScreens() {}
@@ -53,8 +57,9 @@ public:
   QRect loadGeometryRect() { return QRect(0, 0, 2048, 1082); }
   QScreen* loadLastScreen() { return QGuiApplication::screens().first(); }
   QScreen* screen() { return QGuiApplication::screens().first(); }
-  Qt::WindowFlags flags() const { return {}; }
-  void setFlags(Qt::WindowFlags) {}
+  Qt::WindowFlags flags() const { return currentFlags; }
+  void setFlags(Qt::WindowFlags f) { currentFlags = f; }
+  Qt::WindowFlags currentFlags;
   bool m_closing = false;
   quint64 m_windowStateGeneration = 0;
   QWindow::Visibility current = QWindow::Windowed;
@@ -76,7 +81,36 @@ int main(int argc, char** argv) {
   KonvergoWindow window;
   int expectedMoves = 0;
   bool expectedFullscreen = false;
-  if (scenario == "windowed-setting") {
+  if (scenario == "topmost-fullscreen-roundtrip") {
+    settings["alwaysOnTop"] = true;
+    window.updateWindowState();
+    if (!(window.flags() & Qt::WindowStaysOnTopHint)) return 1;
+    settings["fullscreen"] = true;
+    window.updateWindowState();
+    if (window.flags() & Qt::WindowStaysOnTopHint) return 1;
+    // Updating the preference while fullscreen must not make it topmost.
+    window.updateWindowState();
+    if (window.flags() & Qt::WindowStaysOnTopHint) return 1;
+    settings["fullscreen"] = false;
+    window.updateWindowState();
+    if (!(window.flags() & Qt::WindowStaysOnTopHint) || !settings["alwaysOnTop"].toBool()) return 1;
+  } else if (scenario == "explicit-kiosk-exit") {
+    settings["forceAlwaysFS"] = true;
+    settings["fullscreen"] = true;
+    window.updateWindowState();
+    window.setFullScreen(false);
+    window.updateWindowState();
+    if (settings["forceAlwaysFS"].toBool()) return 1;
+  } else if (scenario == "minimize-fullscreen" || scenario == "os-minimize-fullscreen") {
+    settings["fullscreen"] = true;
+    window.updateWindowState();
+    if (scenario == "minimize-fullscreen") window.minimizeWindow();
+    else window.setVisibility(QWindow::Minimized);
+    window.onScreenAdded(nullptr);
+    QTimer::singleShot(300, &app, [&] {
+      if (window.current != QWindow::Minimized) app.exit(1);
+    });
+  } else if (scenario == "windowed-setting") {
     window.updateForcedScreen();
   } else if (scenario == "enter-exit") {
     settings["fullscreen"] = true;
@@ -127,7 +161,7 @@ int main(int argc, char** argv) {
       return 1;
   } else return 2;
   QTimer::singleShot(350, &app, &QCoreApplication::quit);
-  app.exec();
+  if (app.exec() != 0) return 1;
   if (scenarioClock.elapsed() >= 5000) {
     std::cerr << "Fullscreen scenario exceeded its five-second runtime budget\n";
     return 1;

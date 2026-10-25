@@ -4,7 +4,7 @@ import re
 import sys
 source = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
 methods = []
-for name in ("updateForcedScreen", "updateWindowState", "onScreenAdded", "loadGeometry"):
+for name in ("updateForcedScreen", "updateWindowState", "onScreenAdded", "loadGeometry", "minimizeWindow", "setFullScreen"):
     matches = re.findall(rf"^(?:void|QRect) KonvergoWindow::{name}\([^\n]*\)\s*\n\{{.*?^\}}", source, re.M | re.S)
     if len(matches) != 1:
         raise SystemExit(f"Expected one production method: {name}")

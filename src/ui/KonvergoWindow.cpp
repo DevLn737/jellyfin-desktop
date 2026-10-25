@@ -359,9 +359,27 @@ void KonvergoWindow::enableVideoWindow()
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void KonvergoWindow::setFullScreen(bool enable)
 {
+  if (m_closing)
+    return;
+
   qDebug() << "setting fullscreen = " << enable;
 
+  // An explicit desktop exit must override an inherited kiosk preference.
+  // Otherwise onVisibilityChanged immediately sends the window back to fullscreen.
+  if (!enable && !SystemComponent::Get().isOpenELEC())
+    SettingsComponent::Get().setValue(SETTINGS_SECTION_MAIN, "forceAlwaysFS", false);
+
   SettingsComponent::Get().setValue(SETTINGS_SECTION_MAIN, "fullscreen", enable);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+void KonvergoWindow::minimizeWindow()
+{
+  if (m_closing)
+    return;
+
+  ++m_windowStateGeneration;
+  setVisibility(QWindow::Minimized);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -489,6 +507,10 @@ void KonvergoWindow::updateForcedScreen()
   if (m_closing)
     return;
 
+  // A monitor callback must not restore a window minimized by the user or OS.
+  if (visibility() == QWindow::Minimized || visibility() == QWindow::Hidden)
+    return;
+
   if (!SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "fullscreen").toBool()
       && !SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "forceAlwaysFS").toBool()
       && !SystemComponent::Get().isOpenELEC())
@@ -527,6 +549,11 @@ void KonvergoWindow::updateWindowState(bool saveGeo)
     // we want to store our current windowed position
     if (!isFullScreen() && saveGeo)
       saveGeometry();
+
+    // Keep the user's windowed preference, but never carry topmost into
+    // fullscreen: it can cover Alt-Tab targets and interfere with capture.
+    if (flags() & Qt::WindowStaysOnTopHint)
+      setFlags(flags() & ~Qt::WindowStaysOnTopHint);
 
     setVisibility(QWindow::FullScreen);
 
@@ -616,7 +643,7 @@ void KonvergoWindow::focusOutEvent(QFocusEvent * ev)
   if (visibility() == QWindow::FullScreen && SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "minimizeOnDefocus").toBool())
   {
     qDebug() << "minimizing window";
-    showMinimized();
+    minimizeWindow();
   }
 #endif
 

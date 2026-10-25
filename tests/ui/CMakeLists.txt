@@ -41,7 +41,7 @@ add_executable(window-fullscreen-tests WindowFullscreenTest.cpp)
 target_compile_features(window-fullscreen-tests PRIVATE cxx_std_17)
 target_include_directories(window-fullscreen-tests PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(window-fullscreen-tests PRIVATE Qt6::Core)
-foreach(scenario windowed-setting enter-exit enter-exit-enter screen-added-exit always-fullscreen openelec maximized-roundtrips windowed-roundtrips)
+foreach(scenario windowed-setting enter-exit enter-exit-enter screen-added-exit always-fullscreen openelec maximized-roundtrips windowed-roundtrips explicit-kiosk-exit minimize-fullscreen os-minimize-fullscreen topmost-fullscreen-roundtrip)
   add_test(NAME "window-fullscreen-${scenario}" COMMAND window-fullscreen-tests "${scenario}")
   # Allow cold Windows image startup; the test enforces its own scenario budget.
   set_tests_properties("window-fullscreen-${scenario}" PROPERTIES TIMEOUT 30)
