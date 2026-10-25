@@ -53,7 +53,7 @@
       {
         "value": "alwaysOnTop",
         "display_name": "Always on Top",
-        "help": "Keeps Jellyfin Media Player on top of other windows.",
+        "help": "Keeps Jellyfin Media Player on top of other windows in windowed mode. Suspended in fullscreen so other applications remain accessible.",
         "default": false
       },
       {

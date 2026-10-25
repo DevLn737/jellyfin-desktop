@@ -126,6 +126,120 @@ try {
             unknownUnicode: await setting('migrationSmoke', 'unknownUnicode'),
             nested: await setting('migrationSmoke', 'nested')
         };
+        // Check opaque-page dialogs under strict CSP: the former video-only
+        // selector missed these menus. Modal input and animations remain intact.
+        const fixtureSheet = new CSSStyleSheet();
+        fixtureSheet.replaceSync('.dialogBackdropOpened { opacity: .5; will-change: opacity; } .ownedModalDialog { opacity: .73; animation-name: ownedModalEntry; animation-duration: .14s; } @keyframes ownedModalEntry { from { transform: scale(.5); } to { transform: scale(1); } }');
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, fixtureSheet];
+        const backdrop = document.createElement('div');
+        backdrop.className = 'dialogBackdrop dialogBackdropOpened';
+        const dialog = document.createElement('div');
+        dialog.className = 'ownedModalDialog dialog';
+        document.body.append(backdrop, dialog);
+        const backdropStyle = getComputedStyle(backdrop), dialogStyle = getComputedStyle(dialog);
+        result.softwareDialogStyles = {
+            enabled: window.jmpInfo.softwareWebEngine,
+            opaqueDocument: !document.documentElement.classList.contains('transparentDocument'),
+            backdropOpacity: Number(backdropStyle.opacity),
+            backdropPointerEvents: backdropStyle.pointerEvents,
+            backdropWillChange: backdropStyle.willChange,
+            dialogOpacity: Number(dialogStyle.opacity),
+            dialogAnimation: dialogStyle.animationName,
+            dialogDuration: dialogStyle.animationDuration
+        };
+        dialog.classList.add('formDialog', 'dialog-fixedSize');
+        const largeDialogStyle = getComputedStyle(dialog);
+        result.softwareLargeDialogStyles = {
+            duration: largeDialogStyle.animationDuration,
+            delay: largeDialogStyle.animationDelay,
+            animation: largeDialogStyle.animationName,
+            timing: largeDialogStyle.animationTimingFunction,
+            fill: largeDialogStyle.animationFillMode,
+            opacity: Number(largeDialogStyle.opacity)
+        };
+        backdrop.remove(); dialog.remove();
+        document.adoptedStyleSheets = document.adoptedStyleSheets.filter(sheet => sheet !== fixtureSheet);
+        const settingsListenerCounts = () => [jmpInfo.settingsUpdate.length, jmpInfo.settingsDescriptionsUpdate.length];
+        const beforeSettings = settingsListenerCounts();
+        // Synthetic descriptors exercise typed chooser commits without changing
+        // any native user setting or requiring a platform audio device.
+        const chooserValues = [];
+        const chooserSection = '__chooserSmoke';
+        jmpInfo.sections.push({ key: chooserSection, order: 10000 });
+        jmpInfo.settings[chooserSection] = { choice: false, draft: 'Saved fixture text' };
+        jmpInfo.settingsDescriptions[chooserSection] = [{ key: 'choice', displayName: 'Chooser fixture',
+            options: [{ value: false, title: 'Alpha' }, { value: 17, title: 'Beta' }, { value: 'gamma', title: 'Gamma' }] },
+            { key: 'draft', displayName: 'Dirty text fixture', inputType: 'text' }];
+        let chooserValue = false;
+        Object.defineProperty(jmpInfo.settings[chooserSection], 'choice', {
+            get: () => chooserValue, set: value => { chooserValue = value; chooserValues.push(value); }
+        });
+        const beforeSettingsSheets = document.adoptedStyleSheets.length;
+        const beforeSettingsStyles = document.head.querySelectorAll('style').length;
+        await showSettingsModal();
+        const settingsModal = document.querySelector('.nativeClientSettings');
+        await showSettingsModal();
+        const openedCounts = settingsListenerCounts();
+        const input = settingsModal.querySelector('input[type="text"], textarea');
+        if (!input) throw Error('Client settings fixture requires a text control');
+        input.focus();
+        input.setSelectionRange(0, Math.min(2, input.value.length));
+        const selection = [input.selectionStart, input.selectionEnd];
+        for (const section of Object.keys(jmpInfo.settings)) {
+            for (const callback of [...jmpInfo.settingsUpdate]) callback(section, jmpInfo.settings[section]);
+            for (const callback of [...jmpInfo.settingsDescriptionsUpdate]) callback(section);
+        }
+        const focusRetained = document.activeElement === input && input.isConnected &&
+            input.selectionStart === selection[0] && input.selectionEnd === selection[1];
+        const singleton = document.querySelectorAll('.nativeClientSettings').length === 1;
+        const settingsBackground = getComputedStyle(settingsModal).backgroundColor;
+        const draft = settingsModal.querySelector('input[data-setting-key="draft"]');
+        draft.value = 'Uncommitted fixture edit';
+        draft.focus(); draft.setSelectionRange(3, 7);
+        for (const callback of [...jmpInfo.settingsUpdate]) callback(chooserSection, { choice: false });
+        const dirtyTextRetained = draft.value === 'Uncommitted fixture edit' && document.activeElement === draft &&
+            draft.selectionStart === 3 && draft.selectionEnd === 7;
+        const chooser = settingsModal.querySelector('[role="combobox"][aria-label="Chooser fixture"]');
+        const key = (target, value, shiftKey = false) => target.dispatchEvent(new KeyboardEvent('keydown', { key: value, shiftKey, bubbles: true, cancelable: true }));
+        chooser.click();
+        let picker = document.getElementById(chooser.getAttribute('aria-controls'));
+        const topLayerPicker = picker.open && picker.matches(':modal') && !settingsModal.querySelector('select');
+        key(picker, 'End'); key(picker, 'Escape');
+        const cancelled = chooserValue === false && !picker.open && document.activeElement === chooser;
+        chooser.click(); key(picker, 'End'); key(picker, 'Tab');
+        const tabForward = !picker.open && document.activeElement === draft && chooserValues.length === 0;
+        const tabControls = [...settingsModal.querySelectorAll('button, input, select, textarea, [tabindex]')]
+            .filter(control => !control.disabled && control.tabIndex >= 0 && control.getClientRects().length);
+        const previousControl = tabControls[tabControls.indexOf(chooser) - 1];
+        chooser.click(); key(picker, 'End'); key(picker, 'Tab', true);
+        const tabBackward = !picker.open && document.activeElement === previousControl && chooserValues.length === 0;
+        key(chooser, 'ArrowDown'); key(picker, 'ArrowDown'); key(picker, 'Enter');
+        key(chooser, 'Home'); key(picker, ' ');
+        chooser.click(); key(picker, 'g'); key(picker, 'Enter');
+        const typedCommits = chooserValues.slice();
+        chooser.click();
+        jmpInfo.settingsDescriptions[chooserSection] = [{ key: 'choice', displayName: 'Chooser fixture',
+            options: [{ value: false, title: 'Alpha refreshed' }, { value: 17, title: 'Beta' }, { value: 'gamma', title: 'Gamma' }] }];
+        for (const callback of [...jmpInfo.settingsDescriptionsUpdate]) callback(chooserSection);
+        const refreshedClosed = !picker.isConnected && !document.querySelector('.nativeSettingsPicker[open]') &&
+            document.activeElement?.getAttribute('aria-label') === 'Chooser fixture';
+        settingsModal.querySelector('.formDialogFooterItem').click();
+        const afterClose = settingsListenerCounts();
+        await showSettingsModal();
+        const sheetsAfterReopen = document.adoptedStyleSheets.length;
+        document.querySelector('.nativeClientSettings').remove();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        result.clientSettingsLifecycle = {
+            singleton, focusRetained, settingsBackground,
+            beforeSettings, openedCounts, afterClose, afterRemoval: settingsListenerCounts(),
+            addedSheets: sheetsAfterReopen - beforeSettingsSheets,
+            addedStyles: document.head.querySelectorAll('style').length - beforeSettingsStyles,
+            chooser: { topLayerPicker, cancelled, dirtyTextRetained, tabForward, tabBackward, typedCommits, refreshedClosed,
+                remainingPickers: document.querySelectorAll('.nativeSettingsPicker').length }
+        };
+        jmpInfo.sections = jmpInfo.sections.filter(section => section.key !== chooserSection);
+        delete jmpInfo.settings[chooserSection];
+        delete jmpInfo.settingsDescriptions[chooserSection];
         result.plugins = [];
         for (const name of window.NativeShell?.getPlugins() || []) {
             const plugin = await Promise.race([window[name](),
@@ -161,6 +275,28 @@ try {
                 assert.deepEqual(value.plugins.map(plugin => plugin.name),
                     ['mpvVideoPlayer', 'mpvAudioPlayer', 'jmpInputPlugin', 'jmpDiagnosticsPlugin', 'jmpUpdatePlugin']);
                 assert.ok(value.plugins.every(plugin => plugin.loaded));
+                assert.deepEqual(value.softwareDialogStyles, {
+                    enabled: true, opaqueDocument: true,
+                    backdropOpacity: 0, backdropPointerEvents: 'auto', backdropWillChange: 'auto',
+                    dialogOpacity: .73, dialogAnimation: 'ownedModalEntry', dialogDuration: '0.14s'
+                }, 'Software dialog styling must preserve modal input and animations under strict CSP');
+                assert.deepEqual(value.softwareLargeDialogStyles, {
+                    duration: '0.001s', delay: '0s', animation: 'ownedModalEntry',
+                    timing: 'ease', fill: 'none', opacity: .73
+                }, 'Large software forms must retain animation semantics with prompt entry/exit');
+                const lifecycle = value.clientSettingsLifecycle;
+                assert.equal(lifecycle.singleton, true);
+                assert.equal(lifecycle.focusRetained, true, 'Value echoes and unchanged descriptors must retain controls and focus');
+                assert.equal(lifecycle.settingsBackground, 'rgba(0, 0, 0, 0)');
+                assert.deepEqual(lifecycle.openedCounts, lifecycle.beforeSettings.map(count => count + 1));
+                assert.deepEqual(lifecycle.afterClose, lifecycle.beforeSettings);
+                assert.deepEqual(lifecycle.afterRemoval, lifecycle.beforeSettings);
+                assert.ok(lifecycle.addedSheets === 0 || lifecycle.addedSheets === 1);
+                assert.equal(lifecycle.addedStyles, 0, 'Client settings styles must work under strict CSP without accumulating style nodes');
+                assert.deepEqual(lifecycle.chooser, { topLayerPicker: true, cancelled: true,
+                    dirtyTextRetained: true, tabForward: true, tabBackward: true,
+                    typedCommits: [17, false, 'gamma'], refreshedClosed: true, remainingPickers: 0 },
+                    'Client chooser must use the DOM top layer, retain typed values, support keyboard cancellation and clean up on refresh/close');
                 report.phases[phase] = value;
                 return;
             } catch (error) { lastError = error; await wait(100); }

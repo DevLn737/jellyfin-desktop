@@ -230,6 +230,16 @@ int main()
   check(request.pending() == nextEpisode, "next episode's pending request must survive old replies");
   check(!request.complete(0), "unrelated command reply must be ignored");
   check(request.complete(nextEpisode), "next episode can complete normally");
+  ExternalStreamRequest subtitles(ExternalStreamRequest::SubtitleNamespace);
+  const auto subtitleFirst = subtitles.begin();
+  const auto audioParallel = request.begin();
+  check(subtitleFirst != audioParallel, "audio and subtitle asynchronous request IDs must have separate namespaces");
+  check(!request.complete(subtitleFirst) && !subtitles.complete(audioParallel), "one media type's reply cannot complete another media type");
+  check(subtitles.cancel() == subtitleFirst, "changing or disabling subtitles cancels the previous addition");
+  const auto subtitleLatest = subtitles.begin();
+  check(!subtitles.complete(subtitleFirst) && subtitles.pending() == subtitleLatest, "late subtitle completion cannot override the latest selection");
+  check(subtitles.nextFile() == subtitleLatest && !subtitles.complete(subtitleLatest), "old-file subtitle completion is rejected");
+  check(request.complete(audioParallel), "subtitle cancellation must leave independent audio loading intact");
   VideoTrackRestore video;
   video.nextFile();
   video.selection(5);

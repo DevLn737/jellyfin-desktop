@@ -235,13 +235,22 @@ async function createApi() {
             style.replaceSync(`
                 .card, .cardScalable, .cardIndicators { contain: style !important; }
                 .cardPadder, .cardImageContainer { contain: size style !important; }
-                /* A translucent full-window backdrop makes software Viz redraw
-                   the entire transparent video surface during menu animations.
-                   Keep the modal hit area and the dialog's entry/exit animation,
-                   but leave native video undimmed while its menus are open. */
-                .transparentDocument .dialogBackdrop {
+                /* Software Viz blends this full-window surface during every
+                   dialog transition, including opaque library/SyncPlay pages.
+                   Keep the modal hit area and each dialog's entry/exit animation;
+                   omit dimming for all dialogs on the software backend. */
+                .dialogBackdrop {
                     opacity: 0 !important;
                     will-change: auto !important;
+                }
+                /* Large form transitions repaint/rasterize a substantial part
+                   of the software viewport on every animation frame. Open them
+                   promptly; a nonzero duration preserves dialogHelper's
+                   animationend cleanup, including the exit transition.
+                   Small action sheets keep their normal animation. */
+                .formDialog.dialog-fixedSize {
+                    animation-duration: 1ms !important;
+                    animation-delay: 0ms !important;
                 }
             `);
             document.adoptedStyleSheets = [...document.adoptedStyleSheets, style];
@@ -396,11 +405,18 @@ window.NativeShell.AppHost = {
     }
 };
 
+let activeSettingsModal;
+let settingsTooltipSheet;
+
 async function showSettingsModal() {
     await initCompleted;
+    if (activeSettingsModal?.isConnected) {
+        activeSettingsModal.querySelector('input, select, textarea, button')?.focus();
+        return;
+    }
 
     const tooltipCSS = `
-        .tooltip {
+        .nativeClientSettings .tooltip {
             position: relative;
             display: inline-block;
             margin-left: 0.5rem;
@@ -408,7 +424,7 @@ async function showSettingsModal() {
             vertical-align: sub;
         }
 
-        .tooltip .tooltip-text {
+        .nativeClientSettings .tooltip .tooltip-text {
             visibility: hidden;
             width: max-content;
             max-width: 40em;
@@ -425,20 +441,185 @@ async function showSettingsModal() {
             font-size: 12px;
         }
 
-        .tooltip:hover .tooltip-text {
+        .nativeClientSettings .tooltip:hover .tooltip-text {
             visibility: visible;
-        }`;
+        }
+        .nativeSettingsPicker {
+            position: fixed; margin: 0; box-sizing: border-box;
+            padding: .3em; color: #fff; background: #202020;
+            border: 1px solid #777; border-radius: .3em;
+            overflow-y: auto; overscroll-behavior: contain;
+        }
+        .nativeSettingsPicker::backdrop { background: transparent; }
+        .nativeSettingsPicker [role="option"] {
+            padding: .6em .8em; cursor: pointer; overflow-wrap: anywhere;
+        }
+        .nativeSettingsPicker [role="option"][data-active="true"] { background: #414141; }
+        .nativeSettingsPicker [aria-selected="true"] { font-weight: bold; }
+        .nativeClientSettings [role="combobox"] { text-align: left; cursor: pointer; }
+        `;
 
-    var style = document.createElement('style')
-    style.innerText = tooltipCSS
-    document.head.appendChild(style)
+    if (!settingsTooltipSheet) {
+        settingsTooltipSheet = new CSSStyleSheet();
+        settingsTooltipSheet.replaceSync(tooltipCSS);
+        document.adoptedStyleSheets = [...document.adoptedStyleSheets, settingsTooltipSheet];
+    }
 
     const modalContainer = document.createElement("div");
-    modalContainer.className = "dialogContainer";
-    modalContainer.style.backgroundColor = "rgba(0,0,0,0.5)";
+    modalContainer.className = "dialogContainer nativeClientSettings";
+    modalContainer.style.backgroundColor = jmpInfo.softwareWebEngine ? 'transparent' : 'rgba(0,0,0,0.5)';
+    activeSettingsModal = modalContainer;
+    const cleanupCallbacks = [];
+    const addCleanup = callback => cleanupCallbacks.push(callback);
+    let closed = false;
+    const teardown = () => {
+        if (closed) return;
+        closed = true;
+        for (const callback of cleanupCallbacks) callback();
+        if (activeSettingsModal === modalContainer) activeSettingsModal = undefined;
+        modalContainer.remove();
+    };
+    const removal = new MutationObserver(() => {
+        if (!modalContainer.isConnected) teardown();
+    });
+    removal.observe(document.body, { childList: true });
+    addCleanup(() => removal.disconnect());
+    // HTML selects use Qt's native popup window. Keep this chooser inside the
+    // document's top layer so fullscreen window stacking cannot hide its list.
+    const createChooser = (options, initialValue, label, commit) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'emby-select-withcolor emby-select';
+        button.setAttribute('role', 'combobox');
+        button.setAttribute('aria-haspopup', 'listbox');
+        button.setAttribute('aria-expanded', 'false');
+        button.setAttribute('aria-label', label);
+        const popup = document.createElement('dialog');
+        popup.className = 'nativeSettingsPicker';
+        popup.setAttribute('role', 'listbox');
+        popup.setAttribute('aria-label', label);
+        popup.tabIndex = -1;
+        popup.id = `native-settings-picker-${createChooser.nextId++}`;
+        button.setAttribute('aria-controls', popup.id);
+        let value = initialValue;
+        let active = -1;
+        let typeahead = '';
+        let lastTyped = 0;
+        const selectedIndex = () => options.findIndex(option => option.value == value);
+        const optionNodes = options.map((option, index) => {
+            const node = document.createElement('div');
+            node.id = `${popup.id}-${index}`;
+            node.setAttribute('role', 'option');
+            node.textContent = option.title;
+            popup.appendChild(node);
+            node.addEventListener('click', () => choose(index));
+            return node;
+        });
+        const setValue = next => {
+            value = next;
+            const selected = selectedIndex();
+            button.textContent = selected < 0 ? String(next) : options[selected].title;
+            optionNodes.forEach((node, index) => node.setAttribute('aria-selected', String(index === selected)));
+        };
+        const activate = index => {
+            active = Math.max(0, Math.min(options.length - 1, index));
+            optionNodes.forEach((node, i) => node.dataset.active = String(i === active));
+            const node = optionNodes[active];
+            if (node) {
+                popup.setAttribute('aria-activedescendant', node.id);
+                button.setAttribute('aria-activedescendant', node.id);
+                node.scrollIntoView({ block: 'nearest' });
+            }
+        };
+        const position = () => {
+            const rect = button.getBoundingClientRect();
+            const gap = 8;
+            const below = window.innerHeight - rect.bottom - gap;
+            const above = rect.top - gap;
+            const downward = below >= Math.min(240, above);
+            const available = Math.max(40, downward ? below : above);
+            popup.style.width = `${Math.min(Math.max(rect.width, 180), window.innerWidth - gap * 2)}px`;
+            popup.style.maxHeight = `${Math.min(320, available)}px`;
+            popup.style.left = `${Math.max(gap, Math.min(rect.left, window.innerWidth - popup.getBoundingClientRect().width - gap))}px`;
+            popup.style.top = `${downward ? Math.max(gap, rect.bottom) : Math.max(gap, rect.top - popup.getBoundingClientRect().height)}px`;
+        };
+        const closePicker = (restoreFocus = true) => {
+            if (!popup.open) return;
+            popup.close();
+            window.removeEventListener('resize', position);
+            button.setAttribute('aria-expanded', 'false');
+            button.removeAttribute('aria-activedescendant');
+            typeahead = '';
+            if (restoreFocus && button.isConnected) button.focus({ preventScroll: true });
+        };
+        const choose = index => {
+            if (!options[index]) return;
+            setValue(options[index].value);
+            closePicker();
+            commit(options[index].value);
+        };
+        const openPicker = () => {
+            if (popup.open || !options.length) return;
+            popup.showModal();
+            button.setAttribute('aria-expanded', 'true');
+            position();
+            activate(Math.max(0, selectedIndex()));
+            popup.focus({ preventScroll: true });
+            window.addEventListener('resize', position);
+        };
+        const navigate = event => {
+            if (event.key === 'Tab' && popup.open) {
+                event.preventDefault();
+                closePicker(false);
+                const controls = [...modalContainer.querySelectorAll('button, input, select, textarea, [tabindex]')]
+                    .filter(control => !control.disabled && control.tabIndex >= 0 && control.getClientRects().length);
+                const index = controls.indexOf(button);
+                const next = controls[index + (event.shiftKey ? -1 : 1)];
+                (next || button).focus({ preventScroll: true });
+            } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+                event.preventDefault();
+                const wasOpen = popup.open;
+                openPicker();
+                if (event.key === 'Home') activate(0);
+                else if (event.key === 'End') activate(options.length - 1);
+                else if (wasOpen) activate(active + (event.key === 'ArrowDown' ? 1 : -1));
+            } else if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                if (popup.open) choose(active); else openPicker();
+            } else if (event.key === 'Escape' && popup.open) {
+                event.preventDefault();
+                closePicker();
+            } else if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                event.preventDefault();
+                openPicker();
+                const now = performance.now();
+                typeahead = now - lastTyped > 700 ? event.key : typeahead + event.key;
+                lastTyped = now;
+                const query = typeahead.toLocaleLowerCase();
+                const start = query.length === 1 ? active + 1 : active;
+                for (let offset = 0; offset < options.length; offset++) {
+                    const index = (start + offset) % options.length;
+                    if (options[index].title.toLocaleLowerCase().startsWith(query)) { activate(index); break; }
+                }
+            }
+        };
+        button.addEventListener('click', openPicker);
+        button.addEventListener('keydown', navigate);
+        popup.addEventListener('keydown', navigate);
+        popup.addEventListener('cancel', event => { event.preventDefault(); closePicker(); });
+        popup.addEventListener('click', event => {
+            const rect = popup.getBoundingClientRect();
+            if (event.target === popup && (event.clientX < rect.left || event.clientX > rect.right ||
+                event.clientY < rect.top || event.clientY > rect.bottom)) closePicker();
+        });
+        modalContainer.appendChild(popup);
+        setValue(value);
+        return { element: button, setValue, destroy() { closePicker(false); popup.remove(); } };
+    };
+    createChooser.nextId = 0;
     modalContainer.addEventListener("click", e => {
         if (e.target == modalContainer) {
-            modalContainer.remove();
+            teardown();
         }
     });
     document.body.appendChild(modalContainer);
@@ -463,6 +644,11 @@ async function showSettingsModal() {
     modalContainer2.appendChild(modalContents);
 
     const settingUpdateHandlers = {};
+    const settingValueUpdaters = {};
+    const sectionDescriptors = {};
+    const registerValueUpdater = (section, key, updater) => {
+        settingValueUpdaters[section][key] = updater;
+    };
     for (const sectionOrder of jmpInfo.sections.sort((a, b) => a.order - b.order)) {
         const section = sectionOrder.key;
         const group = document.createElement("fieldset");
@@ -470,14 +656,20 @@ async function showSettingsModal() {
         group.style.border = 0;
         group.style.outline = 0;
         modalContents.appendChild(group);
+        let sectionCleanup = [];
+        addCleanup(() => { for (const callback of sectionCleanup) callback(); sectionCleanup = []; });
 
         const createSection = async (clear) => {
             if (clear) {
+                for (const callback of sectionCleanup) callback();
+                sectionCleanup = [];
                 group.innerHTML = "";
             }
 
+            settingValueUpdaters[section] = {};
             const values = jmpInfo.settings[section];
             const settings = jmpInfo.settingsDescriptions[section];
+            sectionDescriptors[section] = JSON.stringify(settings);
 
             const legend = document.createElement("legend");
             const legendHeader = document.createElement("h2");
@@ -512,14 +704,7 @@ async function showSettingsModal() {
                 }
 
                 if (setting.options) {
-                    const safeValues = {};
-                    const control = document.createElement("select");
-                    control.className = "emby-select-withcolor emby-select";
-                    for (const option of setting.options) {
-                        safeValues[String(option.value)] = option.value;
-                        const opt = document.createElement("option");
-                        opt.value = option.value;
-                        opt.selected = option.value == values[setting.key];
+                    const options = setting.options.map(option => {
                         let optionName = option.title;
                         const swTest = `${section}.${setting.key}.`;
                         const swTest2 = `${section}.`;
@@ -528,12 +713,15 @@ async function showSettingsModal() {
                         } else if (optionName.startsWith(swTest2)) {
                             optionName = optionName.substring(swTest2.length);
                         }
-                        opt.appendChild(document.createTextNode(optionName));
-                        control.appendChild(opt);
-                    }
-                    control.addEventListener("change", async (e) => {
-                        jmpInfo.settings[section][setting.key] = safeValues[e.target.value];
+                        return { value: option.value, title: optionName };
                     });
+                    const chooser = createChooser(options, values[setting.key],
+                        setting.displayName || setting.key,
+                        value => { jmpInfo.settings[section][setting.key] = value; });
+                    const control = chooser.element;
+                    control.dataset.settingKey = setting.key;
+                    registerValueUpdater(section, setting.key, chooser.setValue);
+                    sectionCleanup.push(chooser.destroy);
                     const labelText = document.createElement('label');
                     labelText.className = "inputLabel";
                     labelText.textContent = (setting.displayName ? setting.displayName : setting.key) + ": ";
@@ -544,6 +732,8 @@ async function showSettingsModal() {
                     const control = document.createElement("input");
                     control.type = "text";
                     control.className = "emby-input";
+                    control.dataset.settingKey = setting.key;
+                    registerValueUpdater(section, setting.key, value => { if (control.value !== String(value)) control.value = value; });
                     control.value = values[setting.key];
                     control.addEventListener("change", e => {
                         jmpInfo.settings[section][setting.key] = e.target.value.trim();
@@ -560,6 +750,8 @@ async function showSettingsModal() {
                     control.style = "resize: none;"
                     control.value = values[setting.key];
                     control.rows = 5;
+                    control.dataset.settingKey = setting.key;
+                    registerValueUpdater(section, setting.key, value => { if (control.value !== String(value)) control.value = value; });
                     control.addEventListener("change", e =>
                     {
                         jmpInfo.settings[section][setting.key] = e.target.value;
@@ -573,6 +765,8 @@ async function showSettingsModal() {
                 } else {
                     const control = document.createElement("input");
                     control.type = "checkbox";
+                    control.dataset.settingKey = setting.key;
+                    registerValueUpdater(section, setting.key, value => { control.checked = value; });
                     control.checked = values[setting.key];
                     control.addEventListener("change", e => {
                         jmpInfo.settings[section][setting.key] = e.target.checked;
@@ -585,7 +779,21 @@ async function showSettingsModal() {
                 group.appendChild(label);
             }
         };
-        settingUpdateHandlers[section] = () => createSection(true);
+        settingUpdateHandlers[section] = () => {
+            if (sectionDescriptors[section] === JSON.stringify(jmpInfo.settingsDescriptions[section])) return;
+            const focused = group.contains(document.activeElement) ? document.activeElement
+                : group.querySelector('[role="combobox"][aria-expanded="true"]');
+            const key = focused?.dataset.settingKey;
+            const selection = focused && typeof focused.selectionStart === 'number'
+                ? [focused.selectionStart, focused.selectionEnd] : null;
+            createSection(true);
+            if (key) {
+                const replacement = [...group.querySelectorAll('[data-setting-key]')]
+                    .find(control => control.dataset.settingKey === key);
+                replacement?.focus({ preventScroll: true });
+                if (selection && replacement?.setSelectionRange) replacement.setSelectionRange(...selection);
+            }
+        };
         createSection();
     }
 
@@ -595,7 +803,19 @@ async function showSettingsModal() {
         }
     };
     jmpInfo.settingsDescriptionsUpdate.push(onSectionUpdate);
-    jmpInfo.settingsUpdate.push(onSectionUpdate);
+    const onValueUpdate = (section, data) => {
+        for (const [key, value] of Object.entries(data || {})) {
+            settingValueUpdaters[section]?.[key]?.(value);
+        }
+    };
+    jmpInfo.settingsUpdate.push(onValueUpdate);
+    addCleanup(() => {
+        for (const [handlers, callback] of [[jmpInfo.settingsDescriptionsUpdate, onSectionUpdate],
+            [jmpInfo.settingsUpdate, onValueUpdate]]) {
+            const index = handlers.indexOf(callback);
+            if (index !== -1) handlers.splice(index, 1);
+        }
+    });
 
     if (window.api.diagnostics) {
         const diagnostics = window.api.diagnostics;
@@ -641,14 +861,10 @@ async function showSettingsModal() {
             'и откройте http://127.0.0.1:9222. При обычном запуске порт выключен.';
         group.appendChild(devTools);
         modalContents.appendChild(group);
-        const removal = new MutationObserver(() => {
-            if (!modalContainer.isConnected) {
-                diagnostics.captureChanged.disconnect(update);
-                diagnostics.reportSaved.disconnect(saved);
-                removal.disconnect();
-            }
+        addCleanup(() => {
+            diagnostics.captureChanged.disconnect(update);
+            diagnostics.reportSaved.disconnect(saved);
         });
-        removal.observe(document.body, { childList: true });
     }
 
     if (jmpInfo.settings.main.userWebClient) {
@@ -690,8 +906,6 @@ async function showSettingsModal() {
     const close = document.createElement("button");
     close.className = "raised button-cancel block btnCancel formDialogFooterItem emby-button";
     close.textContent = "Close"
-    close.addEventListener("click", () => {
-        modalContainer.remove();
-    });
+    close.addEventListener("click", teardown);
     closeContainer.appendChild(close);
 }
