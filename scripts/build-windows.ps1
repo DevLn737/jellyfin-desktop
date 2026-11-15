@@ -43,7 +43,7 @@ try {
     Invoke-Checked 'python' @('scripts/test-windows-runtime-validation.py')
     & (Join-Path $PSScriptRoot 'test-build-assets.ps1')
     & (Join-Path $PSScriptRoot 'test-diagnostic-symbols-validation.ps1')
-    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-video-ui-background.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js', 'test-find-webclient.js')) {
+    foreach ($test in @('test-external-audio.js', 'test-playback-values.js', 'test-player-cancellation.js', 'test-video-ui-background.js', 'test-updater.js', 'test-diagnostics-plugin.js', 'test-syncplay-native.js', 'test-find-webclient.js')) {
         Invoke-Checked 'node' @("scripts/$test")
     }
     Invoke-Checked 'node' @('scripts/live-playback-probe.mjs', '--self-test')
@@ -60,7 +60,7 @@ try {
         '-DWIX_ACCEPT_EULA=ON', "-DJMP_DIAGNOSTIC=$($Diagnostic.IsPresent)", "-DJMP_PORTABLE_PROFILE=$($IsolatedPortable.IsPresent)")
     Invoke-Checked $cmake $configure
     Invoke-Checked $cmake @('--build', $nativeBuildDirectory, '--parallel', '2')
-    foreach ($test in @('discord', 'diagnostics', 'playback', 'application', 'ui')) {
+    foreach ($test in @('discord', 'diagnostics', 'playback', 'application', 'ui', 'logging')) {
         $testBuild = Join-Path $nativeBuildDirectory "tests/$test"
         Invoke-Checked $cmake @('-S', "tests/$test", '-B', $testBuild, '-G', 'Ninja',
             '-DCMAKE_BUILD_TYPE=RelWithDebInfo', "-DCMAKE_MAKE_PROGRAM=$($state.ninjaExe)", "-DCMAKE_PREFIX_PATH=$($state.qtRoot)")

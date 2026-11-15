@@ -1,0 +1,1554 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "7c52bdc2c2c63c3da250046cf53ea2f4e8a108a5",
+  "sourceBranch": "codex/desktop-fullscreen-syncplay-fixes",
+  "appVersion": "2.0.1-rc.1",
+  "packageVersion": "2.0.8",
+  "publicationStatus": "local-intermediate-beta",
+  "releaseQualified": false,
+  "userAcceptanceCompleted": false,
+  "installerBinding": {
+    "passed": true,
+    "releaseQualified": false,
+    "sourceCommit": "7c52bdc2c2c63c3da250046cf53ea2f4e8a108a5",
+    "installerSha256": "658e3f0ff94a2a47e78751b0dc9835104e3ea547b1249814a35aeb9accd87532",
+    "msiSha256": "9c61489d9607ae29e29fac456038c5dc7f8cb37558b2a84b2bf3eac060936e73",
+    "payloads": {
+      "JellyfinMediaPlayer.exe": "0a889b50d623f8925a8d628ee0bb765885fef0cdee5acf772a611ba7f3bf7b97",
+      "build-manifest.json": "5d982741c1d73036f9e0703cf83185b57ba72952d05d763525c518929997456c",
+      "mpvVideoPlayer.js": "d946042c95f025d3f72a9632049dfa10570357ec734bd5a89edb3a19301b45a8",
+      "nativeshell.js": "b4ef7eb88e85cf4a376d333fe60f1a9676a6c9e8c40420ab19814544a157b8b9"
+    },
+    "steps": [
+      {
+        "exitCode": 0,
+        "log": "build\\beta-package-binding-7c52bdc\\burn.log",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "exitCode": 0,
+        "log": "build\\beta-package-binding-7c52bdc\\msi.log",
+        "logSha256": "1847025f2a0b321a9412e494c95bc396343978b25776775860ad52bd145326dc"
+      }
+    ],
+    "normalBuild": {
+      "pipelineReachedFinalSuccessMarker": true,
+      "invokerExitCode": 0
+    }
+  },
+  "normalBuildExitCode": 0,
+  "diagnosticBuildExitCode": 0,
+  "diagnosticSymbolsMatch": true,
+  "nativeShellStrictCspPassed": true,
+  "normalDevToolsListenerCount": 0,
+  "diagnosticTracyLocalhostOnly": true,
+  "continuousIntegration": {
+    "runId": 38381331638,
+    "url": "https://github.com/DevLn737/jellyfin-desktop/actions/runs/38381331638",
+    "headSha": "7c52bdc2c2c63c3da250046cf53ea2f4e8a108a5",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "windows (diagnostic)",
+        "conclusion": "success"
+      },
+      {
+        "name": "qualification",
+        "conclusion": "success"
+      },
+      {
+        "name": "windows (release)",
+        "conclusion": "success"
+      },
+      {
+        "name": "publish",
+        "conclusion": "skipped"
+      }
+    ]
+  },
+  "fullscreenAndInitialDialogs": {
+    "schemaVersion": 1,
+    "sourceCommit": "459a25b6abedb4dde1bc7ed12d503fc27cb3bfda",
+    "appVersion": "2.0.1-rc.1",
+    "scope": "Windows fullscreen and software WebEngine dialog regression checks",
+    "releaseQualified": false,
+    "userAcceptanceCompleted": false,
+    "userMedia": false,
+    "networkWritesBlocked": true,
+    "fullscreen": [
+      {
+        "restoreMode": "maximized",
+        "ownerReportSha256": "5236557ee4cab042ffa67c5e60bff3f47b82061869d588bad55ce52c3c443dd9",
+        "driverReportSha256": "8604e9d4c98c004d351dd3850d1bcb9fee72432b40bb783b4d4d57aaf964dc9d",
+        "ownerScriptSha256": "29711dbf5ed7900c92f906947966bf2ba8a4039ff6d62e352c3adaf4f0b58fc2",
+        "driverScriptSha256": "e3954caecdc4ba72ca84b414908bb79d338926c7e283a9ac987c71fd361e2ee9",
+        "exeSha256": "29a49cbd91df008740c81398aecb5a014056de4945716e31018d53d900d28f5a",
+        "transitions": [
+          {
+            "kind": "native",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "native",
+            "enable": false,
+            "geometry": {
+              "width": 2048,
+              "height": 1082,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "native",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "native",
+            "enable": false,
+            "geometry": {
+              "width": 2048,
+              "height": 1082,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": false,
+            "geometry": {
+              "width": 2048,
+              "height": 1082,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": false,
+            "geometry": {
+              "width": 2048,
+              "height": 1082,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          }
+        ],
+        "close": {
+          "elapsedMs": 307.0598,
+          "duringActiveVideo": true,
+          "requested": true,
+          "graceful": true
+        },
+        "orphanedOwnedChildrenBeforeCleanup": 0,
+        "originalProfileUnchanged": true,
+        "peakParentPrivateBytes": 724422656.0,
+        "peakChildrenPrivateBytes": 148930560.0
+      },
+      {
+        "restoreMode": "normal",
+        "ownerReportSha256": "e944dd66619f5c47c03c78bf2c5ece48c71ce5d73a0755e91fc9286a02834f40",
+        "driverReportSha256": "8b04683e3314f7bcb7f4234c24f7c92e4a446d87aa5c48bfa37c72c96b3e8f00",
+        "ownerScriptSha256": "b700c980fe245337d27fe43e23f9592809f43822f576d8151a4deab8fbe0168a",
+        "driverScriptSha256": "6a9dd912f842018b94d4cae7b79036a8aa36eb12f63502cfe58c5d1a85b34762",
+        "exeSha256": "29a49cbd91df008740c81398aecb5a014056de4945716e31018d53d900d28f5a",
+        "transitions": [
+          {
+            "kind": "native",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "native",
+            "enable": false,
+            "geometry": {
+              "width": 640,
+              "height": 480,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "native",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "native",
+            "enable": false,
+            "geometry": {
+              "width": 640,
+              "height": 480,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": false,
+            "geometry": {
+              "width": 640,
+              "height": 480,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": true,
+            "geometry": {
+              "width": 2048,
+              "height": 1152,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          },
+          {
+            "kind": "html",
+            "enable": false,
+            "geometry": {
+              "width": 640,
+              "height": 480,
+              "dpr": 1.25
+            },
+            "videoPixelsPassed": true
+          }
+        ],
+        "close": {
+          "duringActiveVideo": true,
+          "requested": true,
+          "elapsedMs": 970.4178,
+          "graceful": true
+        },
+        "orphanedOwnedChildrenBeforeCleanup": 0,
+        "originalProfileUnchanged": true,
+        "peakParentPrivateBytes": 622739456.0,
+        "peakChildrenPrivateBytes": 147283968.0
+      }
+    ],
+    "softwareDialogs": {
+      "scope": "Historical comparison before large-form transition correction; final production results are separate.",
+      "ownerReportSha256": "5682a319a303880d9b12a27cd8a77985e1f61fcdcf049633e9c7e6e5adb04223",
+      "driverReportSha256": "d6acf15c65a099191f3569324a68f2154d41cf0d0c7ac5203a1b9c70ff718cac",
+      "ownerScriptSha256": "90f8617fdf36f6863688e8dcd947f47d8d755cbb3d20c9df5617dd5ab55555b5",
+      "driverScriptSha256": "7e93513dd053aa95039e4bdde3926769e9d72ea2a9cb1b679dd2bbe22f4af9a0",
+      "exeSha256": "29a49cbd91df008740c81398aecb5a014056de4945716e31018d53d900d28f5a",
+      "routes": [
+        {
+          "mode": "production-cold",
+          "kind": "syncplay-group",
+          "firstVisibleMs": 10.5,
+          "frames": {
+            "count": 95,
+            "p95": 16.799999999999727,
+            "max": 33.29999999999973
+          },
+          "early": {
+            "count": 38,
+            "p95": 16.799999999999727,
+            "max": 33.29999999999973
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 76.19999992847443
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 140,
+              "atMs": 199.39999997615814
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            297.5625,
+            206.41250610351562
+          ]
+        },
+        {
+          "mode": "production-cold",
+          "kind": "syncplay-settings",
+          "firstVisibleMs": 250.30000007152557,
+          "frames": {
+            "count": 79,
+            "p95": 33.400000000000546,
+            "max": 66.69999999999982
+          },
+          "early": {
+            "count": 22,
+            "p95": 50,
+            "max": 66.69999999999982
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 331.2000000476837
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 180,
+              "atMs": 532.3000000715256
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            1222.550048828125,
+            865.2750244140625
+          ]
+        },
+        {
+          "mode": "production-cold",
+          "kind": "card-context",
+          "firstVisibleMs": 74.5,
+          "frames": {
+            "count": 94,
+            "p95": 16.80000000000109,
+            "max": 33.399999999999636
+          },
+          "early": {
+            "count": 37,
+            "p95": 33.20000000000073,
+            "max": 33.399999999999636
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 116.10000002384186
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 140,
+              "atMs": 252.60000002384186
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            274.1750183105469,
+            309.875
+          ]
+        },
+        {
+          "mode": "production-cold",
+          "kind": "media-info",
+          "firstVisibleMs": 274.89999997615814,
+          "frames": {
+            "count": 86,
+            "p95": 33.29999999999927,
+            "max": 50.099999999998545
+          },
+          "early": {
+            "count": 31,
+            "p95": 50,
+            "max": 50.099999999998545
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 335
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 180,
+              "atMs": 518.1999999284744
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            1222.550048828125,
+            865.2750244140625
+          ]
+        },
+        {
+          "mode": "production-warm",
+          "kind": "syncplay-group",
+          "firstVisibleMs": 6,
+          "frames": {
+            "count": 95,
+            "p95": 16.700000000000728,
+            "max": 33.29999999999927
+          },
+          "early": {
+            "count": 38,
+            "p95": 16.799999999999272,
+            "max": 33.29999999999927
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 68.10000002384186
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 140,
+              "atMs": 200.79999995231628
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            297.5625,
+            206.41250610351562
+          ]
+        },
+        {
+          "mode": "production-warm",
+          "kind": "syncplay-settings",
+          "firstVisibleMs": 194.60000002384186,
+          "frames": {
+            "count": 83,
+            "p95": 33.399999999999636,
+            "max": 83.29999999999927
+          },
+          "early": {
+            "count": 26,
+            "p95": 66.70000000000073,
+            "max": 83.29999999999927
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 258.1999999284744
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 180,
+              "atMs": 462.2999999523163
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            1222.550048828125,
+            865.2750244140625
+          ]
+        },
+        {
+          "mode": "production-warm",
+          "kind": "card-context",
+          "firstVisibleMs": 62.799999952316284,
+          "frames": {
+            "count": 95,
+            "p95": 16.799999999999272,
+            "max": 16.799999999999272
+          },
+          "early": {
+            "count": 39,
+            "p95": 16.799999999999272,
+            "max": 16.799999999999272
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 106.89999997615814
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 140,
+              "atMs": 231
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            274.1750183105469,
+            309.875
+          ]
+        },
+        {
+          "mode": "production-warm",
+          "kind": "media-info",
+          "firstVisibleMs": 209.79999995231628,
+          "frames": {
+            "count": 88,
+            "p95": 33.29999999999927,
+            "max": 49.900000000001455
+          },
+          "early": {
+            "count": 31,
+            "p95": 33.39999999999782,
+            "max": 49.900000000001455
+          },
+          "longTasks": {
+            "count": 0,
+            "p95": 0,
+            "max": 0
+          },
+          "events": [
+            {
+              "type": "animationstart",
+              "elapsedMs": 0,
+              "atMs": 277.2000000476837
+            },
+            {
+              "type": "animationend",
+              "elapsedMs": 180,
+              "atMs": 478
+            }
+          ],
+          "backdropOpacity": 0,
+          "rect": [
+            1222.550048828125,
+            865.2750244140625
+          ]
+        }
+      ],
+      "playbackMenus": [
+        {
+          "mode": "production",
+          "kind": "settings",
+          "frames": {
+            "count": 96,
+            "p95": 16.799999999999272,
+            "max": 16.799999999999272
+          },
+          "early": {
+            "count": 39,
+            "p95": 16.799999999999272,
+            "max": 16.799999999999272
+          },
+          "animationEvents": [
+            {
+              "type": "animationstart",
+              "atMs": 58.59999990463257,
+              "elapsedMs": 0
+            },
+            {
+              "type": "animationend",
+              "atMs": 184.09999990463257,
+              "elapsedMs": 140
+            }
+          ],
+          "close": {
+            "removedMs": 107.20000004768372,
+            "events": [
+              {
+                "type": "animationend",
+                "atMs": 106.20000004768372,
+                "elapsedMs": 100
+              }
+            ],
+            "frameCount": 33,
+            "maxInterval": 16.80000000000291,
+            "remainingDialogs": 0,
+            "remainingBackdrops": 0
+          }
+        },
+        {
+          "mode": "production",
+          "kind": "subtitles",
+          "frames": {
+            "count": 95,
+            "p95": 16.799999999999272,
+            "max": 16.799999999999272
+          },
+          "early": {
+            "count": 38,
+            "p95": 16.700000000000728,
+            "max": 16.799999999999272
+          },
+          "animationEvents": [
+            {
+              "type": "animationstart",
+              "atMs": 56.200000047683716,
+              "elapsedMs": 0
+            },
+            {
+              "type": "animationend",
+              "atMs": 185.39999997615814,
+              "elapsedMs": 140
+            }
+          ],
+          "close": {
+            "removedMs": 130.60000002384186,
+            "events": [
+              {
+                "type": "animationend",
+                "atMs": 129.69999992847443,
+                "elapsedMs": 100
+              }
+            ],
+            "frameCount": 32,
+            "maxInterval": 16.799999999999272,
+            "remainingDialogs": 0,
+            "remainingBackdrops": 0
+          }
+        },
+        {
+          "mode": "production-repeat",
+          "kind": "settings",
+          "frames": {
+            "count": 96,
+            "p95": 16.700000000000728,
+            "max": 16.80000000000291
+          },
+          "early": {
+            "count": 39,
+            "p95": 16.80000000000291,
+            "max": 16.80000000000291
+          },
+          "animationEvents": [
+            {
+              "type": "animationstart",
+              "atMs": 45.60000002384186,
+              "elapsedMs": 0
+            },
+            {
+              "type": "animationend",
+              "atMs": 169.89999997615814,
+              "elapsedMs": 140
+            }
+          ],
+          "close": {
+            "removedMs": 116,
+            "events": [
+              {
+                "type": "animationend",
+                "atMs": 115.19999992847443,
+                "elapsedMs": 100
+              }
+            ],
+            "frameCount": 32,
+            "maxInterval": 16.799999999999272,
+            "remainingDialogs": 0,
+            "remainingBackdrops": 0
+          }
+        },
+        {
+          "mode": "production-repeat",
+          "kind": "subtitles",
+          "frames": {
+            "count": 95,
+            "p95": 16.799999999999272,
+            "max": 16.799999999999272
+          },
+          "early": {
+            "count": 38,
+            "p95": 16.700000000000728,
+            "max": 16.799999999999272
+          },
+          "animationEvents": [
+            {
+              "type": "animationstart",
+              "atMs": 56.5,
+              "elapsedMs": 0
+            },
+            {
+              "type": "animationend",
+              "atMs": 195.40000009536743,
+              "elapsedMs": 140
+            }
+          ],
+          "close": {
+            "removedMs": 118.69999992847443,
+            "events": [
+              {
+                "type": "animationend",
+                "atMs": 117.89999997615814,
+                "elapsedMs": 100
+              }
+            ],
+            "frameCount": 32,
+            "maxInterval": 16.700000000000728,
+            "remainingDialogs": 0,
+            "remainingBackdrops": 0
+          }
+        }
+      ],
+      "close": {
+        "graceful": true,
+        "requested": true,
+        "duringActiveVideo": true,
+        "elapsedMs": 594.8638
+      },
+      "originalProfileUnchanged": true,
+      "orphanedOwnedChildrenBeforeCleanup": 0,
+      "remainingLimitation": "Historical 459a25b measurements; the final candidate replaces the long large-form transition."
+    },
+    "limits": [
+      "Short synthetic-video observation, not hour-long memory qualification",
+      "One Windows desktop at125% scaling; not physical multimonitor acceptance",
+      "SyncPlay dialog UI only, not mixed-client group synchronization",
+      "No real-media hardware decode/passthrough or clean-machine upgrade acceptance"
+    ],
+    "fullscreenSourceUnchangedInFinalCandidate": true
+  },
+  "finalDialogs": {
+    "sourceCommit": "7c52bdc2c2c63c3da250046cf53ea2f4e8a108a5",
+    "ownerReportSha256": "f25fbe5177612ce442d3d728a435108e61317766893232380611094a65066a9c",
+    "driverReportSha256": "737c734ca9dca90983a6e164cf085ccd50d4d6ba668bddb1008113a7e5ff87cd",
+    "ownerScriptSha256": "90f8617fdf36f6863688e8dcd947f47d8d755cbb3d20c9df5617dd5ab55555b5",
+    "driverScriptSha256": "3f981509c76f4683d4668ceb21355c59aafe065825f8a474c29f9261e24c74d6",
+    "exeSha256": "0a889b50d623f8925a8d628ee0bb765885fef0cdee5acf772a611ba7f3bf7b97",
+    "routes": [
+      {
+        "mode": "production-cold",
+        "kind": "syncplay-group",
+        "firstVisibleMs": 13.199999928474426,
+        "firstInteractiveMs": null,
+        "frames": {
+          "count": 93,
+          "p95": 16.800000000000182,
+          "max": 49.90000000000009
+        },
+        "early": {
+          "count": 35,
+          "p95": 33.399999999999636,
+          "max": 49.90000000000009
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 83.29999995231628
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 140,
+            "atMs": 217.79999995231628
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          0.189535,
+          0.361058,
+          0.518957,
+          0.658656,
+          0.780866,
+          0.881539,
+          0.955482,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 140,
+        "animationDelayMs": 0,
+        "rect": [
+          297.5625,
+          206.41250610351562
+        ],
+        "documentTransparent": false
+      },
+      {
+        "mode": "production-cold",
+        "kind": "syncplay-settings",
+        "firstVisibleMs": 251.29999995231628,
+        "firstInteractiveMs": 253.79999995231628,
+        "frames": {
+          "count": 81,
+          "p95": 49.899999999999636,
+          "max": 66.69999999999982
+        },
+        "early": {
+          "count": 24,
+          "p95": 50.099999999999454,
+          "max": 66.69999999999982
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 316
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 1,
+            "atMs": 316.09999990463257
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 1,
+        "animationDelayMs": 0,
+        "rect": [
+          1222.550048828125,
+          865.2750244140625
+        ],
+        "documentTransparent": false,
+        "close": {
+          "elapsedMs": 428.60000002384186,
+          "events": [
+            {
+              "type": "animationend",
+              "elapsedMs": 1
+            }
+          ],
+          "dialogs": 0,
+          "backdrops": 0
+        }
+      },
+      {
+        "mode": "production-cold",
+        "kind": "card-context",
+        "firstVisibleMs": 62.299999952316284,
+        "firstInteractiveMs": null,
+        "frames": {
+          "count": 94,
+          "p95": 16.800000000000182,
+          "max": 49.900000000000546
+        },
+        "early": {
+          "count": 37,
+          "p95": 16.800000000000182,
+          "max": 49.900000000000546
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 117.10000002384186
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 140,
+            "atMs": 228.10000002384186
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          0.361532,
+          0.518493,
+          0.658246,
+          0.780517,
+          0.880733,
+          0.955651,
+          0.995902,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 140,
+        "animationDelayMs": 0,
+        "rect": [
+          274.1750183105469,
+          309.875
+        ],
+        "documentTransparent": false
+      },
+      {
+        "mode": "production-cold",
+        "kind": "media-info",
+        "firstVisibleMs": 270.2999999523163,
+        "firstInteractiveMs": 270.89999997615814,
+        "frames": {
+          "count": 88,
+          "p95": 33.30000000000109,
+          "max": 50.100000000000364
+        },
+        "early": {
+          "count": 31,
+          "p95": 33.400000000001455,
+          "max": 50.100000000000364
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 324.7000000476837
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 1,
+            "atMs": 324.89999997615814
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 1,
+        "animationDelayMs": 0,
+        "rect": [
+          1222.550048828125,
+          865.2750244140625
+        ],
+        "documentTransparent": false,
+        "close": {
+          "elapsedMs": 434.2999999523163,
+          "events": [
+            {
+              "type": "animationend",
+              "elapsedMs": 1
+            }
+          ],
+          "dialogs": 0,
+          "backdrops": 0
+        }
+      },
+      {
+        "mode": "production-warm",
+        "kind": "syncplay-group",
+        "firstVisibleMs": 5.299999952316284,
+        "firstInteractiveMs": null,
+        "frames": {
+          "count": 94,
+          "p95": 16.700000000000728,
+          "max": 50
+        },
+        "early": {
+          "count": 37,
+          "p95": 16.799999999999272,
+          "max": 50
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 61.799999952316284
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 140,
+            "atMs": 202.79999995231628
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          0.189687,
+          0.361196,
+          0.51819,
+          0.658767,
+          0.78096,
+          0.881083,
+          0.955177,
+          0.995862,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 140,
+        "animationDelayMs": 0,
+        "rect": [
+          297.5625,
+          206.41250610351562
+        ],
+        "documentTransparent": false
+      },
+      {
+        "mode": "production-warm",
+        "kind": "syncplay-settings",
+        "firstVisibleMs": 165.60000002384186,
+        "firstInteractiveMs": 166.10000002384186,
+        "frames": {
+          "count": 88,
+          "p95": 33.29999999999927,
+          "max": 50.100000000000364
+        },
+        "early": {
+          "count": 31,
+          "p95": 49.899999999999636,
+          "max": 50.100000000000364
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 247.10000002384186
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 1,
+            "atMs": 247.19999992847443
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 1,
+        "animationDelayMs": 0,
+        "rect": [
+          1222.550048828125,
+          865.2750244140625
+        ],
+        "documentTransparent": false,
+        "close": {
+          "elapsedMs": 434.5,
+          "events": [
+            {
+              "type": "animationend",
+              "elapsedMs": 1
+            }
+          ],
+          "dialogs": 0,
+          "backdrops": 0
+        }
+      },
+      {
+        "mode": "production-warm",
+        "kind": "card-context",
+        "firstVisibleMs": 64,
+        "firstInteractiveMs": null,
+        "frames": {
+          "count": 95,
+          "p95": 16.799999999999272,
+          "max": 33.19999999999891
+        },
+        "early": {
+          "count": 38,
+          "p95": 16.80000000000109,
+          "max": 33.19999999999891
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 97.30000007152557
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 140,
+            "atMs": 230.30000007152557
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          0,
+          0.189492,
+          0.361019,
+          0.518922,
+          0.658625,
+          0.780839,
+          0.880988,
+          0.955821,
+          0.995959,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 140,
+        "animationDelayMs": 0,
+        "rect": [
+          274.1750183105469,
+          309.875
+        ],
+        "documentTransparent": false
+      },
+      {
+        "mode": "production-warm",
+        "kind": "media-info",
+        "firstVisibleMs": 207.29999995231628,
+        "firstInteractiveMs": 207.59999990463257,
+        "frames": {
+          "count": 92,
+          "p95": 16.799999999999272,
+          "max": 33.39999999999782
+        },
+        "early": {
+          "count": 35,
+          "p95": 33.29999999999927,
+          "max": 33.39999999999782
+        },
+        "longTasks": {
+          "count": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "events": [
+          {
+            "type": "animationstart",
+            "elapsedMs": 0,
+            "atMs": 262.6999999284744
+          },
+          {
+            "type": "animationend",
+            "elapsedMs": 1,
+            "atMs": 262.7999999523163
+          }
+        ],
+        "opacitySamples": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "backdropOpacity": 0,
+        "animationDurationMs": 1,
+        "animationDelayMs": 0,
+        "rect": [
+          1222.550048828125,
+          865.2750244140625
+        ],
+        "documentTransparent": false,
+        "close": {
+          "elapsedMs": 430.89999997615814,
+          "events": [
+            {
+              "type": "animationend",
+              "elapsedMs": 1
+            }
+          ],
+          "dialogs": 0,
+          "backdrops": 0
+        }
+      }
+    ],
+    "playbackMenus": [
+      {
+        "mode": "production",
+        "kind": "settings",
+        "frames": {
+          "count": 96,
+          "p95": 16.799999999999272,
+          "max": 16.80000000000291
+        },
+        "early": {
+          "count": 39,
+          "p95": 16.700000000000728,
+          "max": 16.799999999999272
+        },
+        "animationEvents": [
+          {
+            "type": "animationstart",
+            "atMs": 59.39999997615814,
+            "elapsedMs": 0
+          },
+          {
+            "type": "animationend",
+            "atMs": 184.89999997615814,
+            "elapsedMs": 140
+          }
+        ],
+        "close": {
+          "removedMs": 121.69999992847443,
+          "events": [
+            {
+              "type": "animationend",
+              "atMs": 120.89999997615814,
+              "elapsedMs": 100
+            }
+          ],
+          "frameCount": 32,
+          "maxInterval": 16.799999999999272,
+          "remainingDialogs": 0,
+          "remainingBackdrops": 0
+        }
+      },
+      {
+        "mode": "production",
+        "kind": "subtitles",
+        "frames": {
+          "count": 95,
+          "p95": 16.799999999999272,
+          "max": 16.799999999999272
+        },
+        "early": {
+          "count": 39,
+          "p95": 16.799999999999272,
+          "max": 16.799999999999272
+        },
+        "animationEvents": [
+          {
+            "type": "animationstart",
+            "atMs": 74.20000004768372,
+            "elapsedMs": 0
+          },
+          {
+            "type": "animationend",
+            "atMs": 213.10000002384186,
+            "elapsedMs": 140
+          }
+        ],
+        "close": {
+          "removedMs": 114.20000004768372,
+          "events": [
+            {
+              "type": "animationend",
+              "atMs": 113.29999995231628,
+              "elapsedMs": 100
+            }
+          ],
+          "frameCount": 32,
+          "maxInterval": 16.799999999999272,
+          "remainingDialogs": 0,
+          "remainingBackdrops": 0
+        }
+      },
+      {
+        "mode": "production-repeat",
+        "kind": "settings",
+        "frames": {
+          "count": 96,
+          "p95": 16.799999999999272,
+          "max": 16.80000000000291
+        },
+        "early": {
+          "count": 39,
+          "p95": 16.80000000000291,
+          "max": 16.80000000000291
+        },
+        "animationEvents": [
+          {
+            "type": "animationstart",
+            "atMs": 42.60000002384186,
+            "elapsedMs": 0
+          },
+          {
+            "type": "animationend",
+            "atMs": 183.10000002384186,
+            "elapsedMs": 140
+          }
+        ],
+        "close": {
+          "removedMs": 100.30000007152557,
+          "events": [
+            {
+              "type": "animationend",
+              "atMs": 99.5,
+              "elapsedMs": 100
+            }
+          ],
+          "frameCount": 33,
+          "maxInterval": 16.799999999999272,
+          "remainingDialogs": 0,
+          "remainingBackdrops": 0
+        }
+      },
+      {
+        "mode": "production-repeat",
+        "kind": "subtitles",
+        "frames": {
+          "count": 95,
+          "p95": 16.799999999999272,
+          "max": 16.80000000000291
+        },
+        "early": {
+          "count": 38,
+          "p95": 16.799999999999272,
+          "max": 16.799999999999272
+        },
+        "animationEvents": [
+          {
+            "type": "animationstart",
+            "atMs": 72,
+            "elapsedMs": 0
+          },
+          {
+            "type": "animationend",
+            "atMs": 197.59999990463257,
+            "elapsedMs": 140
+          }
+        ],
+        "close": {
+          "removedMs": 101.5,
+          "events": [
+            {
+              "type": "animationend",
+              "atMs": 100.89999997615814,
+              "elapsedMs": 100
+            }
+          ],
+          "frameCount": 33,
+          "maxInterval": 16.80000000000291,
+          "remainingDialogs": 0,
+          "remainingBackdrops": 0
+        }
+      }
+    ],
+    "close": {
+      "graceful": true,
+      "elapsedMs": 437.5371,
+      "requested": true,
+      "duringActiveVideo": true
+    },
+    "originalProfileUnchanged": true,
+    "orphanedOwnedChildrenBeforeCleanup": 0
+  },
+  "initialNormalBuildAttempt": {
+    "result": "First fresh fullscreen test process exceeded five-second CTest timeout; targeted retry and complete pipeline rerun passed. Cause of the initial startup timeout not established.",
+    "logSha256": "631de370f3c2e66233377ffce703a808950e24918d79466342bcc7485e4a2a10"
+  },
+  "oneHourMemoryQualification": false,
+  "multiClientSyncPlayQualification": false,
+  "diagnosticsOverheadQualification": false,
+  "cleanWindowsInstallationQualification": false,
+  "assets": {
+    "JellyfinMediaPlayer-2.0.1-rc.1-windows-x64.exe": "658e3f0ff94a2a47e78751b0dc9835104e3ea547b1249814a35aeb9accd87532",
+    "JellyfinMediaPlayer-2.0.1-rc.1-windows-x64-portable.zip": "3755b0cd94ee2bb70dbb17c39c80bddf4eee0bb2443628bdf010f750c1406dd0",
+    "JellyfinMediaPlayer-2.0.1-rc.1-windows-x64-diagnostic-tracy-portable.zip": "daee029952910caff59a8ba0ae2d4622f27be3f02c3dd139269c87007b09ed18",
+    "JellyfinMediaPlayer-2.0.1-rc.1-windows-x64-diagnostic-symbols.zip": "b9090e9e890edc967f7be629ee024087818836fb9eafc86bf07387115f2d0b39"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-20",
+  "requestedBy": "user",
+  "request": "Claude начал собирать совершенно новый клиент. Доведи текущий до релиза, он пока что будет считаться основным, но разработка дальнейшая прекращается.",
+  "appVersion": "2.0.1",
+  "packageVersion": "2.0.10",
+  "decision": "Prepare and review the final release, fix confirmed defects and complete validation before publication; end further development after release.",
+  "publicationAuthorized": true,
+  "newUserTestSessionReported": true,
+  "technicalQualificationComplete": false,
+  "automaticQualificationRulesChanged": false,
+  "behaviorBaselineCommit": "9530a85a58b5c52783defe94cf65aa69a868a148",
+  "historicalVerification": "quality/observations/desktop-beta-9530a85.json",
+  "outstandingQualification": [
+    "official-qt-patch-release-evidence",
+    "current-source-long-duration-qt-memory",
+    "mixed-native-web-syncplay-drift",
+    "diagnostics-overhead",
+    "clean-windows-installation"
+  ],
+  "developmentStatus": "ends-with-this-release",
+  "replacementClient": "separate-project-not-released-here",
+  "followupRequest": "Разрешаю пофиксить все ошибки и пробежатся по коду. Нужен финальный релиз, но полностью законченный",
+  "publicationStatus": "pending-final-review-and-validation",
+  "qualificationWaiver": false,
+  "userBetaFeedback": {
+    "date": "2026-10-20",
+    "appVersion": "2.0.1-rc.2",
+    "buildCommit": "9530a85a58b5c52783defe94cf65aa69a868a148",
+    "participants": 2,
+    "statement": "Проверили, известных проблем не осталось",
+    "scope": "Reported no remaining known issues; no measured drift or complete acceptance matrix supplied"
+  }
+}

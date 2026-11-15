@@ -3,6 +3,7 @@
 //
 
 #include "Log.h"
+#include "LogRedaction.h"
 #include "profiling/Trace.h"
 
 #include <QtQml>
@@ -49,30 +50,9 @@ static void qtMessageOutput(QtMsgType type, const QMessageLogContext& context, c
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-static void elidePattern(QString& msg, const QString& substring, int chars)
-{
-  int start = 0;
-  while (true)
-  {
-    start = msg.indexOf(substring, start);
-    if (start < 0 || start + substring.length() + chars > msg.length())
-      break;
-    start += substring.length();
-    for (int n = 0; n < chars; n++)
-      msg[start + n] = QChar('x');
-  }
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
 void Log::CensorAuthTokens(QString& msg)
 {
-  elidePattern(msg, "api_key=", 32);
-  elidePattern(msg, "X-MediaBrowser-Token%3D", 32);
-  elidePattern(msg, "X-MediaBrowser-Token=", 32);
-  elidePattern(msg, "api_key=", 32);
-  elidePattern(msg, "ApiKey=", 32);
-  elidePattern(msg, "AccessToken=", 32);
-  elidePattern(msg, "AccessToken\":\"", 32);
+  LogRedaction::censor(msg);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

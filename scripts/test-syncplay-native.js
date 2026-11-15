@@ -43,7 +43,7 @@ function fixture(name, offsetTicks = 0) {
     'error', 'buffering', 'playbackReady', 'seekStarted'].map(key => [key, signal()]));
   Object.assign(native, {
     load(url, options, metadata, audio, subtitle, callback) {
-      loads.push({ url, options, metadata, audio, subtitle }); callback(true);
+      loads.push({ url, options, metadata, audio, subtitle, callback }); callback(true);
     },
     seekToForReady(position, id, callback) { seeks.push({ position, id }); callback(true); },
     pause() { queueMicrotask(() => { nativePaused = true; native.paused.emit(); }); },
@@ -102,7 +102,7 @@ function fixture(name, offsetTicks = 0) {
       native.paused.connect(player.onPause);
       native.positionUpdate.connect(player.onTimeUpdate);
     }
-    return Promise.resolve();
+    return;
   };
   const apiClient = { serverInfo() { return { Id: 'server' }; }, requestSyncPlayReady(data) { readyRequests.push(data); },
     requestSyncPlayBuffering(data) { bufferingRequests.push(data); } };
@@ -153,6 +153,8 @@ async function groupPlayback(name, offsetTicks) {
     assert.equal(load.options.autoplay, false, 'cold native group load is actually paused');
     assert.equal(load.options.startMilliseconds, 30000 - offsetTicks / 10000);
     assert.equal(f.readyRequests.length, 0, 'queue acknowledgement is not native Ready');
+    assert.equal(f.player._lifecycle.webStarted, true, 'public dispatch starts Web before native readiness');
+    assert.equal(f.player._lifecycle.ready, false, 'early Web start cannot prove native readiness');
     f.native.playing.emit(); await flush();
     assert.equal(f.readyRequests.length, 0, 'playing before native restart is not Ready');
     f.finish(load.options.nativeRequestId + 100, load.options.startMilliseconds); await flush();
@@ -217,17 +219,48 @@ async function groupPlayback(name, offsetTicks) {
   } finally { f.close(); }
 }
 
+async function dispatchContract(name) {
+  const f = fixture(name);
+  try {
+    f.native.load = (url, options, metadata, audio, subtitle, callback) => {
+      f.loads.push({ url, options, metadata, audio, subtitle, callback });
+    };
+    let webStream, failures = 0;
+    const start = url => f.player.play({ ...f.streamInfo, url }).then(() => {
+      webStream = url;
+      f.player.events.trigger(f.player, 'playbackstart');
+    }, () => { ++failures; f.player.stop(); });
+    const first = start('first'), firstLoad = f.loads[0];
+    const second = start('second'), secondLoad = f.loads[1];
+    await first; await second;
+    assert.equal(webStream, 'second', 'same-turn Web play callbacks retain the last stream');
+    assert.equal(failures, 0, 'replacement cancellation stays private to native readiness');
+    assert.equal(f.player._lifecycle.ready, false, 'dispatch settles before native command acknowledgement');
+    assert.equal(f.player._lifecycle.webStarted, true);
+    firstLoad.callback(false);
+    f.finish(firstLoad.options.nativeRequestId, 30000, true); await flush();
+    assert.equal(f.player._lifecycle.ready, false, 'late old native acknowledgement/sample cannot ready replacement');
+    assert.equal(failures, 0);
+    secondLoad.callback(true);
+    f.finish(secondLoad.options.nativeRequestId, 30000, true); await flush();
+    assert.equal(f.player._lifecycle.ready, true, 'only the latest actual native sample completes readiness');
+    assert.equal(webStream, 'second');
+  } finally { f.close(); }
+}
+
 async function lifecycleEdges() {
   const f = fixture('mpvAudioPlayer');
   try {
     f.player.setPlaybackRate(1.75); await flush();
     const first = f.player.play(f.streamInfo); await flush();
+    const firstReady = f.player._lifecycle._request.promise;
     const firstId = f.loads.at(-1).options.nativeRequestId;
     const second = f.player.play(f.streamInfo); await flush();
-    await assert.rejects(first, /replaced/);
+    await first; await second;
+    await assert.rejects(firstReady, /replaced/);
     const secondId = f.loads.at(-1).options.nativeRequestId;
     f.finish(firstId, 30000, false); await flush();
-    let resolved = false; second.then(() => { resolved = true; }); await flush();
+    let resolved = false; f.player._lifecycle._request.promise.then(() => { resolved = true; }); await flush();
     assert.equal(resolved, false, 'old file cannot complete newer load');
     f.finish(secondId, 30000, false); await second;
     assert.equal(f.player.getPlaybackRate(), 1.75, 'audio new file preserves personal speed');
@@ -253,10 +286,16 @@ async function lifecycleEdges() {
     const recovered = f.player.play({ ...f.streamInfo, playerStartPositionTicks: 0 }); await flush();
     f.finish(f.loads.at(-1).options.nativeRequestId, 90000, true); await recovered;
     assert.equal(await f.player.currentTimeAsync(), 90000, 'nonzero initial PTS is valid for a zero-start Live TV load');
-    const pending = f.player.play(f.streamInfo); await flush();
+    const pending = f.player.play(f.streamInfo); await pending; await flush();
+    const readiness = f.player.currentTimeAsync();
+    let errorEvents = 0;
+    f.player.events.on(f.player, 'error', () => { ++errorEvents; });
     await f.advance(30000);
-    await assert.rejects(pending, /30 seconds/);
+    await assert.rejects(readiness, /30 seconds/);
     assert.match(f.toasts.at(-1), /30 seconds/);
+    assert.equal(errorEvents, 1, 'current load timeout reaches the active player error path');
+    f.native.error.emit('duplicate load error');
+    assert.equal(errorEvents, 1, 'the same failed load reports one error');
 
     const timestamps = f.context.window._mpvPlaybackLifecycle.preserveTimestamps;
     assert.equal(timestamps({ playMethod: 'DirectPlay' }, 'https://media.invalid/index.m3u8'), false);
@@ -337,6 +376,7 @@ async function latestRateBarrier(name) {
 
 (async () => {
   for (const name of ['mpvVideoPlayer', 'mpvAudioPlayer']) {
+    await dispatchContract(name);
     await groupPlayback(name, 0); // Direct Play/HLS absolute timestamps.
     await groupPlayback(name, 200000000); // Progressive transcode starts at logical 20s, native 0s.
     await latestRateBarrier(name);

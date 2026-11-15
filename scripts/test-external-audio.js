@@ -87,7 +87,7 @@ assert.ok(
   'new external audio must not immediately fall back to embedded aid=1'
 );
 assert.ok(
-  playerComponentSource.includes('QStringList() << "audio-remove" << id'),
+  playerComponentSource.includes('target == MediaType::Audio ? "audio-remove" : "sub-remove"'),
   'stale external audio demuxers must be removed when switching tracks'
 );
 assert.ok(
@@ -95,8 +95,11 @@ assert.ok(
   'external audio selection must follow asynchronous track-list updates'
 );
 assert.ok(
-  playerComponentSource.includes('m_pendingExternalAudioStream == streamName'),
+  playerComponentSource.includes('if (pendingStream == streamName)') &&
+  playerComponentSource.includes('target == MediaType::Audio ? m_pendingExternalAudioStream : m_pendingExternalSubtitleStream'),
   'repeated track-list events must not add duplicate external audio demuxers'
 );
 
+assert.ok(playerComponentSource.includes('m_externalSubtitleRequest.complete(event->reply_userdata)'),
+  'subtitle replies must use an independent pending request identity');
 console.log('external audio, subtitle, and native stream lifecycle tests passed');

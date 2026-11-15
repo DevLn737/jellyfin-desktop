@@ -3,6 +3,7 @@
 
 #include <QQuickWindow>
 #include <QEvent>
+#include <QMargins>
 #include <settings/SettingsComponent.h>
 
 
@@ -49,11 +50,8 @@ public:
 
   bool isAlwaysOnTop()
   {
-    Qt::WindowFlags forceOnTopFlags = Qt::WindowStaysOnTopHint;
-#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
-    forceOnTopFlags = forceOnTopFlags | Qt::X11BypassWindowManagerHint;
-#endif
-    return (flags() & forceOnTopFlags);
+    // Fullscreen temporarily suspends the native flag, not the preference.
+    return SettingsComponent::Get().value(SETTINGS_SECTION_MAIN, "alwaysOnTop").toBool();
   }
 
   void setAlwaysOnTop(bool enable);
@@ -80,11 +78,7 @@ public:
     emit reloadWebClient();
   }
 
-  Q_INVOKABLE Q_SLOT void minimizeWindow()
-  {
-    if (!isFullScreen())
-      setVisibility(QWindow::Minimized);
-  }
+  Q_INVOKABLE Q_SLOT void minimizeWindow();
 
   QSize windowMinSize() { return WINDOWW_MIN_SIZE; }
   QString webUrl();
@@ -118,7 +112,7 @@ private slots:
 
 private:
   void saveGeometry();
-  QRect loadGeometry();
+  QRect loadGeometry(bool restoreVisibility = false);
   QRect loadGeometryRect();
   bool fitsInScreens(const QRect& rc);
   QScreen* loadLastScreen();
@@ -128,6 +122,8 @@ private:
 
   bool m_debugLayer;
   bool m_closing = false;
+  quint64 m_windowStateGeneration = 0;
+  QMargins m_windowedFrameMargins;
   QTimer* m_infoTimer;
   QString m_debugInfo, m_systemDebugInfo, m_videoInfo;
   int m_ignoreFullscreenSettingsChange;

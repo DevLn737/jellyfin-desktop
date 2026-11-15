@@ -1,32 +1,33 @@
-let fadeTimeout;
-function fade(instance, elem, startingVolume) {
-    instance._isFadingOut = true;
-
-    // Need to record the starting volume on each pass rather than querying elem.volume
-    // This is due to iOS safari not allowing volume changes and always returning the system volume value
-    const newVolume = Math.max(0, startingVolume - 15);
-    console.debug('fading volume to ' + newVolume);
-    api.player.setVolume(newVolume);
-
-    if (newVolume <= 0) {
-        instance._isFadingOut = false;
-        return Promise.resolve();
-    }
-
-    return new Promise(function (resolve, reject) {
-        cancelFadeTimeout();
-        fadeTimeout = setTimeout(function () {
-            fade(instance, null, newVolume).then(resolve, reject);
-        }, 100);
-    });
+// A fade belongs to one player and one stop operation. Cancellation settles
+// its Promise so a replaced stop never holds up the playback manager.
+function cancelFade(instance) {
+    if (instance._fadeTimer != null) clearTimeout(instance._fadeTimer);
+    instance._fadeTimer = null;
+    const resolve = instance._fadeResolve;
+    instance._fadeResolve = null;
+    instance._isFadingOut = false;
+    resolve?.(false);
 }
 
-function cancelFadeTimeout() {
-    const timeout = fadeTimeout;
-    if (timeout) {
-        clearTimeout(timeout);
-        fadeTimeout = null;
-    }
+function fade(instance, startingVolume) {
+    cancelFade(instance);
+    instance._isFadingOut = true;
+    return new Promise(resolve => {
+        instance._fadeResolve = resolve;
+        const step = volume => {
+            const nextVolume = Math.max(0, volume - 15);
+            window.api.player.setVolume(nextVolume);
+            if (nextVolume <= 0) {
+                instance._fadeTimer = null;
+                instance._fadeResolve = null;
+                instance._isFadingOut = false;
+                resolve(true);
+            } else {
+                instance._fadeTimer = setTimeout(() => step(nextVolume), 100);
+            }
+        };
+        step(startingVolume);
+    });
 }
 
 class mpvAudioPlayer {
@@ -54,6 +55,8 @@ class mpvAudioPlayer {
         self._hasConnection = false;
 
         self.play = (options) => {
+            cancelFade(self);
+            self._stopGeneration = (self._stopGeneration || 0) + 1;
             self._started = false;
             self._timeUpdated = false;
             self._currentTime = null;
@@ -77,7 +80,7 @@ class mpvAudioPlayer {
             {
                 const val = options.url;
                 self._currentSrc = val;
-                console.debug('playing url: ' + val);
+                console.debug('Starting native audio playback');
 
                 self._currentPlayOptions = { ...options };
 
@@ -89,34 +92,38 @@ class mpvAudioPlayer {
         }
 
         self.onEndedInternal = () => {
+            cancelFade(self);
+            const generation = self._stopGeneration = (self._stopGeneration || 0) + 1;
             self._lifecycle.cancel();
             const stopInfo = {
                 src: self._currentSrc
             };
 
-            self.events.trigger(self, 'stopped', [stopInfo]);
-
             self._currentTime = null;
             self._currentSrc = null;
             self._currentPlayOptions = null;
+            self.events.trigger(self, 'stopped', [stopInfo]);
+            return generation;
         };
 
         self.stop = (destroyPlayer) => {
             self._lifecycle.cancel();
-            cancelFadeTimeout();
+            cancelFade(self);
+            const generation = self._stopGeneration = (self._stopGeneration || 0) + 1;
 
             const src = self._currentSrc;
 
             if (src) {
                 const originalVolume = self._volume;
 
-                return fade(self, null, self._volume).then(function () {
+                return fade(self, self._volume).then(function (completed) {
+                    if (!completed || generation !== self._stopGeneration || src !== self._currentSrc) return;
                     self.pause();
                     self.setVolume(originalVolume, false);
 
-                    self.onEndedInternal();
+                    const endedGeneration = self.onEndedInternal();
 
-                    if (destroyPlayer) {
+                    if (destroyPlayer && endedGeneration === self._stopGeneration) {
                         self.destroy();
                     }
                 });
@@ -125,6 +132,8 @@ class mpvAudioPlayer {
         };
 
         self.destroy = () => {
+            cancelFade(self);
+            self._stopGeneration = (self._stopGeneration || 0) + 1;
             window.api.player.stop();
 
             const player = window.api.player;
@@ -183,7 +192,10 @@ class mpvAudioPlayer {
             self.events.trigger(self, 'pause');
         }
 
+        self.onError = onError;
         function onError(error) {
+            if (self._lifecycle._errorReported) return;
+            self._lifecycle._errorReported = true;
             self._lifecycle.cancel('Native playback failed.');
             console.error(`media error: ${error}`);
             toast(`media error: ${error}`);
@@ -197,7 +209,7 @@ class mpvAudioPlayer {
     }
 
     getSavedVolume() {
-        return this.appSettings.get('volume') || 1;
+        return this.appSettings.get('volume') ?? 1;
     }
 
     currentSrc() {
@@ -337,7 +349,7 @@ class mpvAudioPlayer {
     }
 
     saveVolume(value) {
-        if (value) {
+        if (value != null) {
             this.appSettings.set('volume', value);
         }
     }
@@ -345,7 +357,7 @@ class mpvAudioPlayer {
     setVolume(val, save = true) {
         this._volume = val;
         if (save) {
-            this.saveVolume((val || 100) / 100);
+            this.saveVolume(val / 100);
             this.events.trigger(this, 'volumechange');
         }
         window.api.player.setVolume(val);
