@@ -1,0 +1,56 @@
+[00:29:03] Copying client to isolated portable directory
+[00:29:07] Running frames-1080-copy-pattern-1080p60-h264.mkv
+[00:34:30] Finished frames-1080-copy-pattern-1080p60-h264.mkv
+[00:34:30] Running frames-1080-enabled-pattern-1080p60-h264.mkv
+[00:39:49] Finished frames-1080-enabled-pattern-1080p60-h264.mkv
+[00:39:49] Running frames-1080-copy-pattern-1080p60-hevc.mkv
+[00:45:08] Finished frames-1080-copy-pattern-1080p60-hevc.mkv
+[00:45:08] Running frames-1080-enabled-pattern-1080p60-hevc.mkv
+[00:50:27] Finished frames-1080-enabled-pattern-1080p60-hevc.mkv
+[00:50:27] Running frames-2160-copy-pattern-2160p60-h264.mkv
+[00:55:46] Finished frames-2160-copy-pattern-2160p60-h264.mkv
+[00:55:46] Running frames-2160-enabled-pattern-2160p60-h264.mkv
+[01:01:05] Finished frames-2160-enabled-pattern-2160p60-h264.mkv
+[01:01:05] Running frames-2160-copy-pattern-2160p60-hevc.mkv
+[01:06:24] Finished frames-2160-copy-pattern-2160p60-hevc.mkv
+[01:06:24] Running frames-2160-enabled-pattern-2160p60-hevc.mkv
+[01:11:43] Finished frames-2160-enabled-pattern-2160p60-hevc.mkv
+[01:11:43] Running cpu-1080-copy-pattern-1080p60-h264.mkv
+[01:12:58] Finished cpu-1080-copy-pattern-1080p60-h264.mkv
+[01:12:58] Running cpu-1080-enabled-pattern-1080p60-h264.mkv
+[01:14:14] Finished cpu-1080-enabled-pattern-1080p60-h264.mkv
+[01:14:14] Running cpu-1080-copy-pattern-1080p60-hevc.mkv
+[01:15:29] Finished cpu-1080-copy-pattern-1080p60-hevc.mkv
+[01:15:29] Running cpu-1080-enabled-pattern-1080p60-hevc.mkv
+[01:16:45] Finished cpu-1080-enabled-pattern-1080p60-hevc.mkv
+[01:16:45] Running cpu-2160-copy-pattern-2160p60-h264.mkv
+[01:18:00] Finished cpu-2160-copy-pattern-2160p60-h264.mkv
+[01:18:00] Running cpu-2160-enabled-pattern-2160p60-h264.mkv
+[01:19:15] Finished cpu-2160-enabled-pattern-2160p60-h264.mkv
+[01:19:15] Running cpu-2160-copy-pattern-2160p60-hevc.mkv
+[01:20:30] Finished cpu-2160-copy-pattern-2160p60-hevc.mkv
+[01:20:30] Running cpu-2160-enabled-pattern-2160p60-hevc.mkv
+[01:21:46] Finished cpu-2160-enabled-pattern-2160p60-hevc.mkv
+[01:21:46] Running first-frame-seek
+[01:22:09] FAILED first-frame-seek : Could not compare "0" to "". Error: "Cannot convert the "System.Object[]" value of type "System.Object[]" to type "System.Int32"." At C:\Users\win\Documents\Claude\jfd-baseline\fork-src\scripts\baseline\Measure-Baseline.ps1:494 char:22
++         for ($i = 0; $i -lt $Seeks; ++$i) {
++                      ~~~~~~~~~~~~~
+[01:22:09] Running fullscreen-50
+[01:25:50] Finished fullscreen-50
+[01:25:50] Running shutdown
+[01:26:40] Finished shutdown
+[01:26:40] Running memory-hour
+[01:31:38] memory 295 s: private 676 MiB
+[01:36:38] memory 595 s: private 672 MiB
+[01:41:38] memory 895 s: private 666 MiB
+[01:46:38] memory 1 195 s: private 684 MiB
+[01:51:38] memory 1 495 s: private 661 MiB
+[01:56:38] memory 1 795 s: private 672 MiB
+[02:01:38] memory 2 095 s: private 675 MiB
+[02:06:38] memory 2 395 s: private 681 MiB
+[02:11:38] memory 2 695 s: private 667 MiB
+[02:16:38] memory 2 995 s: private 683 MiB
+[02:21:38] memory 3 295 s: private 666 MiB
+[02:26:38] memory 3 595 s: private 682 MiB
+[02:28:45] Finished memory-hour
+[02:28:45] Report: C:\Users\win\Documents\Claude\jfd-baseline\console\baseline-report.json
